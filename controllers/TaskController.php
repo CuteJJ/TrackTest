@@ -1,0 +1,70 @@
+<?php
+// controllers/TaskController.php
+require_once __DIR__ . '/../configs/db.php';
+require_once __DIR__ . '/../configs/helper.php';
+
+Helper::requireLogin();
+
+// Fetch Data for the Form
+function getData($pdo) {
+    $printers = $pdo->query("SELECT * FROM printers ORDER BY model_name")->fetchAll();
+    $users = $pdo->query("SELECT * FROM users ORDER BY full_name")->fetchAll();
+    return ['printers' => $printers, 'users' => $users];
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Create the Main Task
+        $stmt = $pdo->prepare("INSERT INTO tasks (task_date, testing_type, fw_version_current, fw_version_prev, fw_version_rec, fw_type, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $_POST['task_date'],
+            $_POST['testing_type'],
+            $_POST['fw_curr'],
+            $_POST['fw_prev'],
+            $_POST['fw_rec'],
+            $_POST['fw_type'],
+            $_POST['due_date']
+        ]);
+        $task_id = $pdo->lastInsertId();
+
+        // 2. Handle Assignments
+        $type = $_POST['testing_type'];
+        $selected_printers = $_POST['printers'] ?? [];
+
+        foreach ($selected_printers as $pid) {
+            if ($type === 'Regression') {
+                // Regression: Get the specific URL for this printer
+                $reg_url = $_POST['regression_urls'][$pid] ?? '';
+                
+                // Assign to current user (Lead) as placeholder/owner, store URL
+                $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, regression_url) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$task_id, $pid, $_SESSION['user_id'], $reg_url]);
+                
+            } elseif ($type === 'Smoke') {
+                // Smoke: Process Main/Support assignments
+                $assigned_users = $_POST['assignments'][$pid] ?? [];
+                $main_tester = $_POST['main_tester'][$pid] ?? null;
+
+                foreach ($assigned_users as $uid) {
+                    $role = ($uid == $main_tester) ? 'Main' : 'Support';
+                    $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$task_id, $pid, $uid, $role]);
+                }
+            }
+        }
+
+        $pdo->commit();
+        Helper::setFlash("Task created successfully!", "success");
+        header("Location: ../index.php");
+        exit();
+
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        Helper::setFlash("Error: " . $e->getMessage(), "error");
+        header("Location: ../create_task.php");
+        exit();
+    }
+}
+?>
