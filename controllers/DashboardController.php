@@ -71,4 +71,30 @@ $stats_sql = "
     GROUP BY p.model_name
 ";
 $chart_data = $pdo->query($stats_sql)->fetchAll();
+
+// LEAD ONLY: All Active Tasks & Progress Calculation
+$lead_tasks = [];
+if ($user_role === 'lead') {
+    $lead_sql = "
+        SELECT 
+            t.id as task_id,
+            t.task_date,
+            t.testing_type,
+            p.id as printer_id,
+            p.model_name,
+            ta.overall_status,
+            -- Calculate Total Cases for this printer model
+            (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = p.model_name) as total_cases,
+            -- Calculate Completed Cases (Pass/Fail) for this specific task assignment
+            (SELECT COUNT(*) FROM test_results tr 
+             WHERE tr.task_id = t.id AND tr.printer_id = p.id AND tr.status IN ('Pass', 'Fail')) as completed_cases
+        FROM task_assignments ta
+        JOIN tasks t ON ta.task_id = t.id
+        JOIN printers p ON ta.printer_id = p.id
+        WHERE t.task_date >= CURRENT_DATE
+        GROUP BY t.id, p.id -- Ensure unique rows per printer-task combo
+        ORDER BY t.task_date ASC
+    ";
+    $lead_tasks = $pdo->query($lead_sql)->fetchAll();
+}
 ?>

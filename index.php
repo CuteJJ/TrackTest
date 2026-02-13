@@ -11,21 +11,19 @@
     <script src="app.js" defer></script>
     
     <style>
+        /* Dashboard Specific Grid Overrides */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(12, 1fr); /* 12-column grid for flexibility */
+            grid-template-columns: repeat(12, 1fr);
             gap: 24px;
             padding: 24px;
             max-width: 1400px;
             margin: 0 auto;
         }
-        
-        /* Grid Spans */
         .col-span-12 { grid-column: span 12; }
         .col-span-8 { grid-column: span 8; }
         .col-span-4 { grid-column: span 4; }
         
-        /* Responsive adjustments */
         @media (max-width: 1000px) {
             .col-span-8, .col-span-4 { grid-column: span 12; }
         }
@@ -48,7 +46,7 @@
         }
         .card-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
         
-        /* Navbar & Actions */
+        /* Navbar */
         .navbar {
             background: var(--bg-surface);
             border-bottom: 1px solid var(--border);
@@ -58,20 +56,24 @@
             align-items: center;
         }
 
-        /* Tables & Badges */
+        /* Tables */
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .data-table th { text-align: left; color: var(--text-muted); padding: 8px; border-bottom: 1px solid var(--border); }
+        .data-table th { text-align: left; color: var(--text-muted); padding: 12px 8px; border-bottom: 1px solid var(--border); }
         .data-table td { padding: 12px 8px; color: var(--text-main); border-bottom: 1px solid var(--border); }
         .data-table tr:last-child td { border-bottom: none; }
         
+        /* Badges */
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
         .badge-lead { background: #e3f2fd; color: #1976d2; }
         .badge-tester { background: #f3e5f5; color: #7b1fa2; }
         
-        /* To-Do Specifics */
         .todo-date { font-family: monospace; color: var(--text-muted); }
         .todo-type-smoke { color: #e65100; background: #fff3e0; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
         .todo-type-reg { color: #01579b; background: #e1f5fe; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+        
+        .role-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: 700; }
+        .role-main { background: rgba(33, 150, 243, 0.1); color: var(--primary); }
+        .role-support { background: var(--border); color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -85,16 +87,13 @@
                 <h2 style="margin:0;">Track Manager</h2>
                 
                 <?php if($_SESSION['role'] === 'lead'): ?>
-                    <a href="create_task.php" class="btn" style="width:auto; padding: 8px 16px; font-size:0.9rem;">
-                        + Create Task
-                    </a>
+                    <a href="create_task.php" class="btn" style="width:auto; padding: 8px 16px; font-size:0.9rem;">+ Create Task</a>
                 <?php endif; ?>
             </div>
 
             <div style="display: flex; gap: 1rem; align-items: center;">
                 <span style="font-size: 0.9rem; color: var(--text-muted);">
-                    <?= htmlspecialchars($_SESSION['full_name']) ?> 
-                    (<?= ucfirst($_SESSION['role']) ?>)
+                    <?= htmlspecialchars($_SESSION['full_name']) ?> (<?= ucfirst($_SESSION['role']) ?>)
                 </span>
                 <a href="logout.php" style="color: var(--error); text-decoration: none; font-size: 0.9rem;">Logout</a>
             </div>
@@ -104,64 +103,127 @@
             
             <div class="card col-span-8">
                 <div class="card-header">
-                    <span class="card-title">My Pending Tasks</span>
+                    <span class="card-title">
+                        <?= $_SESSION['role'] === 'lead' ? 'All Active Testing Tasks' : 'My Pending Assignments' ?>
+                    </span>
                 </div>
-                
-                <?php if (empty($my_tasks)): ?>
-                    <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
-                        <p>No tasks assigned to you yet.</p>
-                    </div>
+
+                <?php if ($_SESSION['role'] === 'lead'): ?>
+                    <?php if (empty($lead_tasks)): ?>
+                        <div style="padding: 2rem; text-align: center; color: var(--text-muted);">No active tasks found.</div>
+                    <?php else: ?>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Printer</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($lead_tasks as $task): ?>
+                                <?php 
+                                    $is_complete = $task['completed_cases'] >= $task['total_cases'] && $task['total_cases'] > 0;
+                                    $percent = $task['total_cases'] > 0 ? round(($task['completed_cases'] / $task['total_cases']) * 100) : 0;
+                                ?>
+                                <tr>
+                                    <td class="todo-date"><?= date('M d', strtotime($task['task_date'])) ?></td>
+                                    <td><span class="<?= $task['testing_type'] == 'Smoke' ? 'todo-type-smoke' : 'todo-type-reg' ?>"><?= htmlspecialchars($task['testing_type']) ?></span></td>
+                                    <td><strong><?= htmlspecialchars($task['model_name']) ?></strong></td>
+                                    <td style="width: 150px; vertical-align: middle;">
+                                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px;">
+                                            <span><?= $task['completed_cases'] ?>/<?= $task['total_cases'] ?></span>
+                                            <span><?= $percent ?>%</span>
+                                        </div>
+                                        <div style="width:100%; height:6px; background:var(--border); border-radius:3px; overflow:hidden;">
+                                            <div style="width:<?= $percent ?>%; height:100%; background:var(--primary);"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <?php if($task['overall_status'] == 'Pass'): ?>
+                                            <span class="badge" style="background:var(--success-bg); color:var(--success);">PASSED</span>
+                                        <?php elseif($task['overall_status'] == 'Fail'): ?>
+                                            <span class="badge" style="background:var(--error-bg); color:var(--error);">FAILED</span>
+                                        <?php else: ?>
+                                            <span style="color:var(--text-muted); font-size:0.8rem;">Pending</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($task['testing_type'] == 'Smoke'): ?>
+                                            <?php if ($is_complete): ?>
+                                                <a href="report.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" 
+                                                   class="btn" style="padding: 6px 12px; font-size: 0.85rem; width: auto;">View Report</a>
+                                            <?php else: ?>
+                                                <button class="btn" disabled style="padding: 6px 12px; font-size: 0.85rem; width: auto; opacity: 0.5; cursor: not-allowed; background: var(--text-muted);">In Progress</button>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span style="color:var(--text-muted); font-size:0.8rem;">Regression</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+
                 <?php else: ?>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Printer Model</th>
-                                <th>My Role</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($my_tasks as $task): ?>
-                            <tr>
-                                <td class="todo-date"><?= date('M d', strtotime($task['task_date'])) ?></td>
-                                <td>
-                                    <span class="<?= $task['testing_type'] == 'Smoke' ? 'todo-type-smoke' : 'todo-type-reg' ?>">
-                                        <?= htmlspecialchars($task['testing_type']) ?>
-                                    </span>
-                                </td>
-                                <td><strong><?= htmlspecialchars($task['model_name']) ?></strong></td>
-                                <td>
-                                    <?php if($task['testing_type'] == 'Regression'): ?>
-                                        <span style="color:var(--text-muted); font-size:0.8rem;">Full Suite</span>
-                                    <?php else: ?>
-                                        <span class="role-badge <?= $task['designation'] == 'Main' ? 'role-main' : 'role-support' ?>">
-                                            <?= htmlspecialchars($task['designation']) ?>
+                    <?php if (empty($my_tasks)): ?>
+                        <div style="padding: 2rem; text-align: center; color: var(--text-muted);">No tasks assigned to you yet.</div>
+                    <?php else: ?>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Printer</th>
+                                    <th>Role</th>
+                                    <th style="text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($my_tasks as $task): ?>
+                                <tr>
+                                    <td class="todo-date"><?= date('M d', strtotime($task['task_date'])) ?></td>
+                                    <td>
+                                        <span class="<?= $task['testing_type'] == 'Smoke' ? 'todo-type-smoke' : 'todo-type-reg' ?>">
+                                            <?= htmlspecialchars($task['testing_type']) ?>
                                         </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-    <?php if($task['testing_type'] == 'Regression'): ?>
-        <?php if (!empty($task['regression_url'])): ?>
-            <a href="<?= htmlspecialchars($task['regression_url']) ?>" target="_blank" class="btn" 
-               style="padding: 6px 12px; font-size: 0.85rem; background: var(--bg-surface); color: var(--primary); border: 1px solid var(--border);">
-               Open TestRail ↗
-            </a>
-        <?php else: ?>
-            <span style="color: var(--text-muted);">No Link Provided</span>
-        <?php endif; ?>
-    <?php else: ?>
-        <a href="execute_task.php?task_id=<?= $task['id'] ?>&printer_id=<?= $task['printer_id'] ?>" 
-           class="btn" style="padding: 6px 12px; font-size: 0.85rem; width: auto;">
-           Execute Test
-        </a>
-    <?php endif; ?>
-</td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                    </td>
+                                    <td><strong><?= htmlspecialchars($task['model_name']) ?></strong></td>
+                                    <td>
+                                        <?php if($task['testing_type'] == 'Regression'): ?>
+                                            <span style="color:var(--text-muted); font-size:0.8rem;">Full Suite</span>
+                                        <?php else: ?>
+                                            <span class="role-badge <?= $task['designation'] == 'Main' ? 'role-main' : 'role-support' ?>">
+                                                <?= htmlspecialchars($task['designation']) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <?php if($task['testing_type'] == 'Regression'): ?>
+                                            <?php if (!empty($task['regression_url'])): ?>
+                                                <a href="<?= htmlspecialchars($task['regression_url']) ?>" target="_blank" class="btn" 
+                                                   style="padding: 6px 12px; font-size: 0.85rem; background: var(--bg-surface); color: var(--primary); border: 1px solid var(--border);">
+                                                   Open TestRail ↗
+                                                </a>
+                                            <?php else: ?>
+                                                <span style="color: var(--text-muted); font-size:0.85rem;">No Link</span>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <a href="execute_task.php?task_id=<?= $task['id'] ?>&printer_id=<?= $task['printer_id'] ?>" 
+                                               class="btn" style="padding: 6px 12px; font-size: 0.85rem; width: auto;">
+                                               Execute Test
+                                            </a>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
 
