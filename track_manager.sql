@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 12, 2026 at 10:24 AM
+-- Generation Time: Feb 16, 2026 at 09:07 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -69,7 +69,10 @@ CREATE TABLE `tasks` (
 
 INSERT INTO `tasks` (`id`, `task_date`, `testing_type`, `fw_version_current`, `fw_version_prev`, `fw_version_rec`, `fw_type`, `due_date`, `created_at`) VALUES
 (1, '2026-02-12', 'Smoke', '123.457', '123.456', '123.001', 'Trunk', '2026-02-12', '2026-02-12 08:38:20'),
-(2, '2026-02-12', 'Regression', '23.457', '23.456', '23.001', 'Branch', '2026-02-12', '2026-02-12 08:52:24');
+(2, '2026-02-12', 'Regression', '23.457', '23.456', '23.001', 'Branch', '2026-02-12', '2026-02-12 08:52:24'),
+(3, '2026-02-13', 'Smoke', '123.459', '123.457', '123.001', 'Trunk', '2026-02-13', '2026-02-13 09:29:54'),
+(4, '2026-02-16', 'Smoke', '123.460', '123.457', '123.001', 'Trunk', '2026-02-16', '2026-02-16 03:27:45'),
+(5, '2026-02-16', 'Smoke', '123.457', '123.456', '123.001', 'Trunk', '2026-02-16', '2026-02-16 03:29:52');
 
 -- --------------------------------------------------------
 
@@ -83,22 +86,32 @@ CREATE TABLE `task_assignments` (
   `printer_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `designation` enum('Main','Support') DEFAULT 'Main',
-  `regression_url` text DEFAULT NULL
+  `regression_url` text DEFAULT NULL,
+  `overall_status` enum('Pass','Fail','Pending') DEFAULT 'Pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `task_assignments`
 --
 
-INSERT INTO `task_assignments` (`id`, `task_id`, `printer_id`, `user_id`, `designation`, `regression_url`) VALUES
-(1, 1, 3, 1, 'Main', NULL),
-(2, 1, 3, 2, 'Support', NULL),
-(3, 1, 2, 2, 'Main', NULL),
-(4, 1, 2, 1, 'Support', NULL),
-(5, 1, 6, 1, 'Main', NULL),
-(6, 2, 3, 2, 'Main', 'http://localhost/tracktest/create_task1.php'),
-(7, 2, 2, 2, 'Main', 'http://localhost/tracktest/create_task2.php'),
-(8, 2, 6, 2, 'Main', 'http://localhost/tracktest/create_task3.php');
+INSERT INTO `task_assignments` (`id`, `task_id`, `printer_id`, `user_id`, `designation`, `regression_url`, `overall_status`) VALUES
+(1, 1, 3, 1, 'Main', NULL, 'Pending'),
+(2, 1, 3, 2, 'Support', NULL, 'Pending'),
+(3, 1, 2, 2, 'Main', NULL, 'Pending'),
+(4, 1, 2, 1, 'Support', NULL, 'Pending'),
+(5, 1, 6, 1, 'Main', NULL, 'Pending'),
+(6, 2, 3, 2, 'Main', 'http://localhost/tracktest/create_task1.php', 'Pending'),
+(7, 2, 2, 2, 'Main', 'http://localhost/tracktest/create_task2.php', 'Pending'),
+(8, 2, 6, 2, 'Main', 'http://localhost/tracktest/create_task3.php', 'Pending'),
+(9, 3, 3, 3, 'Main', NULL, 'Pass'),
+(10, 3, 3, 1, 'Support', NULL, 'Pass'),
+(11, 3, 2, 3, 'Support', NULL, 'Pending'),
+(12, 3, 2, 4, 'Main', NULL, 'Pending'),
+(13, 3, 2, 1, 'Support', NULL, 'Pending'),
+(14, 4, 3, 3, 'Main', NULL, 'Pass'),
+(15, 4, 3, 1, 'Support', NULL, 'Pass'),
+(16, 4, 2, 1, 'Main', NULL, 'Fail'),
+(17, 5, 3, 3, 'Main', NULL, 'Pending');
 
 -- --------------------------------------------------------
 
@@ -182,30 +195,59 @@ CREATE TABLE `test_results` (
   `status` enum('Pass','Fail','Pending') DEFAULT 'Pending',
   `jira_url` text DEFAULT NULL,
   `updated_by` int(11) DEFAULT NULL,
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `assigned_to` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `test_results`
 --
 
-INSERT INTO `test_results` (`id`, `task_id`, `printer_id`, `test_case_id`, `status`, `jira_url`, `updated_by`, `updated_at`) VALUES
-(1, 1, 3, 15, 'Fail', '', 2, '2026-02-12 09:12:55'),
-(2, 1, 3, 17, 'Pass', '', 2, '2026-02-12 09:06:22'),
-(3, 1, 3, 21, 'Pass', '', 2, '2026-02-12 09:06:26'),
-(4, 1, 3, 20, 'Pass', '', 2, '2026-02-12 09:06:27'),
-(5, 1, 3, 22, 'Pass', '', 2, '2026-02-12 09:06:28'),
-(6, 1, 3, 18, 'Pass', '', 2, '2026-02-12 09:06:29'),
-(7, 1, 3, 19, 'Pass', '', 2, '2026-02-12 09:06:30'),
-(8, 1, 3, 16, 'Pass', '', 2, '2026-02-12 09:06:30'),
-(9, 1, 3, 23, 'Pass', '', 2, '2026-02-12 09:06:31'),
-(10, 1, 2, 8, 'Fail', '', 2, '2026-02-12 09:13:20'),
-(11, 1, 2, 11, 'Fail', '', 2, '2026-02-12 09:13:21'),
-(12, 1, 2, 10, 'Fail', '', 2, '2026-02-12 09:13:23'),
-(13, 1, 2, 14, 'Pass', '', 2, '2026-02-12 09:13:24'),
-(14, 1, 2, 12, 'Pass', '', 2, '2026-02-12 09:13:25'),
-(15, 1, 2, 13, 'Pass', '', 2, '2026-02-12 09:13:26'),
-(16, 1, 2, 9, 'Pass', '', 2, '2026-02-12 09:13:28');
+INSERT INTO `test_results` (`id`, `task_id`, `printer_id`, `test_case_id`, `status`, `jira_url`, `updated_by`, `updated_at`, `assigned_to`) VALUES
+(1, 1, 3, 15, 'Fail', '', 2, '2026-02-12 09:12:55', NULL),
+(2, 1, 3, 17, 'Pass', '', 2, '2026-02-12 09:06:22', NULL),
+(3, 1, 3, 21, 'Pass', '', 2, '2026-02-12 09:06:26', NULL),
+(4, 1, 3, 20, 'Pass', '', 2, '2026-02-12 09:06:27', NULL),
+(5, 1, 3, 22, 'Pass', '', 2, '2026-02-12 09:06:28', NULL),
+(6, 1, 3, 18, 'Pass', '', 2, '2026-02-12 09:06:29', NULL),
+(7, 1, 3, 19, 'Pass', '', 2, '2026-02-12 09:06:30', NULL),
+(8, 1, 3, 16, 'Pass', '', 2, '2026-02-12 09:06:30', NULL),
+(9, 1, 3, 23, 'Pass', '', 2, '2026-02-12 09:06:31', NULL),
+(10, 1, 2, 8, 'Fail', '', 2, '2026-02-12 09:13:20', NULL),
+(11, 1, 2, 11, 'Fail', '', 2, '2026-02-12 09:13:21', NULL),
+(12, 1, 2, 10, 'Fail', '', 2, '2026-02-12 09:13:23', NULL),
+(13, 1, 2, 14, 'Pass', '', 2, '2026-02-12 09:13:24', NULL),
+(14, 1, 2, 12, 'Pass', '', 2, '2026-02-12 09:13:25', NULL),
+(15, 1, 2, 13, 'Pass', '', 2, '2026-02-12 09:13:26', NULL),
+(16, 1, 2, 9, 'Pass', '', 2, '2026-02-12 09:13:28', NULL),
+(17, 3, 3, 15, 'Pass', '', 1, '2026-02-13 09:30:09', NULL),
+(18, 3, 3, 17, 'Pass', '', 1, '2026-02-13 09:30:10', NULL),
+(19, 3, 3, 21, 'Pass', '', 1, '2026-02-13 09:30:11', NULL),
+(20, 3, 3, 20, 'Pass', '', 1, '2026-02-13 09:30:11', NULL),
+(21, 3, 3, 22, 'Pass', '', 1, '2026-02-13 09:30:12', NULL),
+(22, 3, 3, 18, 'Pass', '', 1, '2026-02-13 09:30:13', NULL),
+(23, 3, 3, 19, 'Pass', '', 1, '2026-02-13 09:30:14', NULL),
+(24, 3, 3, 16, 'Pass', '', 1, '2026-02-13 09:30:15', NULL),
+(25, 3, 3, 23, 'Pass', '', 1, '2026-02-13 09:30:16', NULL),
+(26, 3, 2, 11, 'Pass', '', 1, '2026-02-13 09:57:01', NULL),
+(27, 3, 2, 8, 'Fail', '', 1, '2026-02-13 09:57:02', NULL),
+(28, 3, 2, 10, 'Pass', '', 1, '2026-02-13 09:57:05', NULL),
+(29, 4, 2, 11, 'Pending', NULL, 1, '2026-02-16 06:50:34', NULL),
+(30, 4, 2, 8, 'Pending', NULL, 1, '2026-02-16 06:50:39', NULL),
+(31, 4, 2, 10, 'Pending', NULL, 1, '2026-02-16 06:50:44', NULL),
+(32, 4, 2, 14, 'Pending', NULL, 1, '2026-02-16 06:50:46', NULL),
+(33, 4, 2, 12, 'Pending', NULL, 1, '2026-02-16 06:50:55', NULL),
+(34, 4, 2, 13, 'Pending', NULL, 1, '2026-02-16 06:50:59', NULL),
+(35, 4, 2, 9, 'Pending', NULL, 1, '2026-02-16 06:51:02', NULL),
+(36, 4, 3, 17, 'Fail', 'https://canvasjs.com/jquery-charts/pie-chart/', 1, '2026-02-16 07:53:44', 1),
+(37, 4, 3, 20, 'Pass', '', 1, '2026-02-16 07:53:47', 1),
+(38, 4, 3, 22, 'Pass', '', 1, '2026-02-16 07:01:26', 1),
+(39, 4, 3, 18, 'Pass', '', 1, '2026-02-16 07:01:27', 1),
+(40, 4, 3, 15, 'Pending', NULL, 1, '2026-02-16 07:53:30', NULL),
+(41, 4, 3, 23, 'Pass', '', 3, '2026-02-16 06:54:21', 3),
+(42, 4, 3, 19, 'Pass', '', 3, '2026-02-16 06:56:12', 3),
+(43, 4, 3, 21, 'Pass', '', 3, '2026-02-16 06:56:11', 3),
+(44, 4, 3, 16, 'Pass', '', 3, '2026-02-16 06:56:10', 3);
 
 -- --------------------------------------------------------
 
@@ -229,8 +271,8 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `full_name`, `username`, `password`, `role`, `last_login`) VALUES
 (1, 'Chan Jian Feng', 'jfchan', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', NULL),
 (2, 'Kali', 'Kali', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'lead', NULL),
-(3, 'Alice', 'Alice', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'tester', NULL),
-(4, 'Dante', 'Dante', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'tester', NULL);
+(3, 'Alice', 'Alice', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', NULL),
+(4, 'Dante', 'Dante', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', NULL);
 
 --
 -- Indexes for dumped tables
@@ -270,7 +312,8 @@ ALTER TABLE `test_cases`
 ALTER TABLE `test_results`
   ADD PRIMARY KEY (`id`),
   ADD KEY `task_id` (`task_id`),
-  ADD KEY `updated_by` (`updated_by`);
+  ADD KEY `updated_by` (`updated_by`),
+  ADD KEY `fk_tr_assignee` (`assigned_to`);
 
 --
 -- Indexes for table `users`
@@ -293,13 +336,13 @@ ALTER TABLE `printers`
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `task_assignments`
 --
 ALTER TABLE `task_assignments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `test_cases`
@@ -311,7 +354,7 @@ ALTER TABLE `test_cases`
 -- AUTO_INCREMENT for table `test_results`
 --
 ALTER TABLE `test_results`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -335,6 +378,7 @@ ALTER TABLE `task_assignments`
 -- Constraints for table `test_results`
 --
 ALTER TABLE `test_results`
+  ADD CONSTRAINT `fk_tr_assignee` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `test_results_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `test_results_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`);
 COMMIT;

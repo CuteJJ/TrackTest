@@ -96,11 +96,11 @@
                     <div class="info-card">
                         <div class="mini-row">
                             <div>
-                                <span class="info-label">Recovery FW</span>
-                                <strong style="color:var(--error);"><?= htmlspecialchars($task_info['fw_version_rec']) ?></strong>
+                                <span class="info-label">Recovery FW</span><br>
+                                <strong style="color: #d08770;"><?= htmlspecialchars($task_info['fw_version_rec']) ?></strong>
                             </div>
                             <div>
-                                <span class="info-label">FW Type</span>
+                                <span class="info-label">FW Type</span><br>
                                 <strong><?= htmlspecialchars($task_info['fw_type']) ?></strong>
                             </div>
                         </div>
@@ -109,12 +109,12 @@
                     <div class="info-card">
                         <div class="mini-row">
                             <div>
-                                <span class="info-label">Task Date</span>
+                                <span class="info-label">Task Date</span><br>
                                 <strong><?= date('M d', strtotime($task_info['task_date'])) ?></strong>
                             </div>
                             <div>
-                                <span class="info-label">Due Date</span>
-                                <strong style="color:var(--text-main);"><?= date('M d', strtotime($task_info['due_date'])) ?></strong>
+                                <span class="info-label">Due Date</span><br>
+                                <strong style="color:var(--error);"><?= date('M d', strtotime($task_info['due_date'])) ?></strong>
                             </div>
                         </div>
                     </div>
