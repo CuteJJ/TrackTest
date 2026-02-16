@@ -20,7 +20,7 @@ if (!$task_id || !$printer_id) {
 }
 
 // 1. Handle Form Submission (Overall Status Update)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['overall_status'])) {
     $overall_status = $_POST['overall_status'];
     $stmt = $pdo->prepare("UPDATE task_assignments SET overall_status = ? WHERE task_id = ? AND printer_id = ?");
     $stmt->execute([$overall_status, $task_id, $printer_id]);
@@ -54,6 +54,11 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute([$task_id, $printer_id]);
 $results = $stmt->fetchAll();
 
+// 3. Filter for Issues Table (Auto-generated from test results)
+$issues = array_filter($results, function($r) {
+    return !empty($r['jira_url']);
+});
+
 $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] == 'Fail');
 ?>
 
@@ -81,22 +86,22 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
         .formal-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 10px;
             margin-bottom: 30px;
             font-size: 0.9rem;
             color: #000;
         }
 
         .formal-table th, .formal-table td {
-            border: 1px solid #000; /* Strict Outline */
-            padding: 10px;
+            border: 1px solid #000;
+            padding: 8px 10px;
             text-align: left;
         }
 
         .formal-table th {
             background-color: #f0f0f0 !important;
             font-weight: 700;
-            -webkit-print-color-adjust: exact; /* Force print background */
+            -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
@@ -119,17 +124,23 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
             print-color-adjust: exact;
         }
 
+        .section-title {
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
         /* Print/PDF Optimization */
         @media print {
             @page { margin: 15mm; size: A4; }
             body { background: white; margin: 0; padding: 0; }
             .no-print { display: none !important; }
             .report-container { 
-                box-shadow: none; 
-                border: none; 
-                padding: 0; 
-                margin: 0; 
-                width: 100%;
+                box-shadow: none; border: none; padding: 0; margin: 0; width: 100%;
             }
             a { text-decoration: none; color: #000; }
             a[href]:after { content: none !important; } 
@@ -154,7 +165,7 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
 
     <div class="report-container">
         
-        <div style="text-align:center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px;">
+        <div style="text-align:center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
             <h1 style="margin:0; font-size:24px; text-transform: uppercase; letter-spacing: 1px;">Smoke Test Report</h1>
             <p style="margin:5px 0 0; color:#555;">Beam SOHO Test Track System</p>
         </div>
@@ -182,15 +193,40 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
             </tr>
         </table>
 
-        <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-top: 30px;">Detailed Test Results</h3>
+        <div class="section-title">New Issues Found</div>
+        <?php if(!empty($issues)): ?>
+            <table class="formal-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Num</th>
+                        <th style="width: 90%;">New Issue (JIRA URL)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $count = 1; foreach($issues as $issue): ?>
+                    <tr>
+                        <td style="text-align:center;"><?= $count++ ?></td>
+                        <td>
+                            <a href="<?= htmlspecialchars($issue['jira_url']) ?>" style="color:#0056b3; text-decoration:underline;">
+                                <?= htmlspecialchars($issue['jira_url']) ?>
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php else: ?>
+            <p style="font-style:italic; color:#555; margin-bottom:30px;">No new issues reported.</p>
+        <?php endif; ?>
+
+        <div class="section-title">Detailed Smoke Test Results</div>
         <table class="formal-table">
             <thead>
                 <tr>
                     <th style="width: 15%;">Case ID</th>
                     <th style="width: 35%;">Test Case Title</th>
                     <th style="width: 15%; text-align:center;">Result</th>
-                    <th style="width: 20%;">Tested By</th>
-                    <th style="width: 15%;">Issue (Jira)</th>
+                    <th style="width: 20%;">Tested By</th> <th style="width: 15%;">Bug (JIRA)</th>
                 </tr>
             </thead>
             <tbody>
@@ -204,12 +240,12 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
                     <?php else: ?>
                         <td class="cell-fail">FAIL</td>
                     <?php endif; ?>
-
-                    <td><?= htmlspecialchars($row['tester_name'] ?? '-') ?></td>
                     
+                    <td><?= htmlspecialchars($row['tester_name'] ?? 'Pending') ?></td>
+
                     <td style="font-size:0.85rem;">
                         <?php if($row['jira_url']): ?>
-                            <a href="<?= htmlspecialchars($row['jira_url']) ?>" style="color:#0056b3; text-decoration:underline;">View Issue</a>
+                            <a href="<?= htmlspecialchars($row['jira_url']) ?>" style="color:#0056b3; text-decoration:underline;">Link</a>
                         <?php else: ?>
                             -
                         <?php endif; ?>
@@ -226,11 +262,6 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
 
     <div class="no-print" style="max-width: 1000px; margin: 0 auto 50px; background:var(--bg-surface); border:1px solid var(--border); padding:24px; border-radius:8px;">
         <h3 style="margin-top:0;"><?= $is_finalized ? 'Update Overall Result' : 'Finalize Report' ?></h3>
-        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;">
-            <?= $is_finalized 
-                ? 'The report is currently set to <strong>' . htmlspecialchars($info['overall_status']) . '</strong>. You can change it below.' 
-                : 'Review the results above and select the overall outcome.' ?>
-        </p>
         
         <form method="POST">
             <div style="display:flex; gap:16px; align-items:center;">
