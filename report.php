@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->prepare("UPDATE task_assignments SET overall_status = ? WHERE task_id = ? AND printer_id = ?");
     $stmt->execute([$overall_status, $task_id, $printer_id]);
     
-    Helper::setFlash("Report finalized as " . $overall_status, "success");
+    Helper::setFlash("Report status updated to: " . $overall_status, "success");
     header("Location: report.php?task_id=$task_id&printer_id=$printer_id");
     exit();
 }
@@ -64,11 +64,10 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
     <title>Test Report | Track Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="app.css">
     
     <style>
-        /* Report Specific Styles */
+        /* Screen Styles */
         .report-container {
             max-width: 1000px;
             margin: 40px auto;
@@ -90,35 +89,50 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
 
         .formal-table th, .formal-table td {
             border: 1px solid #000; /* Strict Outline */
-            padding: 12px;
+            padding: 10px;
             text-align: left;
         }
 
         .formal-table th {
-            background-color: #f0f0f0;
+            background-color: #f0f0f0 !important;
             font-weight: 700;
+            -webkit-print-color-adjust: exact; /* Force print background */
+            print-color-adjust: exact;
         }
 
         /* Status Coloring */
         .cell-pass {
-            background-color: #d4edda !important; /* Light Green */
-            color: #155724;
+            background-color: #d4edda !important;
+            color: #155724 !important;
             font-weight: bold;
             text-align: center;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .cell-fail {
-            background-color: #f8d7da !important; /* Light Red */
-            color: #721c24;
+            background-color: #f8d7da !important;
+            color: #721c24 !important;
             font-weight: bold;
             text-align: center;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
-        /* Print/PDF Tweaks */
+        /* Print/PDF Optimization */
         @media print {
-            body { background: white; }
+            @page { margin: 15mm; size: A4; }
+            body { background: white; margin: 0; padding: 0; }
             .no-print { display: none !important; }
-            .report-container { box-shadow: none; border: none; padding: 0; margin: 0; }
+            .report-container { 
+                box-shadow: none; 
+                border: none; 
+                padding: 0; 
+                margin: 0; 
+                width: 100%;
+            }
+            a { text-decoration: none; color: #000; }
+            a[href]:after { content: none !important; } 
         }
     </style>
 </head>
@@ -130,25 +144,25 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
         <a href="index.php" class="btn" style="width:auto; background:transparent; border:1px solid var(--border); color:var(--text-main);">&larr; Back</a>
         
         <?php if($is_finalized): ?>
-            <button onclick="downloadPDF()" class="btn" style="width:auto; display:flex; gap:8px; align-items:center;">
-                <span class="material-symbols-outlined">download</span> Export to PDF
+            <button onclick="window.print()" class="btn" style="width:auto; display:flex; gap:8px; align-items:center; background:var(--primary); color:white;">
+                <span class="material-symbols-outlined">print</span> Print / Save as PDF
             </button>
         <?php else: ?>
-             <span style="color:var(--text-muted); font-size:0.9rem;">(Finalize report to enable export)</span>
+             <span style="color:var(--text-muted); font-size:0.9rem;">(Set status to enable export)</span>
         <?php endif; ?>
     </div>
 
-    <div class="report-container" id="printable-area">
+    <div class="report-container">
         
         <div style="text-align:center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-            <h1 style="margin:0; font-size:24px; text-transform: uppercase;">Smoke Test Report</h1>
+            <h1 style="margin:0; font-size:24px; text-transform: uppercase; letter-spacing: 1px;">Smoke Test Report</h1>
             <p style="margin:5px 0 0; color:#555;">Beam SOHO Test Track System</p>
         </div>
 
-        <table style="width:100%; margin-bottom: 30px; border:none;">
+        <table style="width:100%; margin-bottom: 20px; border:none; font-size: 1rem;">
             <tr>
-                <td style="padding:5px; border:none;"><strong>Printer Model:</strong> <?= htmlspecialchars($info['model_name']) ?></td>
-                <td style="padding:5px; border:none;"><strong>Date:</strong> <?= date('d M Y', strtotime($info['task_date'])) ?></td>
+                <td style="padding:5px; border:none; width: 50%;"><strong>Printer Model:</strong> <?= htmlspecialchars($info['model_name']) ?></td>
+                <td style="padding:5px; border:none; width: 50%;"><strong>Date:</strong> <?= date('d M Y', strtotime($info['task_date'])) ?></td>
             </tr>
             <tr>
                 <td style="padding:5px; border:none;"><strong>Firmware Ver:</strong> <?= htmlspecialchars($info['fw_version_current']) ?></td>
@@ -158,9 +172,9 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
                 <td style="padding:5px; border:none; padding-top:15px;" colspan="2">
                     <strong>Overall Status:</strong> 
                     <?php if($info['overall_status'] == 'Pass'): ?>
-                        <span style="display:inline-block; padding:4px 12px; background:#d4edda; color:#155724; border:1px solid #155724; border-radius:4px; font-weight:bold;">PASS</span>
+                        <span style="color:#155724; font-weight:800; font-size: 1.1rem; text-transform:uppercase;">PASS</span>
                     <?php elseif($info['overall_status'] == 'Fail'): ?>
-                        <span style="display:inline-block; padding:4px 12px; background:#f8d7da; color:#721c24; border:1px solid #721c24; border-radius:4px; font-weight:bold;">FAIL</span>
+                        <span style="color:#721c24; font-weight:800; font-size: 1.1rem; text-transform:uppercase;">FAIL</span>
                     <?php else: ?>
                         <span style="color:orange;">PENDING</span>
                     <?php endif; ?>
@@ -168,13 +182,13 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
             </tr>
         </table>
 
-        <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 8px;">Detailed Test Results</h3>
+        <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-top: 30px;">Detailed Test Results</h3>
         <table class="formal-table">
             <thead>
                 <tr>
                     <th style="width: 15%;">Case ID</th>
                     <th style="width: 35%;">Test Case Title</th>
-                    <th style="width: 15%;">Result</th>
+                    <th style="width: 15%; text-align:center;">Result</th>
                     <th style="width: 20%;">Tested By</th>
                     <th style="width: 15%;">Issue (Jira)</th>
                 </tr>
@@ -191,11 +205,11 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
                         <td class="cell-fail">FAIL</td>
                     <?php endif; ?>
 
-                    <td><?= htmlspecialchars($row['tester_name'] ?? 'N/A') ?></td>
+                    <td><?= htmlspecialchars($row['tester_name'] ?? '-') ?></td>
                     
                     <td style="font-size:0.85rem;">
                         <?php if($row['jira_url']): ?>
-                            <a href="<?= htmlspecialchars($row['jira_url']) ?>" style="color:blue; text-decoration:underline;">Link</a>
+                            <a href="<?= htmlspecialchars($row['jira_url']) ?>" style="color:#0056b3; text-decoration:underline;">View Issue</a>
                         <?php else: ?>
                             -
                         <?php endif; ?>
@@ -210,40 +224,27 @@ $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] ==
         </div>
     </div>
 
-    <?php if(!$is_finalized): ?>
     <div class="no-print" style="max-width: 1000px; margin: 0 auto 50px; background:var(--bg-surface); border:1px solid var(--border); padding:24px; border-radius:8px;">
-        <h3 style="margin-top:0;">Finalize Report</h3>
-        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;">Review the results above and select the overall outcome.</p>
+        <h3 style="margin-top:0;"><?= $is_finalized ? 'Update Overall Result' : 'Finalize Report' ?></h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;">
+            <?= $is_finalized 
+                ? 'The report is currently set to <strong>' . htmlspecialchars($info['overall_status']) . '</strong>. You can change it below.' 
+                : 'Review the results above and select the overall outcome.' ?>
+        </p>
         
         <form method="POST">
             <div style="display:flex; gap:16px; align-items:center;">
                 <select name="overall_status" class="form-control" style="max-width:200px;" required>
-                    <option value="" disabled selected>Select Status...</option>
-                    <option value="Pass">Pass</option>
-                    <option value="Fail">Fail</option>
+                    <option value="" disabled <?= empty($info['overall_status']) || $info['overall_status']=='Pending' ? 'selected' : '' ?>>Select Status...</option>
+                    <option value="Pass" <?= $info['overall_status'] == 'Pass' ? 'selected' : '' ?>>Pass</option>
+                    <option value="Fail" <?= $info['overall_status'] == 'Fail' ? 'selected' : '' ?>>Fail</option>
                 </select>
-                <button type="submit" class="btn" style="width:auto;">Finalize & Enable Export</button>
+                <button type="submit" class="btn" style="width:auto;">
+                    <?= $is_finalized ? 'Update Result' : 'Finalize & Enable Export' ?>
+                </button>
             </div>
         </form>
     </div>
-    <?php endif; ?>
 
-    <script>
-        function downloadPDF() {
-            const element = document.getElementById('printable-area');
-            const filename = 'Report_<?= $info['model_name'] ?>_<?= $info['fw_version_current'] ?>.pdf';
-            
-            const opt = {
-                margin:       [10, 10],
-                filename:     filename,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            // Generate
-            html2pdf().set(opt).from(element).save();
-        }
-    </script>
 </body>
 </html>

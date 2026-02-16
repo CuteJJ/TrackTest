@@ -252,3 +252,414 @@ body {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* --- Split Layout for Execution --- */
+.execution-container {
+    display: grid;
+    grid-template-rows: auto 1fr; /* Top Bar, then Content */
+    height: 100vh;
+    overflow: hidden;
+}
+
+.exec-header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    z-index: 10;
+}
+
+.exec-body {
+    display: grid;
+    grid-template-columns: 1fr 350px; /* Left (Flexible), Right (Fixed) */
+    overflow: hidden;
+    height: 100%;
+}
+
+/* LEFT SIDE: Execution List */
+.exec-left {
+    padding: 24px;
+    overflow-y: auto;
+    background: var(--bg-body);
+}
+
+/* RIGHT SIDE: Fixed Status Panel */
+.exec-right {
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* STEP 1: Selection Area */
+.selection-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.case-chip {
+    padding: 8px 16px; /* Slightly more padding for text */
+    border-radius: 16px; /* Updated from 20px */
+    background: var(--bg-body);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex; /* Changed to inline-flex to wrap text nicely */
+    align-items: center;
+    gap: 8px;
+    max-width: 100%; /* Prevent overflow */
+    text-align: left;
+    line-height: 1.3;
+}
+
+.case-chip:hover {
+    border-color: var(--primary);
+    background: rgba(33, 150, 243, 0.05);
+}
+
+/* CALENDAR GRID STYLES */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 cols per row */
+    gap: 8px;
+}
+
+.grid-cell {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: help;
+    transition: transform 0.1s;
+    border: 1px solid transparent;
+    position: relative; /* For tooltip positioning context if needed */
+}
+
+.grid-cell:hover {
+    transform: scale(1.1);
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Tester Colors (Generated dynamically in PHP, but base styles here) */
+.tester-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+/* --- Test Case Card Styles (Missing) --- */
+.case-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.case-row {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 16px;
+}
+
+.status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.case-info {
+    flex-grow: 1;
+}
+
+.case-code {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.case-title {
+    font-weight: 500;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.status-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.status-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.status-btn:hover {
+    background: var(--bg-body);
+}
+
+/* Active States Colors */
+.case-card.status-Pass {
+    border-left: 5px solid var(--success);
+}
+.case-card.status-Pass .btn-pass {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.case-card.status-Fail {
+    border-left: 5px solid var(--error);
+}
+.case-card.status-Fail .btn-fail {
+    background: var(--error);
+    color: white;
+    border-color: var(--error);
+}
+
+/* Jira Input Area */
+.jira-box {
+    background: var(--bg-body);
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: none; /* Hidden by default */
+}
+
+/* Only show Jira box if status is Fail */
+.case-card.status-Fail .jira-box {
+    display: block;
+}
+
+/* --- Custom Floating Tooltip --- */
+#custom-tooltip {
+    position: fixed;
+    background: rgba(30, 33, 36, 0.95); /* Deep dark background */
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    pointer-events: none; /* Let mouse pass through */
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    min-width: 200px;
+    backdrop-filter: blur(4px);
+}
+
+#custom-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* Tooltip Content Styling */
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+.tooltip-row:last-child { margin-bottom: 0; }
+.tooltip-label { color: #aaa; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
+.tooltip-value { font-weight: 500; text-align: right; }
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+/* --- Task Briefing Header Styles --- */
+.exec-header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.task-info-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr; /* Proportions for the 3 cards */
+    gap: 16px;
+    margin-top: 8px;
+}
+
+@media (max-width: 1100px) {
+    .task-info-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.info-card {
+    background: var(--bg-body);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.info-card.highlight {
+    background: rgba(33, 150, 243, 0.04); /* Very subtle blue tint */
+    border-color: rgba(33, 150, 243, 0.2);
+}
+
+.info-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Firmware Transition Styling */
+.fw-transition {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.fw-ver {
+    display: flex;
+    flex-direction: column;
+}
+
+.fw-ver span { font-size: 0.7rem; color: var(--text-muted); }
+.fw-ver strong { font-family: monospace; font-size: 1.1rem; color: var(--text-main); }
+
+.fw-ver.new strong { color: var(--primary); font-weight: 700; }
+.fw-ver.old strong { color: var(--text-muted); text-decoration: line-through; opacity: 0.7; font-size: 0.95rem; }
+
+.fw-arrow {
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+}
+
+/* Mini Row for side-by-side data */
+.mini-row {
+    display: flex;
+    gap: 24px;
+}
+.mini-row strong {
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+/* --- Slide-to-Delete Styles --- */
+
+/* 1. Base Card Adjustments */
+.case-card {
+    position: relative; /* Context for absolute positioning */
+    overflow: hidden;   /* Hide the delete button when off-screen */
+}
+
+/* 2. Wrapper for the existing content */
+.card-content-wrapper {
+    background: var(--bg-surface);
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2;
+    position: relative;
+}
+
+/* 3. The Red Notification Dot */
+.remove-trigger {
+    position: absolute;
+    top: 0;
+    right: 0px;
+    width: 3px;
+    height: 100%;
+    background-color: var(--text-muted);
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+    z-index: 10;
+}
+
+.remove-trigger:hover {
+    transform: scale(1.3);
+    background-color: #d32f2f;
+}
+
+/* 4. The Hidden Delete Button */
+.delete-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 80px; /* Width of the delete area */
+    background-color: #fee2e2; /* Light red bg */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1; /* Behind content wrapper initially */
+}
+
+.delete-btn {
+    color: var(--error);
+    background: white;
+    border-radius: 50%;
+    padding: 8px;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.2);
+    transition: transform 0.2s;
+}
+
+.delete-btn:hover {
+    transform: scale(1.1) rotate(5deg);
+    background: var(--error);
+    color: white;
+}
+
+/* 5. Active State (Slide Left) */
+.case-card.delete-mode .card-content-wrapper {
+    transform: translateX(-80px); /* Push content left to reveal delete panel */
+}
+
+/* Change dot to a 'close' or 'minus' state when active if desired */
+.case-card.delete-mode .remove-trigger {
+    background-color: var(--text-muted); /* Grey out the dot to indicate cancel */
+}

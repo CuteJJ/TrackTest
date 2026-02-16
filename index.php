@@ -155,7 +155,7 @@
                                         <?php if ($task['testing_type'] == 'Smoke'): ?>
                                             <?php if ($is_complete): ?>
                                                 <a href="report.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" 
-                                                   class="btn" style="padding: 6px 12px; font-size: 0.85rem; width: auto;">View Report</a>
+                                                   class="btn" target="_blank" style="padding: 6px 12px; font-size: 0.85rem; width: auto;">View Report</a>
                                             <?php else: ?>
                                                 <button class="btn" disabled style="padding: 6px 12px; font-size: 0.85rem; width: auto; opacity: 0.5; cursor: not-allowed; background: var(--text-muted);">In Progress</button>
                                             <?php endif; ?>
