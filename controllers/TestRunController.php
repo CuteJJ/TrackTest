@@ -164,6 +164,7 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$task_id, $printer_id]);
 $assigned_rows = $stmt->fetchAll();
+
 // D. Get Unique Testers involved (For the Grid Legend)
 $testers = [];
 foreach ($assigned_rows as $row) {

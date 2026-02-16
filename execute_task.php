@@ -11,18 +11,20 @@
 
     <style>
         /* Dynamic Colors for Testers */
-        <?php
+        <?php 
         $colors = ['#E91E63', '#9C27B0', '#2196F3', '#009688', '#FF9800', '#795548'];
         $i = 0;
         $tester_colors = [];
-        foreach ($testers as $tid => $name) {
+        foreach($testers as $tid => $info) { // Changed $name to $info
             $col = $colors[$i % count($colors)];
             $tester_colors[$tid] = $col;
             echo ".tester-bg-$tid { background-color: $col !important; color: white; }";
             echo ".tester-text-$tid { color: $col; }";
             $i++;
         }
-        ?>.cell-unassigned {
+        ?>
+        
+        .cell-unassigned {
             background: var(--bg-body);
             border: 1px dashed var(--border);
             color: var(--text-muted);
@@ -201,10 +203,18 @@
             <div class="exec-right">
                 <div>
                     <h4 style="margin:0 0 15px; font-size:0.9rem; text-transform:uppercase; color:var(--text-muted);">Testers</h4>
-                    <?php foreach ($testers as $tid => $name): ?>
-                        <div class="tester-legend-item" style="background: var(--bg-body);">
-                            <div class="color-dot tester-bg-<?= $tid ?>"></div>
-                            <span><?= htmlspecialchars($name) ?></span>
+                    <?php foreach($testers as $tid => $t): ?>
+                        <div class="tester-legend-item" style="background: var(--bg-body); justify-content: space-between;">
+                            
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="color-dot tester-bg-<?= $tid ?>"></div>
+                                <span><?= htmlspecialchars($t['name']) ?></span>
+                            </div>
+
+                            <?php if($t['role'] === 'Main'): ?>
+                                <span class="mini-badge-main">MAIN</span>
+                            <?php endif; ?>
+
                         </div>
                     <?php endforeach; ?>
                 </div>
