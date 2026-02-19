@@ -12,6 +12,9 @@ function getData($pdo) {
     return ['printers' => $printers, 'users' => $users];
 }
 
+// ============================================
+// CREATE TASK
+// ============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
     try {
         // 1. Validation: Ensure at least one printer is selected
@@ -86,4 +89,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
         exit();
     }
 }
-?>
+
+// ============================================
+// UPDATE TASK (EDIT)
+// ============================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task'])) {
+    try {
+        $task_id = $_POST['task_id'];
+        $selected_printers = $_POST['printers'] ?? [];
+
+        if (empty($selected_printers)) {
+            throw new Exception("Please select at least one printer and assign testers/URL.");
+        }
+
+        $pdo->beginTransaction();
+
+        // 1. Update the main task
+        $stmt = $pdo->prepare("
+            UPDATE tasks SET
+                task_date = ?,
+                testing_type = ?,
+                fw_version_current = ?,
+                fw_version_prev = ?,
+                fw_version_rec = ?,
+                fw_type = ?,
+                due_date = ?
+            WHERE id = ?
+        ");
+        $stmt->execute([
+            $_POST['task_date'],
+            $_POST['testing_type'],
+            $_POST['fw_curr'],
+            $_POST['fw_prev'],
+            $_POST['fw_rec'],
+            $_POST['fw_type'],
+            $_POST['due_date'],
+            $task_id
+        ]);
+
+        // 2. Delete all existing assignments for this task
+        $stmt = $pdo->prepare("DELETE FROM task_assignments WHERE task_id = ?");
+        $stmt->execute([$task_id]);
+
+        // 3. Re-insert assignments based on current form data
+        $type = $_POST['testing_type'];
+
+        foreach ($selected_printers as $pid) {
+            if ($type === 'Regression') {
+                $reg_url = $_POST['regression_urls'][$pid] ?? '';
+                // Assign to current user (lead) as placeholder
+                $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation, regression_url) VALUES (?, ?, ?, 'Main', ?)");
+                $stmt->execute([$task_id, $pid, $_SESSION['user_id'], $reg_url]);
+            } else {
+                $assigned_users = $_POST['assignments'][$pid] ?? [];
+                // If no testers, auto-assign the lead so task remains visible
+                if (empty($assigned_users)) {
+                    $assigned_users = [$_SESSION['user_id']];
+                    $main_tester = $_SESSION['user_id'];
+                } else {
+                    $main_tester = $_POST['main_tester'][$pid] ?? null;
+                }
+
+                foreach ($assigned_users as $uid) {
+                    $role = ($uid == $main_tester) ? 'Main' : 'Support';
+                    $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$task_id, $pid, $uid, $role]);
+                }
+            }
+        }
+
+        $pdo->commit();
+        Helper::setFlash("Task updated successfully! All assignments have been reset.", "success");
+        unset($_SESSION['edit_task_form']);
+        header("Location: ../index.php");
+        exit();
+
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        $_SESSION['edit_task_form'] = $_POST;
+        Helper::setFlash("Error updating task: " . $e->getMessage(), "error");
+        header("Location: ../edit_task.php?id=" . $_POST['task_id']);
+        exit();
+    }
+}

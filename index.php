@@ -53,6 +53,27 @@
         </div>
 
         <div class="d-card-body">
+            <!-- Filter Bar -->
+<form method="get" class="filter-bar">
+    <div class="filter-group">
+        <label for="start_date">From</label>
+        <input type="date" id="start_date" name="start_date" value="<?= htmlspecialchars($_GET['start_date'] ?? date('Y-m-d')) ?>">
+    </div>
+    <div class="filter-group">
+        <label for="end_date">To</label>
+        <input type="date" id="end_date" name="end_date" value="<?= htmlspecialchars($_GET['end_date'] ?? '') ?>">
+    </div>
+    <div class="filter-group">
+        <label for="type">Type</label>
+        <select id="type" name="type">
+            <option value="" <?= empty($_GET['type']) ? 'selected' : '' ?>>All</option>
+            <option value="Smoke" <?= ($_GET['type'] ?? '') == 'Smoke' ? 'selected' : '' ?>>Smoke</option>
+            <option value="Regression" <?= ($_GET['type'] ?? '') == 'Regression' ? 'selected' : '' ?>>Regression</option>
+        </select>
+    </div>
+    <button type="submit" class="btn-mini">Apply Filters</button>
+    <a href="index.php" class="btn-mini ghost">Reset</a>
+</form>
         <?php if ($_SESSION['role'] === 'lead'): ?>
             <?php if (empty($lead_tasks)): ?>
                 <div class="empty-state">
@@ -170,8 +191,8 @@
                                             <?php endif; ?>
                                             <span class="divider-line"></span>
                                             <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn" title="Edit Task">
-                                                <span class="material-symbols-outlined">edit</span>
-                                            </a>
+    <span class="material-symbols-outlined">edit</span>
+</a>
                                             <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete" title="Delete Task" onclick="return confirm('Delete this task?');">
                                                 <span class="material-symbols-outlined">delete</span>
                                             </a>
@@ -182,6 +203,7 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    
                 </div>
             <?php endif; ?>
 
@@ -268,6 +290,32 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php
+$totalRows = ($_SESSION['role'] === 'lead') ? $pagination['leadRows'] : $pagination['myRows'];
+$totalPages = ($_SESSION['role'] === 'lead') ? $pagination['leadPages'] : $pagination['myPages'];
+$currentPage = $pagination['currentPage'];
+
+if ($totalPages > 1):
+?>
+<div class="pagination">
+    <?php if ($currentPage > 1): ?>
+        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $currentPage - 1])) ?>" class="page-link prev">← Prev</a>
+    <?php endif; ?>
+
+    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <?php if ($i == $currentPage): ?>
+            <span class="page-link active"><?= $i ?></span>
+        <?php else: ?>
+            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>" class="page-link"><?= $i ?></a>
+        <?php endif; ?>
+    <?php endfor; ?>
+
+    <?php if ($currentPage < $totalPages): ?>
+        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $currentPage + 1])) ?>" class="page-link next">Next →</a>
+    <?php endif; ?>
+</div>
+<p class="pagination-info">Showing <?= min(($currentPage-1)*$perPage+1, $totalRows) ?> – <?= min($currentPage*$perPage, $totalRows) ?> of <?= $totalRows ?> tasks</p>
+<?php endif; ?>
                 </div>
             <?php endif; ?>
         <?php endif; ?>
@@ -380,7 +428,8 @@
         </div>
     </div>
 
-</div><?php
+</div>
+<?php
 function time_ago($datetime) {
     $interval = time() - strtotime($datetime);
     if ($interval < 60) return 'Just now';

@@ -165,4 +165,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
+
+    // --- GLOBAL LOADER CONTROLS ---
+    window.showLoader = () => {
+        const loader = document.getElementById('global-loader-overlay');
+        if (loader) loader.classList.add('active');
+    };
+
+    window.hideLoader = () => {
+        const loader = document.getElementById('global-loader-overlay');
+        if (loader) loader.classList.remove('active');
+    };
+
+    // Optional Auto-Loader for all standard form submissions:
+    document.addEventListener('submit', (e) => {
+        if(!e.target.classList.contains('no-loader')) {
+            window.showLoader();
+        }
+    });
 });

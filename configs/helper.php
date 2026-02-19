@@ -8,11 +8,25 @@ class Helper {
 
     public static function requireLogin() {
         if (!self::isLoggedIn()) {
-            header("Location: /project/login.php"); // Adjust path if needed
+            header("Location: ../login.php"); // Adjust path if needed
             exit();
         }
     }
     
+    public static function displayLoader() {
+        echo '
+        <div id="global-loader-overlay">
+            <div class="typing-indicator">
+                <div class="typing-circle"></div>
+                <div class="typing-circle"></div>
+                <div class="typing-circle"></div>
+                <div class="typing-shadow"></div>
+                <div class="typing-shadow"></div>
+                <div class="typing-shadow"></div>
+            </div>
+        </div>';
+    }
+
     public static function setFlash($message, $type = 'info') {
         $_SESSION['flash'] = ['message' => $message, 'type' => $type];
     }

@@ -539,7 +539,7 @@
             formData.append('case_id', caseId);
             formData.append('status', status);
             formData.append('jira_url', jiraUrl);
-
+            
             fetch(window.location.href, {
                 method: 'POST',
                 body: formData
