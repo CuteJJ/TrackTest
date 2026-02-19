@@ -60,221 +60,461 @@ $issues = array_filter($results, function($r) {
 });
 
 $is_finalized = ($info['overall_status'] == 'Pass' || $info['overall_status'] == 'Fail');
-?>
 
+// Stats
+$total   = count($results);
+$passed  = count(array_filter($results, fn($r) => $r['status'] === 'Pass'));
+$failed  = count(array_filter($results, fn($r) => $r['status'] !== 'Pass'));
+$pct     = $total > 0 ? round($passed / $total * 100) : 0;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Test Report | Track Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,500,0,0" rel="stylesheet">
     <link rel="stylesheet" href="app.css">
-    
+
     <style>
-        /* Screen Styles */
-        .report-container {
-            max-width: 1000px;
-            margin: 40px auto;
-            background: white;
-            padding: 40px;
-            border: 1px solid #ddd;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: var(--bg-body);
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text-main);
         }
 
-        /* Formal Table Styles */
-        .formal-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-            color: #000;
+        /* ── TOPBAR ── */
+        .rp-topbar {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            height: 58px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .rp-topbar-brand { display: flex; align-items: center; gap: 10px; font-size: 1rem; font-weight: 700; }
+        .rp-topbar-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+        .rp-topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+        .rp-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 7px;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; border: 1.5px solid transparent;
+            font-family: 'DM Sans', sans-serif; text-decoration: none;
+        }
+        .rp-btn.ghost {
+            background: white; color: var(--text-muted); border-color: var(--border);
+        }
+        .rp-btn.ghost:hover { border-color: var(--text-muted); color: var(--text-main); }
+        .rp-btn.primary {
+            background: var(--primary); color: white; border-color: var(--primary);
+        }
+        .rp-btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+        .rp-btn .material-symbols-outlined { font-size: 16px; }
+
+        .rp-status-hint {
+            font-size: 0.78rem; color: var(--text-muted);
+            display: flex; align-items: center; gap: 6px;
         }
 
-        .formal-table th, .formal-table td {
-            border: 1px solid #000;
-            padding: 8px 10px;
-            text-align: left;
+        /* ── PAGE SHELL ── */
+        .rp-wrap {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 32px 24px 80px;
         }
 
-        .formal-table th {
-            background-color: #f0f0f0 !important;
-            font-weight: 700;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+        /* ── REPORT HEADER CARD ── */
+        .rp-header-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 22px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .rp-header-top {
+            padding: 24px 28px;
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+            flex-wrap: wrap;
+        }
+        .rp-doc-title {
+            font-size: 1.35rem; font-weight: 800; color: var(--text-main);
+            letter-spacing: -0.4px; margin: 0 0 4px;
+        }
+        .rp-doc-sub { font-size: 0.82rem; color: var(--text-muted); margin: 0; }
+
+        .rp-overall-badge {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 8px 18px; border-radius: 8px;
+            font-size: 1rem; font-weight: 800; letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+        .rp-overall-badge.pass { background: #dcfce7; color: #15803d; border: 1.5px solid #86efac; }
+        .rp-overall-badge.fail { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; }
+        .rp-overall-badge.pending { background: #fff7ed; color: #c2410c; border: 1.5px solid #fed7aa; }
+        .rp-overall-badge .material-symbols-outlined { font-size: 20px; }
+
+        .rp-meta-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            border-top: 1px solid var(--border);
+        }
+        @media (max-width: 680px) { .rp-meta-grid { grid-template-columns: 1fr 1fr; } }
+        .rp-meta-item {
+            padding: 14px 20px;
+            border-right: 1px solid var(--border);
+        }
+        .rp-meta-item:last-child { border-right: none; }
+        .rp-meta-label {
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 4px;
+        }
+        .rp-meta-value {
+            font-size: 0.9rem; font-weight: 700; color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .rp-meta-value.plain { font-family: 'DM Sans', sans-serif; }
+
+        /* ── STAT PILLS ── */
+        .rp-stats-bar {
+            display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap;
+        }
+        .rp-stat {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px 20px;
+            display: flex; flex-direction: column; gap: 3px;
+            flex: 1; min-width: 110px;
+        }
+        .rp-stat-num { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+        .rp-stat-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .rp-stat-num.green { color: #15803d; }
+        .rp-stat-num.red   { color: #b91c1c; }
+        .rp-stat-num.blue  { color: var(--primary); }
+
+        /* ── SECTION BLOCK ── */
+        .rp-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .rp-section-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 13px 20px;
+            border-bottom: 1px solid var(--border);
+            background: #fafbfc;
+        }
+        .rp-section-title {
+            font-size: 0.8rem; font-weight: 700; color: var(--text-main);
+            text-transform: uppercase; letter-spacing: 0.07em;
+        }
+        .rp-section-count {
+            margin-left: auto;
+            font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+            background: #f1f5f9; border: 1px solid var(--border);
+            padding: 2px 8px; border-radius: 99px;
         }
 
-        /* Status Coloring */
-        .cell-pass {
-            background-color: #d4edda !important;
-            color: #155724 !important;
-            font-weight: bold;
-            text-align: center;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+        /* ── TABLES ── */
+        .rp-table {
+            width: 100%; border-collapse: collapse; font-size: 0.83rem;
+        }
+        .rp-table th {
+            text-align: left; padding: 10px 16px;
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--text-muted);
+            background: #f9fafb; border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .rp-table td {
+            padding: 11px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle; color: var(--text-main);
+        }
+        .rp-table tr:last-child td { border-bottom: none; }
+        .rp-table tbody tr:hover td { background: #fafbfd; }
+
+        .rp-jira-link {
+            display: inline-flex; align-items: center; gap: 5px;
+            color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.8rem;
+        }
+        .rp-jira-link:hover { text-decoration: underline; }
+        .rp-jira-link .material-symbols-outlined { font-size: 13px; }
+
+        .rp-dash { color: var(--border); font-weight: 400; }
+
+        /* ── STATUS BADGES ── */
+        .rp-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 9px; border-radius: 5px;
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em;
+        }
+        .rp-badge .material-symbols-outlined { font-size: 12px; }
+        .rp-badge.pass { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .rp-badge.fail { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+        /* ── MONO ── */
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; }
+
+        /* ── FINALIZE PANEL ── */
+        .rp-finalize-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px; padding: 22px 24px;
+            margin-bottom: 20px;
+        }
+        .rp-finalize-title {
+            font-size: 0.92rem; font-weight: 700; color: var(--text-main); margin: 0 0 14px;
+        }
+        .rp-finalize-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+        .rp-select {
+            padding: 9px 14px; border-radius: 7px;
+            border: 1.5px solid var(--border); background: #f9fafb;
+            font-family: 'DM Sans', sans-serif; font-size: 0.88rem;
+            color: var(--text-main); cursor: pointer; outline: none;
+            transition: border-color 0.15s;
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center;
+            padding-right: 36px; min-width: 180px;
+        }
+        .rp-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2,136,209,0.1); background-color: white; }
+
+        /* ── GENERATED FOOTER ── */
+        .rp-footer {
+            font-size: 0.75rem; color: var(--text-muted);
+            text-align: center; padding: 12px 0;
         }
 
-        .cell-fail {
-            background-color: #f8d7da !important;
-            color: #721c24 !important;
-            font-weight: bold;
-            text-align: center;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
-        .section-title {
-            border-bottom: 2px solid #000;
-            padding-bottom: 5px;
-            margin-top: 30px;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        /* Print/PDF Optimization */
+        /* ── PRINT ── */
         @media print {
-            @page { margin: 15mm; size: A4; }
-            body { background: white; margin: 0; padding: 0; }
+            @page { margin: 12mm; size: A4; }
+            body { background: white; }
             .no-print { display: none !important; }
-            .report-container { 
-                box-shadow: none; border: none; padding: 0; margin: 0; width: 100%;
+            .rp-topbar { display: none; }
+            .rp-wrap { padding: 0; max-width: 100%; }
+            .rp-header-card, .rp-section, .rp-stats-bar .rp-stat {
+                box-shadow: none;
+                border-color: #d0d0d0;
+                border-radius: 6px;
             }
-            a { text-decoration: none; color: #000; }
-            a[href]:after { content: none !important; } 
+            .rp-badge.pass { background: #dcfce7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .rp-badge.fail { background: #fee2e2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .rp-meta-grid { border-top: 1px solid #ccc; }
+            .rp-meta-item { border-right: 1px solid #ccc; }
         }
     </style>
 </head>
 <body>
-    
+
     <?php Helper::displayFlash(); ?>
 
-    <div class="no-print" style="max-width: 1000px; margin: 20px auto; display:flex; justify-content:space-between; align-items:center;">
-        <a href="index.php" class="btn" style="width:auto; background:transparent; border:1px solid var(--border); color:var(--text-main);">&larr; Back</a>
-        
-        <?php if($is_finalized): ?>
-            <button onclick="window.print()" class="btn" style="width:auto; display:flex; gap:8px; align-items:center; background:var(--primary); color:white;">
-                <span class="material-symbols-outlined">print</span> Print / Save as PDF
-            </button>
-        <?php else: ?>
-             <span style="color:var(--text-muted); font-size:0.9rem;">(Set status to enable export)</span>
-        <?php endif; ?>
+    <!-- TOPBAR -->
+    <div class="rp-topbar no-print">
+        <div class="rp-topbar-brand">
+            <div class="rp-topbar-dot"></div>
+            Track Manager
+        </div>
+        <div class="rp-topbar-actions">
+            <a href="index.php" class="rp-btn ghost">
+                <span class="material-symbols-outlined">arrow_back</span> Back
+            </a>
+            <?php if ($is_finalized): ?>
+                <button onclick="window.print()" class="rp-btn primary">
+                    <span class="material-symbols-outlined">print</span> Print / Save PDF
+                </button>
+            <?php else: ?>
+                <span class="rp-status-hint">
+                    <span class="material-symbols-outlined" style="font-size:15px;">info</span>
+                    Finalize report to enable export
+                </span>
+            <?php endif; ?>
+        </div>
     </div>
 
-    <div class="report-container">
-        
-        <div style="text-align:center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-            <h1 style="margin:0; font-size:24px; text-transform: uppercase; letter-spacing: 1px;">Smoke Test Report</h1>
-            <p style="margin:5px 0 0; color:#555;">Beam SOHO Test Track System</p>
+    <div class="rp-wrap">
+
+        <!-- ── REPORT HEADER ── -->
+        <div class="rp-header-card">
+            <div class="rp-header-top">
+                <div>
+                    <p class="rp-doc-title">Smoke Test Report</p>
+                    <p class="rp-doc-sub">Beam SOHO Test Track System · Generated <?= date('d M Y, g:i A') ?></p>
+                </div>
+                <?php if ($info['overall_status'] == 'Pass'): ?>
+                    <div class="rp-overall-badge pass">
+                        <span class="material-symbols-outlined">verified</span> PASSED
+                    </div>
+                <?php elseif ($info['overall_status'] == 'Fail'): ?>
+                    <div class="rp-overall-badge fail">
+                        <span class="material-symbols-outlined">cancel</span> FAILED
+                    </div>
+                <?php else: ?>
+                    <div class="rp-overall-badge pending">
+                        <span class="material-symbols-outlined">schedule</span> PENDING
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="rp-meta-grid">
+                <div class="rp-meta-item">
+                    <div class="rp-meta-label">Printer Model</div>
+                    <div class="rp-meta-value plain"><?= htmlspecialchars($info['model_name']) ?></div>
+                </div>
+                <div class="rp-meta-item">
+                    <div class="rp-meta-label">Test Date</div>
+                    <div class="rp-meta-value plain"><?= date('d M Y', strtotime($info['task_date'])) ?></div>
+                </div>
+                <div class="rp-meta-item">
+                    <div class="rp-meta-label">Firmware</div>
+                    <div class="rp-meta-value"><?= htmlspecialchars($info['fw_version_current']) ?></div>
+                </div>
+                <div class="rp-meta-item">
+                    <div class="rp-meta-label">Branch Type</div>
+                    <div class="rp-meta-value plain"><?= htmlspecialchars($info['fw_type']) ?></div>
+                </div>
+            </div>
         </div>
 
-        <table style="width:100%; margin-bottom: 20px; border:none; font-size: 1rem;">
-            <tr>
-                <td style="padding:5px; border:none; width: 50%;"><strong>Printer Model:</strong> <?= htmlspecialchars($info['model_name']) ?></td>
-                <td style="padding:5px; border:none; width: 50%;"><strong>Date:</strong> <?= date('d M Y', strtotime($info['task_date'])) ?></td>
-            </tr>
-            <tr>
-                <td style="padding:5px; border:none;"><strong>Firmware Ver:</strong> <?= htmlspecialchars($info['fw_version_current']) ?></td>
-                <td style="padding:5px; border:none;"><strong>Type:</strong> <?= htmlspecialchars($info['fw_type']) ?></td>
-            </tr>
-            <tr>
-                <td style="padding:5px; border:none; padding-top:15px;" colspan="2">
-                    <strong>Overall Status:</strong> 
-                    <?php if($info['overall_status'] == 'Pass'): ?>
-                        <span style="color:#155724; font-weight:800; font-size: 1.1rem; text-transform:uppercase;">PASS</span>
-                    <?php elseif($info['overall_status'] == 'Fail'): ?>
-                        <span style="color:#721c24; font-weight:800; font-size: 1.1rem; text-transform:uppercase;">FAIL</span>
-                    <?php else: ?>
-                        <span style="color:orange;">PENDING</span>
-                    <?php endif; ?>
-                </td>
-            </tr>
-        </table>
+        <!-- ── STATS ── -->
+        <div class="rp-stats-bar no-print">
+            <div class="rp-stat">
+                <span class="rp-stat-num blue"><?= $total ?></span>
+                <span class="rp-stat-label">Total Cases</span>
+            </div>
+            <div class="rp-stat">
+                <span class="rp-stat-num green"><?= $passed ?></span>
+                <span class="rp-stat-label">Passed</span>
+            </div>
+            <div class="rp-stat">
+                <span class="rp-stat-num red"><?= $failed ?></span>
+                <span class="rp-stat-label">Failed</span>
+            </div>
+            <div class="rp-stat">
+                <span class="rp-stat-num <?= $pct >= 80 ? 'green' : ($pct >= 50 ? 'blue' : 'red') ?>"><?= $pct ?>%</span>
+                <span class="rp-stat-label">Pass Rate</span>
+            </div>
+            <div class="rp-stat">
+                <span class="rp-stat-num red"><?= count($issues) ?></span>
+                <span class="rp-stat-label">Issues Filed</span>
+            </div>
+        </div>
 
-        <div class="section-title">New Issues Found</div>
-        <?php if(!empty($issues)): ?>
-            <table class="formal-table">
+        <!-- ── FINALIZE PANEL ── -->
+        <div class="rp-finalize-panel no-print">
+            <p class="rp-finalize-title"><?= $is_finalized ? 'Update Overall Result' : 'Finalize Report' ?></p>
+            <form method="POST">
+                <div class="rp-finalize-row">
+                    <select name="overall_status" class="rp-select" required>
+                        <option value="" disabled <?= empty($info['overall_status']) || $info['overall_status']=='Pending' ? 'selected' : '' ?>>Select status…</option>
+                        <option value="Pass" <?= $info['overall_status'] == 'Pass' ? 'selected' : '' ?>>✓ Pass</option>
+                        <option value="Fail" <?= $info['overall_status'] == 'Fail' ? 'selected' : '' ?>>✗ Fail</option>
+                    </select>
+                    <button type="submit" class="rp-btn primary">
+                        <span class="material-symbols-outlined">save</span>
+                        <?= $is_finalized ? 'Update Result' : 'Finalize & Enable Export' ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── ISSUES TABLE ── -->
+        <div class="rp-section">
+            <div class="rp-section-header">
+                <span class="material-symbols-outlined" style="font-size:16px; color:var(--error);">bug_report</span>
+                <span class="rp-section-title">New Issues Found</span>
+                <span class="rp-section-count"><?= count($issues) ?> issues</span>
+            </div>
+            <?php if (!empty($issues)): ?>
+                <table class="rp-table">
+                    <thead>
+                        <tr>
+                            <th style="width:50px;">#</th>
+                            <th>JIRA Issue URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $count = 1; foreach ($issues as $issue): ?>
+                        <tr>
+                            <td style="color:var(--text-muted); font-size:0.78rem;"><?= $count++ ?></td>
+                            <td>
+                                <a href="<?= htmlspecialchars($issue['jira_url']) ?>" target="_blank" class="rp-jira-link">
+                                    <span class="material-symbols-outlined">open_in_new</span>
+                                    <?= htmlspecialchars($issue['jira_url']) ?>
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div style="padding: 24px 20px; font-size: 0.85rem; color: var(--text-muted); font-style: italic;">
+                    No new issues reported for this test cycle.
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- ── RESULTS TABLE ── -->
+        <div class="rp-section">
+            <div class="rp-section-header">
+                <span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">checklist</span>
+                <span class="rp-section-title">Detailed Test Results</span>
+                <span class="rp-section-count"><?= count($results) ?> cases</span>
+            </div>
+            <table class="rp-table">
                 <thead>
                     <tr>
-                        <th style="width: 10%;">Num</th>
-                        <th style="width: 90%;">New Issue (JIRA URL)</th>
+                        <th style="width:120px;">Case ID</th>
+                        <th>Title</th>
+                        <th style="width:90px; text-align:center;">Result</th>
+                        <th style="width:160px;">Tested By</th>
+                        <th style="width:90px;">Bug</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php $count = 1; foreach($issues as $issue): ?>
+                    <?php foreach ($results as $row): ?>
                     <tr>
-                        <td style="text-align:center;"><?= $count++ ?></td>
+                        <td><span class="mono"><?= htmlspecialchars($row['case_code']) ?></span></td>
+                        <td style="font-size:0.85rem;"><?= htmlspecialchars($row['title']) ?></td>
+                        <td style="text-align:center;">
+                            <?php if ($row['status'] == 'Pass'): ?>
+                                <span class="rp-badge pass">
+                                    <span class="material-symbols-outlined">check_circle</span> PASS
+                                </span>
+                            <?php else: ?>
+                                <span class="rp-badge fail">
+                                    <span class="material-symbols-outlined">cancel</span> FAIL
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <td style="font-size:0.82rem; color:var(--text-muted);">
+                            <?= htmlspecialchars($row['tester_name'] ?? 'Pending') ?>
+                        </td>
                         <td>
-                            <a href="<?= htmlspecialchars($issue['jira_url']) ?>" style="color:#0056b3; text-decoration:underline;">
-                                <?= htmlspecialchars($issue['jira_url']) ?>
-                            </a>
+                            <?php if ($row['jira_url']): ?>
+                                <a href="<?= htmlspecialchars($row['jira_url']) ?>" target="_blank" class="rp-jira-link">
+                                    <span class="material-symbols-outlined">open_in_new</span> Link
+                                </a>
+                            <?php else: ?>
+                                <span class="rp-dash">—</span>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        <?php else: ?>
-            <p style="font-style:italic; color:#555; margin-bottom:30px;">No new issues reported.</p>
-        <?php endif; ?>
-
-        <div class="section-title">Detailed Smoke Test Results</div>
-        <table class="formal-table">
-            <thead>
-                <tr>
-                    <th style="width: 15%;">Case ID</th>
-                    <th style="width: 35%;">Test Case Title</th>
-                    <th style="width: 15%; text-align:center;">Result</th>
-                    <th style="width: 20%;">Tested By</th> <th style="width: 15%;">Bug (JIRA)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($results as $row): ?>
-                <tr>
-                    <td style="font-family:monospace;"><?= htmlspecialchars($row['case_code']) ?></td>
-                    <td><?= htmlspecialchars($row['title']) ?></td>
-                    
-                    <?php if($row['status'] == 'Pass'): ?>
-                        <td class="cell-pass">PASS</td>
-                    <?php else: ?>
-                        <td class="cell-fail">FAIL</td>
-                    <?php endif; ?>
-                    
-                    <td><?= htmlspecialchars($row['tester_name'] ?? 'Pending') ?></td>
-
-                    <td style="font-size:0.85rem;">
-                        <?php if($row['jira_url']): ?>
-                            <a href="<?= htmlspecialchars($row['jira_url']) ?>" style="color:#0056b3; text-decoration:underline;">Link</a>
-                        <?php else: ?>
-                            -
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-
-        <div style="margin-top: 50px; font-size: 0.8rem; color: #777; border-top: 1px solid #eee; padding-top: 10px;">
-            <p>Generated by Track Manager on <?= date('Y-m-d H:i:s') ?></p>
         </div>
-    </div>
 
-    <div class="no-print" style="max-width: 1000px; margin: 0 auto 50px; background:var(--bg-surface); border:1px solid var(--border); padding:24px; border-radius:8px;">
-        <h3 style="margin-top:0;"><?= $is_finalized ? 'Update Overall Result' : 'Finalize Report' ?></h3>
-        
-        <form method="POST">
-            <div style="display:flex; gap:16px; align-items:center;">
-                <select name="overall_status" class="form-control" style="max-width:200px;" required>
-                    <option value="" disabled <?= empty($info['overall_status']) || $info['overall_status']=='Pending' ? 'selected' : '' ?>>Select Status...</option>
-                    <option value="Pass" <?= $info['overall_status'] == 'Pass' ? 'selected' : '' ?>>Pass</option>
-                    <option value="Fail" <?= $info['overall_status'] == 'Fail' ? 'selected' : '' ?>>Fail</option>
-                </select>
-                <button type="submit" class="btn" style="width:auto;">
-                    <?= $is_finalized ? 'Update Result' : 'Finalize & Enable Export' ?>
-                </button>
-            </div>
-        </form>
+        <div class="rp-footer">Generated by Track Manager · <?= date('Y-m-d H:i:s') ?></div>
+
     </div>
 
 </body>

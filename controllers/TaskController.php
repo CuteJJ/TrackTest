@@ -14,9 +14,15 @@ function getData($pdo) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
     try {
+        // 1. Validation: Ensure at least one printer is selected
+        $selected_printers = $_POST['printers'] ?? [];
+        if (empty($selected_printers)) {
+            throw new Exception("Please select at least one printer and assign testers/URL.");
+        }
+
         $pdo->beginTransaction();
 
-        // 1. Create the Main Task
+        // 2. Create the Main Task
         $stmt = $pdo->prepare("INSERT INTO tasks (task_date, testing_type, fw_version_current, fw_version_prev, fw_version_rec, fw_type, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $_POST['task_date'],
@@ -29,23 +35,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
         ]);
         $task_id = $pdo->lastInsertId();
 
-        // 2. Handle Assignments
+        // 3. Handle Assignments
         $type = $_POST['testing_type'];
-        $selected_printers = $_POST['printers'] ?? [];
 
         foreach ($selected_printers as $pid) {
             if ($type === 'Regression') {
                 // Regression: Get the specific URL for this printer
                 $reg_url = $_POST['regression_urls'][$pid] ?? '';
                 
-                // Assign to current user (Lead) as placeholder/owner, store URL
-                $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, regression_url) VALUES (?, ?, ?, ?)");
+                // Assign to current user (Lead) as placeholder/owner
+                $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation, regression_url) VALUES (?, ?, ?, 'Main', ?)");
                 $stmt->execute([$task_id, $pid, $_SESSION['user_id'], $reg_url]);
                 
             } elseif ($type === 'Smoke') {
                 // Smoke: Process Main/Support assignments
                 $assigned_users = $_POST['assignments'][$pid] ?? [];
-                $main_tester = $_POST['main_tester'][$pid] ?? null;
+                
+                // Fallback: If no testers were dragged in, auto-assign the Lead so the task is created and visible
+                if (empty($assigned_users)) {
+                    $assigned_users = [$_SESSION['user_id']];
+                    $main_tester = $_SESSION['user_id'];
+                } else {
+                    $main_tester = $_POST['main_tester'][$pid] ?? null;
+                }
 
                 foreach ($assigned_users as $uid) {
                     $role = ($uid == $main_tester) ? 'Main' : 'Support';
@@ -57,11 +69,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
 
         $pdo->commit();
         Helper::setFlash("Task created successfully!", "success");
+        unset($_SESSION['create_task_form']); // Clear saved form data on success
         header("Location: ../index.php");
         exit();
 
     } catch (Exception $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        
+        // Save form data into session so the user doesn't lose their inputs
+        $_SESSION['create_task_form'] = $_POST; 
+        
         Helper::setFlash("Error: " . $e->getMessage(), "error");
         header("Location: ../create_task.php");
         exit();
