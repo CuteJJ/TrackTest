@@ -8,10 +8,36 @@ class Helper {
 
     public static function requireLogin() {
         if (!self::isLoggedIn()) {
-            header("Location: ../login.php"); // Adjust path if needed
+            header("Location: login.php");
             exit();
         }
     }
+
+    public static function requireRole($allowedRoles) {
+        // 1. Ensure they are logged in first
+        self::requireLogin(); 
+        
+        $userRole = strtolower($_SESSION['role'] ?? '');
+        
+        // 2. Check if they have the required role (supports single string or array of roles)
+        if (is_array($allowedRoles)) {
+            $allowed = array_map('strtolower', $allowedRoles);
+            if (!in_array($userRole, $allowed)) {
+                self::denyAccess();
+            }
+        } else {
+            if ($userRole !== strtolower($allowedRoles)) {
+                self::denyAccess();
+            }
+        }
+    }
+
+    private static function denyAccess() {
+        self::setFlash("Access Denied: You do not have permission to view that page.", "error");
+        header("Location: index.php");
+        exit();
+    }
+    // ----------------------------------------------
     
     public static function displayLoader() {
         echo '
@@ -26,7 +52,7 @@ class Helper {
             </div>
         </div>';
     }
-
+    
     public static function setFlash($message, $type = 'info') {
         $_SESSION['flash'] = ['message' => $message, 'type' => $type];
     }

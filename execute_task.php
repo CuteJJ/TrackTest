@@ -183,7 +183,7 @@
             overflow: hidden;
             min-height: 0;
         }
-        .rp-head { flex-shrink: 0; padding: 18px 24px; border-bottom: 1px solid var(--border); background: #fafbfc; }
+        .rp-head { flex-shrink: 0; padding: 16px 22px; border-bottom: 1px solid var(--border); background: #fafbfc; }
         .rp-head-title { font-size: 0.73rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-main); display: block; margin-bottom: 4px; }
         
         .rp-body { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 32px; }
@@ -295,7 +295,7 @@
                     <div class="mini-row">
                         <div>
                             <span class="info-label">Recovery FW</span>
-                            <strong style="color: #ef4444;"><?= htmlspecialchars($task_info['fw_version_rec']) ?></strong>
+                            <strong style="color: #d08770;"><?= htmlspecialchars($task_info['fw_version_rec']) ?></strong>
                         </div>
                         <div>
                             <span class="info-label">FW Type</span>
@@ -307,8 +307,8 @@
                 <div class="info-card">
                     <div class="mini-row">
                         <div>
-                            <span class="info-label">Task Date</span>
-                            <strong><?= date('M d', strtotime($task_info['task_date'])) ?></strong>
+                            <span class="info-label">Due Date</span><br>
+                            <strong style="color: var(--error);"><?= date('M d', strtotime($task_info['due_date'])) ?></strong>
                         </div>
                     </div>
                 </div>
@@ -397,6 +397,7 @@
                     <?php foreach($testers as $tid => $t): ?>
                         <div class="tester-legend-item">
                             <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="<?= htmlspecialchars($t['pfp']) ?>" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border);">
                                 <div class="color-dot tester-bg-<?= $tid ?>"></div>
                                 <span><?= htmlspecialchars($t['name']) ?></span>
                             </div>

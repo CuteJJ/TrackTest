@@ -3,7 +3,7 @@ require_once 'controllers/TaskController.php';
 require_once 'configs/db.php';
 require_once 'configs/helper.php';
 
-Helper::requireLogin();
+Helper::requireRole('lead');
 
 // Restore form data from session if validation failed
 $form_data = $_SESSION['create_task_form'] ?? null;
@@ -29,13 +29,12 @@ if ($form_data) {
                 if (isset($user_map[$uid])) {
                     $u = $user_map[$uid];
                     $parts = explode(' ', $u['full_name']);
-                    $initials = strtoupper(substr($parts[0],0,1)) . (isset($parts[1]) ? strtoupper(substr($parts[1],0,1)) : '');
-                    $saved_assignments[$pid][] = [
-                        'uid' => $uid,
-                        'name' => $u['full_name'],
-                        'ini' => $initials,
-                        'av' => 'av' . (array_search($uid, array_keys($user_map)) % 8)
-                    ];
+                    $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
+$saved_assignments[$pid][] = [
+    'uid' => $uid,
+    'name' => $u['full_name'],
+    'pfp' => $pfp
+];
                 }
             }
         }
@@ -455,17 +454,18 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
                     <div class="tester-pool-section">
                         <span class="micro-label">Tester Pool</span>
                         <div class="t-pool" id="globalPool">
-                            <?php foreach ($data['users'] as $ui => $u):
-                                $fn = trim($u['full_name']);
-                                $parts = explode(' ', $fn);
-                                $initials = strtoupper(substr($parts[0],0,1)) . (isset($parts[1]) ? strtoupper(substr($parts[1],0,1)) : '');
-                                $av = 'av' . ($ui % 8);
-                            ?>
-                            <div class="t-av-wrap" data-uid="<?= $u['id'] ?>" data-name="<?= htmlspecialchars($fn, ENT_QUOTES) ?>" data-ini="<?= $initials ?>" data-av="<?= $av ?>">
-                                <div class="t-av <?= $av ?>"><?= $initials ?></div>
-                                <span class="t-nm"><?= htmlspecialchars($parts[0]) ?></span>
-                            </div>
-                            <?php endforeach; ?>
+                            <?php foreach ($data['users'] as $u):
+    $fn = trim($u['full_name']);
+    $parts = explode(' ', $fn);
+    $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
+?>
+                            <div class="t-av-wrap" data-uid="<?= $u['id'] ?>" data-name="<?= htmlspecialchars($fn, ENT_QUOTES) ?>" data-pfp="<?= htmlspecialchars($pfp) ?>">
+    <div class="t-av" style="background: transparent;">
+        <img src="<?= htmlspecialchars($pfp) ?>" class="pfp-img">
+    </div>
+    <span class="t-nm"><?= htmlspecialchars($parts[0]) ?></span>
+</div>
+<?php endforeach; ?>
                         </div>
                     </div>
                     <div class="assigned-section">
@@ -582,11 +582,13 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
             chip.className = `a-chip ${isMain ? 'a-main' : ''}`;
             chip.dataset.uid = t.uid;
             chip.innerHTML = `
-                <div class="a-chip-av ${t.av}">${t.ini}</div>
-                <span class="a-chip-name">${firstName(t.name)}</span>
-                <span class="a-chip-role">${isMain ? 'MAIN' : 'SUP'}</span>
-                <span class="a-chip-close" title="Remove"><span class="material-symbols-outlined">close</span></span>
-            `;
+                <div class="a-chip-av" style="background: transparent;">
+                    <img src="${t.pfp}" class="pfp-img">
+                </div>
+    <span class="a-chip-name">${firstName(t.name)}</span>
+    <span class="a-chip-role">${isMain ? 'MAIN' : 'SUP'}</span>
+    <span class="a-chip-close" title="Remove"><span class="material-symbols-outlined">close</span></span>
+`;
             chip.addEventListener('click', (e) => {
                 if (e.target.classList.contains('a-chip-close') || e.target.closest('.a-chip-close')) return;
                 if (!isMain) {
@@ -690,13 +692,13 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
         }
         const uid = poolChip.dataset.uid;
         const name = poolChip.dataset.name;
-        const ini = poolChip.dataset.ini;
+        const pfp = poolChip.dataset.pfp;
         const av = poolChip.dataset.av;
 
         const list = assignments[activePrinter];
         if (list.some(t => String(t.uid) === String(uid))) return;
 
-        list.push({ uid, name, ini, av });
+        list.push({ uid, name, pfp });
         renderActiveSlots();
         renderHiddenInputs(activePrinter);
         updatePrinterCard(activePrinter);

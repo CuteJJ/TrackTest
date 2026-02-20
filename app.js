@@ -177,10 +177,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loader) loader.classList.remove('active');
     };
 
-    // Optional Auto-Loader for all standard form submissions:
+//    Auto-Loader for all standard form submissions:
     document.addEventListener('submit', (e) => {
         if(!e.target.classList.contains('no-loader')) {
             window.showLoader();
         }
     });
+
+// --- PROFILE DROPDOWN LOGIC ---
+window.toggleProfileMenu = function(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('profileMenu');
+    const btn = document.getElementById('profileDropdownBtn');
+    if (menu) menu.classList.toggle('show');
+    if (btn) btn.classList.toggle('active');
+};
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('profileMenu');
+    const btn = document.getElementById('profileDropdownBtn');
+    if (menu && menu.classList.contains('show') && !menu.contains(event.target)) {
+        menu.classList.remove('show');
+        if (btn) btn.classList.remove('active');
+    }
+});
+
 });

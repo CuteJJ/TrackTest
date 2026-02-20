@@ -21,20 +21,33 @@
         <span class="nav-brand-dot"></span>
         Track Manager
     </div>
-    <div class="nav-right">
-        <div class="nav-user">
-            <?php
-                $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $_SESSION['full_name']), 0, 2)));
-                $avColors = ['av-blue','av-green','av-violet','av-rose','av-amber','av-teal'];
-                $avClass = $avColors[crc32($initials) % count($avColors)];
-            ?>
-            <div class="nav-avatar <?= $avClass ?>"><?= $initials ?></div>
+    
+    <div class="nav-right relative" style="display: flex; align-items: center;">
+        <div class="nav-user-dropdown" id="profileDropdownBtn" onclick="toggleProfileMenu(event)">
+            <div class="nav-avatar" style="background: transparent; border: 1px solid var(--border);">
+                <img src="<?= htmlspecialchars($_SESSION['pfp_path'] ?? 'imgs/default_pfp.svg') ?>" alt="Profile" class="pfp-img">
+            </div>
             <div class="nav-user-info">
                 <div class="nav-user-name"><?= htmlspecialchars($_SESSION['full_name']) ?></div>
                 <div class="nav-user-role"><?= htmlspecialchars($_SESSION['role']) ?></div>
             </div>
+            <span class="material-symbols-outlined dropdown-chevron">expand_more</span>
         </div>
-        <a href="logout.php" class="nav-logout">Logout</a>
+
+        <div class="profile-menu" id="profileMenu">
+            <div class="profile-menu-header">
+                Signed in as<br>
+                <strong><?= htmlspecialchars($_SESSION['username'] ?? $_SESSION['full_name']) ?></strong>
+            </div>
+            <div class="profile-menu-divider"></div>
+            <a href="settings.php" class="profile-menu-item">
+                <span class="material-symbols-outlined">manage_accounts</span> Account Settings
+            </a>
+            <div class="profile-menu-divider"></div>
+            <a href="logout.php" class="profile-menu-item text-danger">
+                <span class="material-symbols-outlined">logout</span> Sign out
+            </a>
+        </div>
     </div>
 </nav>
 
@@ -111,7 +124,8 @@
                                         $rowId = "task_" . $task['task_id'] . "_" . $task['printer_id'];
                                         $printerName = htmlspecialchars($task['model_name']);
                                     ?>
-                                    <tr class="expand-trigger main-row" onclick="toggleRow('<?= $rowId ?>')">
+                                    
+                                    <tr class="expand-trigger main-row" onclick="toggleRow('<?= $rowId ?>', this)">
                                         <td>
                                             <span class="mono" style="font-size:0.8rem; color:var(--text-muted);">
                                                 <?= date('M d', strtotime($task['task_date'])) ?>
@@ -158,46 +172,48 @@
 
                                     <tr class="expanded-row">
                                         <td colspan="6">
-                                            <div class="expanded-content" id="<?= $rowId ?>">
-                                                <div class="expand-detail">
-                                                    <span class="expand-detail-label">Due Date</span>
-                                                    <span class="expand-detail-value" style="font-family:var(--font-body);"><?= date('M d, Y', strtotime($task['due_date'])) ?></span>
-                                                </div>
-                                                <div class="expand-detail">
-                                                    <span class="expand-detail-label">Target FW</span>
-                                                    <span class="expand-detail-value" style="color:var(--primary);"><?= htmlspecialchars($task['fw_version_current']) ?></span>
-                                                </div>
-                                                <div class="expand-detail">
-                                                    <span class="expand-detail-label">Branch</span>
-                                                    <span class="expand-detail-value"><?= htmlspecialchars($task['fw_type']) ?></span>
-                                                </div>
-                                                <div class="expand-detail">
-                                                    <span class="expand-detail-label">Prev / Rec FW</span>
-                                                    <span class="expand-detail-value">
-                                                        <span style="color:var(--text-muted); opacity:0.8;"><?= htmlspecialchars($task['fw_version_prev']) ?></span>
-                                                        <span style="color:var(--border); margin:0 4px;">/</span>
-                                                        <span style="color:var(--error);"><?= htmlspecialchars($task['fw_version_rec']) ?></span>
-                                                    </span>
-                                                </div>
-                                                <div class="expand-actions">
-                                                    <?php if ($task['testing_type'] == 'Smoke'): ?>
-                                                        <?php if ($is_complete): ?>
-                                                            <a href="report.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini ghost">
-                                                                <span class="material-symbols-outlined">description</span> Report
-                                                            </a>
-                                                        <?php else: ?>
-                                                            <span class="btn-mini disabled">
-                                                                <span class="material-symbols-outlined">hourglass_top</span> In Progress
-                                                            </span>
+                                            <div class="accordion-wrapper" id="<?= $rowId ?>">
+                                                <div class="expanded-content">
+                                                    <div class="expand-detail">
+                                                        <span class="expand-detail-label">Due Date</span>
+                                                        <span class="expand-detail-value" style="font-family:var(--font-body);"><?= date('M d, Y', strtotime($task['due_date'])) ?></span>
+                                                    </div>
+                                                    <div class="expand-detail">
+                                                        <span class="expand-detail-label">Target FW</span>
+                                                        <span class="expand-detail-value" style="color:var(--primary);"><?= htmlspecialchars($task['fw_version_current']) ?></span>
+                                                    </div>
+                                                    <div class="expand-detail">
+                                                        <span class="expand-detail-label">Branch</span>
+                                                        <span class="expand-detail-value"><?= htmlspecialchars($task['fw_type']) ?></span>
+                                                    </div>
+                                                    <div class="expand-detail">
+                                                        <span class="expand-detail-label">Prev / Rec FW</span>
+                                                        <span class="expand-detail-value">
+                                                            <span style="color:var(--text-muted); opacity:0.8;"><?= htmlspecialchars($task['fw_version_prev']) ?></span>
+                                                            <span style="color:var(--border); margin:0 4px;">/</span>
+                                                            <span style="color:var(--error);"><?= htmlspecialchars($task['fw_version_rec']) ?></span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="expand-actions">
+                                                        <?php if ($task['testing_type'] == 'Smoke'): ?>
+                                                            <?php if ($is_complete): ?>
+                                                                <a href="report.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini ghost">
+                                                                    <span class="material-symbols-outlined">description</span> Report
+                                                                </a>
+                                                            <?php else: ?>
+                                                                <span class="btn-mini disabled">
+                                                                    <span class="material-symbols-outlined">hourglass_top</span> In Progress
+                                                                </span>
+                                                            <?php endif; ?>
                                                         <?php endif; ?>
-                                                    <?php endif; ?>
-                                                    <span class="divider-line"></span>
-                                                    <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn" title="Edit Task">
-                                                        <span class="material-symbols-outlined">edit</span>
-                                                    </a>
-                                                    <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete" title="Delete Task" onclick="return confirm('Delete this task?');">
-                                                        <span class="material-symbols-outlined">delete</span>
-                                                    </a>
+                                                        <span class="divider-line"></span>
+                                                        <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn" title="Edit Task">
+                                                            <span class="material-symbols-outlined">edit</span>
+                                                        </a>
+                                                        <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete" title="Delete Task" onclick="return confirm('Delete this task?');">
+                                                            <span class="material-symbols-outlined">delete</span>
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -328,111 +344,119 @@
             </div> </div>
     </div>
 
-    <div class="dash-split-row">
+<div class="dash-split-row">
         
-        <div class="d-card">
-            <div class="d-card-header">
-                <div class="d-card-title">
-                    <span class="material-symbols-outlined">memory</span>
-                    Firmware Overview
-                </div>
-            </div>
-            <div class="fw-grid">
-                <?php foreach ($firmware_overview as $fw): ?>
-                <div class="fw-card">
-                    <div class="fw-model"><?= htmlspecialchars($fw['model']) ?></div>
-                    <div class="fw-row">
-                        <span class="fw-label">Branch</span>
-                        <span class="fw-value"><?= htmlspecialchars($fw['branch']) ?></span>
-                    </div>
-                    <div class="fw-row">
-                        <span class="fw-label">Trunk</span>
-                        <span class="fw-value trunk"><?= htmlspecialchars($fw['trunk']) ?></span>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
-        <div class="d-card" style="align-self: start;">
-            <div class="d-card-header">
-                <div class="d-card-title">
-                    <span class="material-symbols-outlined">group</span>
-                    Team Status
-                </div>
-            </div>
-            <div class="d-card-body">
-                <?php
-                    $memberColors = ['av-blue','av-green','av-violet','av-rose','av-amber','av-teal'];
-                    foreach ($team_members as $idx => $member):
-                        $mInitials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $member['full_name']), 0, 2)));
-                        $mColor = $memberColors[$idx % count($memberColors)];
-                        $lastSeen = $member['last_login'] ? time_ago($member['last_login']) : 'Never';
-                        $lastFull = $member['last_login'] ? date('M d, Y g:i A', strtotime($member['last_login'])) : 'No login recorded';
-                ?>
-                <div class="member-row">
-                    <div class="member-avatar <?= $mColor ?>"><?= $mInitials ?></div>
-                    <div class="member-info">
-                        <div class="member-name"><?= htmlspecialchars($member['full_name']) ?></div>
-                        <div class="member-last tooltip-trigger" data-tip="Last login: <?= $lastFull ?>"><?= $lastSeen ?></div>
-                    </div>
-                    <span class="member-role <?= $member['role'] === 'lead' ? 'lead' : 'tester' ?>">
-                        <?= ucfirst($member['role']) ?>
-                    </span>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </div>
-
-    <div class="d-card">
-        <div class="d-card-header">
-            <div class="d-card-title">
-                <span class="material-symbols-outlined">donut_large</span>
-                30-Day Performance by Printer
-            </div>
-        </div>
-        <div class="chart-layout">
+        <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
             
-            <div class="chart-sidebar">
-                <?php if(empty($chart_data)): ?>
-                    <p style="font-size:0.85rem; color:var(--text-muted); text-align:center; padding: 20px;">No testing data available.</p>
-                <?php else: ?>
-                    <div class="p-card-grid" id="chartPrinterSelect">
-                        <?php foreach ($chart_data as $idx => $data): ?>
-                            <?php
-                                $pName = htmlspecialchars($data['model_name']);
-                                $n = strtolower($pName);
-                                $icon = 'print';
-                                if (str_contains($n, 'flare')) $icon = 'local_fire_department';
-                                if (str_contains($n, 'ray'))   $icon = 'bolt';
-                                if (str_contains($n, 'mfp'))  $icon = 'content_copy';
-                            ?>
-                            <div class="p-card <?= $idx === 0 ? 'p-active' : '' ?>" data-idx="<?= $idx ?>" onclick="selectChartPrinter(<?= $idx ?>)">
-                                <div class="p-card-icon">
-                                    <span class="material-symbols-outlined"><?= $icon ?></span>
-                                </div>
-                                <div class="p-card-name"><?= $pName ?></div>
+            <div class="d-card">
+                <div class="d-card-header">
+                    <div class="d-card-title">
+                        <span class="material-symbols-outlined">memory</span>
+                        Firmware Overview
+                    </div>
+                </div>
+                <div class="fw-grid">
+                    <?php foreach ($firmware_overview as $fw): ?>
+                    <div class="fw-card">
+                        <div class="fw-model"><?= htmlspecialchars($fw['model']) ?></div>
+                        <div class="fw-row">
+                            <span class="fw-label">Branch</span>
+                            <span class="fw-value"><?= htmlspecialchars($fw['branch']) ?></span>
+                        </div>
+                        <div class="fw-row">
+                            <span class="fw-label">Trunk</span>
+                            <span class="fw-value trunk"><?= htmlspecialchars($fw['trunk']) ?></span>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div class="d-card">
+                <div class="d-card-header">
+                    <div class="d-card-title">
+                        <span class="material-symbols-outlined">donut_large</span>
+                        30-Day Performance by Printer
+                    </div>
+                </div>
+                <div class="chart-layout">
+                    
+                    <div class="chart-sidebar">
+                        <?php if(empty($chart_data)): ?>
+                            <p style="font-size:0.85rem; color:var(--text-muted); text-align:center; padding: 20px;">No testing data available.</p>
+                        <?php else: ?>
+                            <div class="p-card-grid" id="chartPrinterSelect">
+                                <?php foreach ($chart_data as $idx => $data): ?>
+                                    <?php
+                                        $pName = htmlspecialchars($data['model_name']);
+                                        $n = strtolower($pName);
+                                        $icon = 'print';
+                                        if (str_contains($n, 'flare')) $icon = 'local_fire_department';
+                                        if (str_contains($n, 'ray'))   $icon = 'bolt';
+                                        if (str_contains($n, 'mfp'))  $icon = 'content_copy';
+                                    ?>
+                                    <div class="p-card <?= $idx === 0 ? 'p-active' : '' ?>" data-idx="<?= $idx ?>" onclick="selectChartPrinter(<?= $idx ?>)">
+                                        <div class="p-card-icon">
+                                            <span class="material-symbols-outlined"><?= $icon ?></span>
+                                        </div>
+                                        <div class="p-card-name"><?= $pName ?></div>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
-                        <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
-                <?php endif; ?>
+
+                    <div class="chart-display">
+                        <?php if(empty($chart_data)): ?>
+                            <div class="empty-state" style="padding:0;">
+                                <span class="material-symbols-outlined" style="font-size:48px;">pie_chart_outline</span>
+                            </div>
+                        <?php else: ?>
+                            <div class="chart-canvas-wrap">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                </div>
             </div>
 
-            <div class="chart-display">
-                <?php if(empty($chart_data)): ?>
-                    <div class="empty-state" style="padding:0;">
-                        <span class="material-symbols-outlined" style="font-size:48px;">pie_chart_outline</span>
+        </div> <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+            
+            <div class="d-card" style="width: 100%;">
+                <div class="d-card-header">
+                    <div class="d-card-title">
+                        <span class="material-symbols-outlined">group</span>
+                        Team Status
                     </div>
-                <?php else: ?>
-                    <div class="chart-canvas-wrap">
-                        <canvas id="progressChart"></canvas>
+                </div>
+                <div class="d-card-body" style="max-height: 620px; overflow-y: auto;">
+                    <?php
+                        $memberColors = ['av-blue','av-green','av-violet','av-rose','av-amber','av-teal'];
+                        foreach ($team_members as $idx => $member):
+                            $mInitials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $member['full_name']), 0, 2)));
+                            $mColor = $memberColors[$idx % count($memberColors)];
+                            $lastSeen = $member['last_login'] ? time_ago($member['last_login']) : 'Never';
+                            $lastFull = $member['last_login'] ? date('M d, Y g:i A', strtotime($member['last_login'])) : 'No login recorded';
+                            $pfp = !empty($member['pfp_path']) ? $member['pfp_path'] : 'imgs/default_pfp.svg';
+                    ?>
+                    <div class="member-row">
+                        <div class="member-avatar" style="background: transparent; border: 1px solid var(--border);">
+                            <img src="<?= htmlspecialchars($pfp) ?>" class="pfp-img" alt="<?= htmlspecialchars($member['full_name']) ?>">
+                        </div>
+                        <div class="member-info">
+                            <div class="member-name"><?= htmlspecialchars($member['full_name']) ?></div>
+                            <div class="member-last tooltip-trigger" data-tip="Last login: <?= $lastFull ?>"><?= $lastSeen ?></div>
+                        </div>
+                        <span class="member-role <?= $member['role'] === 'lead' ? 'lead' : 'tester' ?>">
+                            <?= ucfirst($member['role']) ?>
+                        </span>
                     </div>
-                <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
             </div>
 
-        </div>
-    </div>
+        </div> </div>
 
 </div>
 
@@ -449,21 +473,24 @@ function time_ago($datetime) {
 <script src="app.js"></script>
 <script>
     // ── Row Toggle ───────────────────────────────────────
-    function toggleRow(rowId) {
-        const content = document.getElementById(rowId);
+    function toggleRow(rowId, triggerElement) {
+        const wrapper = document.getElementById(rowId);
         const chevron = document.getElementById('chev-' + rowId);
-        const isOpen = content.classList.contains('open');
+        const isOpen = wrapper.classList.contains('open');
 
         // Close all
-        document.querySelectorAll('.expanded-content.open').forEach(el => el.classList.remove('open'));
+        document.querySelectorAll('.accordion-wrapper.open').forEach(el => el.classList.remove('open'));
         document.querySelectorAll('.chevron-icon.open').forEach(el => el.classList.remove('open'));
+        document.querySelectorAll('.main-row.is-open').forEach(el => el.classList.remove('is-open'));
 
+        // Open target if it wasn't already open
         if (!isOpen) {
-            content.classList.add('open');
-            chevron.classList.add('open');
+            wrapper.classList.add('open');
+            if (chevron) chevron.classList.add('open');
+            if (triggerElement) triggerElement.classList.add('is-open');
         }
     }
-
+    
     // ── Tooltip ──────────────────────────────────────────
     const tooltip = document.getElementById('custom-tooltip');
     function attachTooltips() {

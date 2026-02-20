@@ -156,7 +156,7 @@ $available_cases = array_filter($all_cases, function($c) {
 });
 
 $stmt = $pdo->prepare("
-    SELECT u.id, u.full_name, ta.designation 
+    SELECT u.id, u.full_name, u.pfp_path, ta.designation 
     FROM task_assignments ta 
     JOIN users u ON ta.user_id = u.id 
     WHERE ta.task_id = ? AND ta.printer_id = ?
@@ -170,7 +170,8 @@ $testers = [];
 foreach ($assigned_rows as $row) {
     $testers[$row['id']] = [
         'name' => $row['full_name'],
-        'role' => $row['designation']
+        'role' => $row['designation'],
+        'pfp'  => !empty($row['pfp_path']) ? $row['pfp_path'] : 'imgs/default_pfp.svg'
     ];
 }
 ?>

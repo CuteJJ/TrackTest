@@ -2,14 +2,7 @@
 require_once 'configs/db.php';
 require_once 'configs/helper.php';
 
-Helper::requireLogin();
-
-// Security: Only Leads can view reports
-if ($_SESSION['role'] !== 'lead') {
-    Helper::setFlash("Access Denied", "error");
-    header("Location: index.php");
-    exit();
-}
+Helper::requireRole('lead');
 
 $task_id = $_GET['task_id'] ?? null;
 $printer_id = $_GET['printer_id'] ?? null;

@@ -3,11 +3,7 @@ require_once 'controllers/TaskController.php';
 require_once 'configs/db.php';
 require_once 'configs/helper.php';
 
-Helper::requireLogin();
-if ($_SESSION['role'] !== 'lead') {
-    header('Location: index.php');
-    exit();
-}
+Helper::requireRole('lead');
 
 $task_id = $_GET['id'] ?? 0;
 if (!$task_id) {

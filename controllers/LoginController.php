@@ -15,7 +15,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['full_name'] = $user['full_name'];
+        $_SESSION['pfp_path'] = !empty($user['pfp_path']) ? $user['pfp_path'] : 'imgs/default_pfp.svg';
 
+        $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+        $updateStmt->execute([$user['id']]);
+        
         Helper::setFlash("Welcome back, " . htmlspecialchars($user['full_name']), "success");
         header("Location: ../index.php");
         exit();

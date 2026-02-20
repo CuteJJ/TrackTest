@@ -38,7 +38,7 @@ function buildTaskFilters($start_date, $end_date, $type) {
 }
 
 // 1. Team Members
-$stmt = $pdo->query("SELECT full_name, role, last_login FROM users ORDER BY role ASC, full_name ASC");
+$stmt = $pdo->query("SELECT full_name, role, last_login, pfp_path FROM users ORDER BY role ASC, full_name ASC");
 $team_members = $stmt->fetchAll();
 
 // 2. Firmware Overview
@@ -54,17 +54,33 @@ foreach ($printers as $p) {
     $firmware_overview[] = ['model' => $p['model_name'], 'branch' => $branch, 'trunk' => $trunk];
 }
 
-// 3. Chart Data
+// 3. Chart Data (FIXED: Calculates Pending from Total Cases minus Pass/Fail)
 $stats_sql = "
-    SELECT p.model_name,
-        COUNT(CASE WHEN tr.status = 'Pass' THEN 1 END) as passed,
-        COUNT(CASE WHEN tr.status = 'Fail' THEN 1 END) as failed,
-        COUNT(CASE WHEN tr.status = 'Pending' THEN 1 END) as pending
-    FROM test_results tr
-    JOIN printers p ON tr.printer_id = p.id
-    JOIN tasks t ON tr.task_id = t.id
+    SELECT 
+        p.model_name,
+        COALESCE(SUM(tr_stats.passed), 0) as passed,
+        COALESCE(SUM(tr_stats.failed), 0) as failed,
+        COALESCE(SUM(
+            GREATEST(0, (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = p.model_name) 
+            - COALESCE(tr_stats.passed, 0) 
+            - COALESCE(tr_stats.failed, 0))
+        ), 0) as pending
+    FROM printers p
+    JOIN (
+        SELECT printer_id, task_id 
+        FROM task_assignments 
+        GROUP BY printer_id, task_id
+    ) ta ON p.id = ta.printer_id
+    JOIN tasks t ON ta.task_id = t.id
+    LEFT JOIN (
+        SELECT task_id, printer_id,
+            SUM(CASE WHEN status = 'Pass' THEN 1 ELSE 0 END) as passed,
+            SUM(CASE WHEN status = 'Fail' THEN 1 ELSE 0 END) as failed
+        FROM test_results
+        GROUP BY task_id, printer_id
+    ) tr_stats ON t.id = tr_stats.task_id AND p.id = tr_stats.printer_id
     WHERE t.task_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-    GROUP BY p.model_name
+    GROUP BY p.id, p.model_name
 ";
 $chart_data = $pdo->query($stats_sql)->fetchAll();
 
