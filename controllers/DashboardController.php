@@ -127,8 +127,9 @@ $my_totalPages = 1;
 
 if ($user_role !== 'lead') {
     [$filterConditions, $filterParams] = buildTaskFilters($start_date, $end_date, $type);
-    // Add user condition
-    $filterConditions[] = "ta.user_id = :user_id";
+    
+    // Add user condition OR Regression tasks (so regression is global to testers)
+    $filterConditions[] = "(ta.user_id = :user_id OR t.testing_type = 'Regression')";
     $filterParams['user_id'] = $user_id;
     $whereClause = 'WHERE ' . implode(' AND ', $filterConditions);
 
