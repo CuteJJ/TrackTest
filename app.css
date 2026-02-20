@@ -1,23 +1,27 @@
-:root {
-    /* --- HIGH CONTRAST LIGHT THEME --- */
-    --primary: #0288d1; /* Sharper Blue */
+/* =========================================
+   1. THEME ENGINE (CSS Variables)
+   ========================================= */
+
+/* Base / High Contrast Light Theme */
+:root, [data-theme="light"] {
+    /* --- BRAND --- */
+    --primary: #0288d1; 
     --primary-hover: #01579b;
     
-    /* Backgrounds */
+    /* --- BACKGROUNDS --- */
     --bg-body: #f0f2f5; 
     --bg-surface: #ffffff;
     --input-bg: #ffffff;
     
-    /* Text */
+    /* --- TEXT --- */
     --text-main: #111827; 
     --text-muted: #6b7280; 
     
-    /* Borders & Depth */
+    /* --- BORDERS & DEPTH --- */
     --border: #d1d5db; 
     --shadow: 0 1px 3px rgba(0,0,0,0.1);
-    --radius: 8px; 
     
-    /* Functional Colors */
+    /* --- FUNCTIONAL COLORS --- */
     --error: #d32f2f;
     --error-bg: #fdeded;
     --success: #1b5e20; 
@@ -25,10 +29,57 @@
     --warning: #ed6c02;
     --warning-bg: #fff3e0;
 
-    /* Dashboard Specific Fonts */
+    /* --- LAYOUT & TYPOGRAPHY (Only needed in base) --- */
+    --radius: 8px; 
     --font-body: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
     --nav-height: 60px;
+}
+
+/* Classic Dark Theme */
+[data-theme="dark"] {
+    --primary: #3b82f6; 
+    --primary-hover: #60a5fa;
+    
+    --bg-body: #111827; 
+    --bg-surface: #1f2937; 
+    --input-bg: #374151;
+    
+    --text-main: #f9fafb; 
+    --text-muted: #9ca3af; 
+    
+    --border: #374151; 
+    --shadow: 0 4px 6px rgba(0,0,0,0.3);
+    
+    --error: #ef4444;
+    --error-bg: rgba(239, 68, 68, 0.1);
+    --success: #10b981; 
+    --success-bg: rgba(16, 185, 129, 0.1);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245, 158, 11, 0.1);
+}
+
+/* Midnight (Deep Purple / Dracula) Theme */
+[data-theme="midnight"] {
+    --primary: #8b5cf6; 
+    --primary-hover: #a78bfa;
+    
+    --bg-body: #0f172a; 
+    --bg-surface: #1e293b;
+    --input-bg: #334155;
+    
+    --text-main: #f1f5f9; 
+    --text-muted: #94a3b8; 
+    
+    --border: #334155; 
+    --shadow: 0 4px 10px rgba(0,0,0,0.4);
+    
+    --error: #f43f5e;
+    --error-bg: rgba(244, 63, 94, 0.1);
+    --success: #10b981; 
+    --success-bg: rgba(16, 185, 129, 0.1);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245, 158, 11, 0.1);
 }
 
 /* =========================================
