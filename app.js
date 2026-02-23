@@ -1,18 +1,50 @@
-// 1. Theme Engine
-const applyTheme = () => {
-    // Check if user has a saved preference (optional feature) or use system default
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = prefersDark ? 'dark' : 'light';
+// ==========================================
+// 1. THEME ENGINE (LocalStorage)
+// ==========================================
+const initTheme = () => {
+    // Check local storage. If nothing is saved, default to 'light'
+    const savedTheme = localStorage.getItem('track-manager-theme') || 'light';
     
-    document.documentElement.setAttribute('data-theme', theme);
+    // Apply immediately to the HTML tag
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    // Update the UI Swatches to show which one is active
+    updateThemeUI(savedTheme);
 };
 
-// Listen for system changes
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+const updateThemeUI = (activeTheme) => {
+    document.querySelectorAll('.theme-swatch').forEach(swatch => {
+        if (swatch.dataset.setTheme === activeTheme) {
+            swatch.classList.add('active');
+        } else {
+            swatch.classList.remove('active');
+        }
+    });
+};
 
-// Initialize
-applyTheme();
+// Run this the millisecond the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
 
+    // Listen for swatch clicks
+    document.querySelectorAll('.theme-swatch').forEach(swatch => {
+        swatch.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevents dropdown from closing when selecting a theme
+            
+            const selectedTheme = swatch.dataset.setTheme;
+            
+            // Set HTML attribute and save to LocalStorage
+            document.documentElement.setAttribute('data-theme', selectedTheme);
+            localStorage.setItem('track-manager-theme', selectedTheme);
+            
+            // Update the rings around the swatches
+            updateThemeUI(selectedTheme);
+        });
+    });
+});
+
+// Immediately invoke initTheme so it runs before the body even finishes rendering
+initTheme();
 
 // 2. Flash Message Logic
 document.addEventListener('DOMContentLoaded', () => {

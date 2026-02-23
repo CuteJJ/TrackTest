@@ -40,6 +40,16 @@
                 <strong><?= htmlspecialchars($_SESSION['username'] ?? $_SESSION['full_name']) ?></strong>
             </div>
             <div class="profile-menu-divider"></div>
+            <div class="theme-section">
+                <span class="theme-label">Theme</span>
+                <div class="theme-swatches">
+                    <div class="theme-swatch active" data-set-theme="light" style="background: #f0f2f5; border: 1px solid #d1d5db;" title="Light"></div>
+                    <div class="theme-swatch" data-set-theme="dark" style="background: #111827; border: 1px solid #374151;" title="Dark"></div>
+                    <div class="theme-swatch" data-set-theme="midnight" style="background: #0f172a; border: 1px solid #334155;" title="Midnight"></div>
+                    <div class="theme-swatch" data-set-theme="catppuccin" style="background-color: #303446; background-image: url('https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/catppuccin.svg'); background-size: cover; border: 1px solid #51576d;" title="Catppuccin Frappé"></div>
+                </div>
+            </div>  
+            <div class="profile-menu-divider"></div>
             <a href="settings.php" class="profile-menu-item">
                 <span class="material-symbols-outlined">manage_accounts</span> Account Settings
             </a>

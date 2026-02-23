@@ -111,6 +111,36 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
     
     <link rel="stylesheet" href="app.css">
     <script src="app.js" defer></script>
+    <style>
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 99px; /* Pill shape */
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-back:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateX(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+        .btn-back .material-symbols-outlined {
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+        .btn-back:hover .material-symbols-outlined {
+            transform: translateX(-4px);
+        }
+    </style>
 </head>
 <body>
 
@@ -123,7 +153,7 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
         Account Settings
     </div>
     <div class="nav-right">
-        <a href="index.php" class="btn-mini ghost" style="padding: 8px 16px;">
+        <a href="index.php" class="btn-back">
             <span class="material-symbols-outlined">arrow_back</span> Back to Dashboard
         </a>
     </div>
@@ -187,14 +217,17 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
                 <div class="d-card-body padded">
                     <form method="POST">
                         <input type="hidden" name="update_info" value="1">
+           
                         <div class="form-group" style="margin-top: 10px;">
+                            <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($u['full_name']) ?>" autocomplete="off" required>
                             <label class="form-label">Full Name</label>
-                            <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($u['full_name']) ?>" required>
                         </div>
+                        
                         <div class="form-group">
+                            <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($u['username']) ?>" autocomplete="off" required>
                             <label class="form-label">Username</label>
-                            <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($u['username']) ?>" required>
                         </div>
+                        
                         <button type="submit" class="btn" style="width: auto; float: right;">Save Information</button>
                         <div style="clear: both;"></div>
                     </form>
@@ -208,20 +241,25 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
                 <div class="d-card-body padded">
                     <form method="POST">
                         <input type="hidden" name="update_password" value="1">
+                        
                         <div class="form-group" style="margin-top: 10px;">
-                            <label class="form-label">Current Password</label>
                             <input type="password" name="current_password" class="form-control" required>
+                            <label class="form-label">Current Password</label>
                         </div>
+                        
                         <div style="height: 1px; background: var(--border); margin: 20px 0;"></div>
+                        
                         <div class="form-group">
-                            <label class="form-label">New Password</label>
                             <input type="password" name="new_password" class="form-control" required minlength="6">
+                            <label class="form-label">New Password</label>
                         </div>
+                        
                         <div class="form-group">
-                            <label class="form-label">Confirm New Password</label>
                             <input type="password" name="confirm_password" class="form-control" required minlength="6">
+                            <label class="form-label">Confirm New Password</label>
                         </div>
-                        <button type="submit" class="btn" style="background: var(--text-main); width: auto; float: right;">Update Password</button>
+                        
+                        <button type="submit" class="btn" style="width: auto; float: right;">Update Password</button>
                         <div style="clear: both;"></div>
                     </form>
                 </div>
