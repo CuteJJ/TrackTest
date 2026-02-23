@@ -45,11 +45,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $case_id = $_POST['case_id'];
             
             // Check if row exists first
-            $check = $pdo->prepare("SELECT id FROM test_results WHERE task_id=? AND printer_id=? AND test_case_id=?");
+            $check = $pdo->prepare("SELECT id, assigned_to FROM test_results WHERE task_id=? AND printer_id=? AND test_case_id=?");
             $check->execute([$task_id, $printer_id, $case_id]);
+            $existing = $check->fetch();
             
-            if ($check->rowCount() > 0) {
-                // Update existing row
+            if ($existing) {
+                // --- CONCURRENCY BUG FIX ---
+                // If it's already assigned to someone who IS NOT the current user, reject it!
+                if (!empty($existing['assigned_to']) && $existing['assigned_to'] != $user_id) {
+                    $u_stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+                    $u_stmt->execute([$existing['assigned_to']]);
+                    $other_user = $u_stmt->fetchColumn() ?: 'another tester';
+                    
+                    // Return the error message to the frontend
+                    echo json_encode([
+                        'success' => false, 
+                        'error' => "Task has been picked up by " . htmlspecialchars($other_user)
+                    ]);
+                    exit();
+                }
+
+                // If unassigned (or assigned to self), update it
                 $upd = $pdo->prepare("UPDATE test_results SET assigned_to = ?, status = 'Pending' WHERE task_id=? AND printer_id=? AND test_case_id=?");
                 $upd->execute([$user_id, $task_id, $printer_id, $case_id]);
             } else {

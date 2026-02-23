@@ -197,9 +197,6 @@ require_once 'configs/helper.php';
         line-height: 1.5;
         max-width: 400px;
     }
-
-    /* Flash Message Position Override for Login */
-    .flash-toast { top: 20px; }
 </style>
 </head>
 <body>
@@ -251,7 +248,7 @@ require_once 'configs/helper.php';
         </div>
 
         <div class="showcase-text">
-            "Just a BEAM SOHO "
+            Good work today.
         </div>
     </div>
 

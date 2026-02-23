@@ -203,7 +203,7 @@
                 <?php else: ?>
                     <div class="chip-grid">
                         <?php foreach ($available_cases as $case): ?>
-                            <button class="case-chip" onclick="claimCase(<?= $case['case_id'] ?>)" title="ID: <?= $case['case_code'] ?>">
+                            <button class="case-chip" onclick="claimCase(<?= $case['case_id'] ?>, this)" title="ID: <?= $case['case_code'] ?>">
                                 <span class="material-symbols-outlined" style="font-size:18px; color:var(--primary); flex-shrink:0;">add_circle</span>
                                 <span><?= htmlspecialchars($case['title']) ?></span>
                             </button>
@@ -423,16 +423,57 @@
             card.classList.toggle('delete-mode');
         }
 
-        function claimCase(caseId) {
+        function showDynamicToast(message, type = 'error') {
+            // Remove any existing toast so they don't stack infinitely
+            const existing = document.querySelector('.flash-toast.js-dynamic-toast');
+            if(existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `flash-toast js-dynamic-toast ${type}`;
+            
+            const icon = type === 'error' ? 'cancel' : 'check_circle';
+            toast.innerHTML = `<span class="material-symbols-outlined">${icon}</span> ${message}`;
+            
+            document.body.appendChild(toast);
+            
+            // Trigger the CSS slide-down animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // --- CLAIM CASE AJAX ---
+        function claimCase(caseId, btnElement) {
             window.showLoader();
             const formData = new FormData();
             formData.append('claim_case', '1');
             formData.append('case_id', caseId);
+            
             fetch(window.location.href, { method: 'POST', body: formData })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success) location.reload();
-                    else window.hideLoader();
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        // FIX: Task was stolen! Hide loader & show the flash message
+                        window.hideLoader();
+                        showDynamicToast(data.error || "Could not claim task.", 'error');
+                        
+                        // Shrink and remove the stolen chip so they can't click it again
+                        if(btnElement) {
+                            btnElement.style.transition = 'all 0.3s ease';
+                            btnElement.style.transform = 'scale(0)';
+                            btnElement.style.opacity = '0';
+                            setTimeout(() => btnElement.remove(), 300);
+                        }
+                        
+                        // Gracefully reload after 2.5 seconds so the rest of the board syncs up
+                        setTimeout(() => location.reload(), 2500);
+                    }
                 })
                 .catch(() => window.hideLoader());
         }
@@ -461,6 +502,8 @@
                 })
                 .catch(() => window.hideLoader());
         }
+
+        
     </script>
 </body>
 </html>

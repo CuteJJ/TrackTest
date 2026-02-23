@@ -46,17 +46,73 @@ document.addEventListener('DOMContentLoaded', () => {
 // Immediately invoke initTheme so it runs before the body even finishes rendering
 initTheme();
 
-// 2. Flash Message Logic
+// ==========================================
+//   FLASH MESSAGE (7s Timer & Close)
+// ==========================================
+
+// Reusable function to manage the lifecycle of any toast
+function initToast(toast) {
+    // Slight delay so the DOM paints the starting state before sliding in
+    setTimeout(() => toast.classList.add('show'), 50);
+
+    // Timer for auto-dismiss (7000ms = 7 seconds)
+    const dismissTimer = setTimeout(() => {
+        dismissToast(toast);
+    }, 7000);
+
+    // Handle manual close button click
+    const closeBtn = toast.querySelector('.toast-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            clearTimeout(dismissTimer); // Stop the 7s timer
+            dismissToast(toast); // Dismiss immediately
+        });
+    }
+}
+
+// Reusable function to slide out and remove a toast
+function dismissToast(toast) {
+    toast.classList.remove('show'); // Slide out to the right
+    setTimeout(() => toast.remove(), 400); // Wait for transition, then delete from DOM
+}
+
+// 1. Initialize PHP-generated Toasts on Page Load
 document.addEventListener('DOMContentLoaded', () => {
-    const toast = document.getElementById('flash-toast');
+    const toast = document.querySelector('.flash-toast:not(.js-dynamic-toast)');
     if (toast) {
-        setTimeout(() => toast.classList.add('show'), 100); // Slide in
-        setTimeout(() => {
-            toast.classList.remove('show'); // Slide out
-            setTimeout(() => toast.remove(), 400); // Remove from DOM
-        }, 3000);
+        initToast(toast);
     }
 });
+
+// 2. AJAX Dynamic Toast Generator (For concurrency bugs, etc.)
+function showDynamicToast(message, type = 'error') {
+    // Remove old dynamic toast if one is already showing
+    const existing = document.querySelector('.flash-toast.js-dynamic-toast');
+    if(existing) dismissToast(existing);
+
+    const toast = document.createElement('div');
+    toast.className = `flash-toast js-dynamic-toast ${type}`;
+    
+    // Choose the SVG based on the type
+    const iconHtml = type === 'error' 
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16"><path fill="currentColor" d="M8 1C4.14 1 1 4.14 1 8s3.14 7 7 7s7-3.14 7-7s-3.14-7-7-7m0 13c-3.309 0-6-2.691-6-6s2.691-6 6-6s6 2.691 6 6s-2.691 6-6 6m2.854-8.146L8.708 8l2.146 2.146a.5.5 0 0 1-.708.707L8 8.707l-2.146 2.146a.5.5 0 0 1-.708 0a.5.5 0 0 1 0-.707L7.292 8L5.146 5.854a.5.5 0 0 1 .707-.707l2.146 2.146l2.146-2.146a.5.5 0 0 1 .707.707z" stroke-width="0.2" stroke="currentColor"></path></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"><path d="m14.25 8.75c-.5 2.5-2.3849 4.85363-5.03069 5.37991-2.64578.5263-5.33066-.7044-6.65903-3.0523-1.32837-2.34784-1.00043-5.28307.81336-7.27989 1.81379-1.99683 4.87636-2.54771 7.37636-1.54771"/><polyline points="5.75 7.75 8.25 10.25 14.25 3.75"/></g></svg>`;
+
+    // Inject the new SaaS HTML structure
+    toast.innerHTML = `
+        <div class="toast-icon">${iconHtml}</div>
+        <div class="toast-content">${message}</div>
+        <button class="toast-close" aria-label="Close">
+            <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+        </button>
+        <div class="toast-progress"></div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Kick off the lifecycle (slide in, start 7s timer)
+    initToast(toast);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     
