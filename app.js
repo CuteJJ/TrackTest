@@ -1,9 +1,13 @@
 // ==========================================
-// 1. THEME ENGINE (LocalStorage)
+// 1. THEME ENGINE (LocalStorage & OS Preference)
 // ==========================================
 const initTheme = () => {
-    // Check local storage. If nothing is saved, default to 'light'
-    const savedTheme = localStorage.getItem('track-manager-theme') || 'light';
+    let savedTheme = localStorage.getItem('track-manager-theme');
+    
+    // If nothing is saved, detect the OS System Theme
+    if (!savedTheme) {
+        savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
     
     // Apply immediately to the HTML tag
     document.documentElement.setAttribute('data-theme', savedTheme);

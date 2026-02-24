@@ -103,7 +103,7 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings | Track Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,500,0,0" rel="stylesheet">
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -158,117 +158,117 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
         </a>
     </div>
 </nav>
-
-<div class="dash-wrapper" style="padding-top: 40px;">
-    
-    <div class="settings-grid">
+<div class="page-content-scroll">
+    <div class="dash-wrapper" style="padding-top: 40px;">
         
-        <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="settings-grid">
             
-            <div class="d-card">
-                <div class="d-card-header">
-                    <div class="d-card-title"><span class="material-symbols-outlined">account_circle</span> Profile Picture</div>
-                </div>
-                <div class="d-card-body padded" style="text-align: center;">
-                    <div style="width: 100px; height: 100px; margin: 0 auto 20px; border-radius: 50%; padding: 4px; border: 2px solid var(--border);">
-                        <img src="<?= htmlspecialchars($pfp) ?>" class="pfp-img" alt="Profile">
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                
+                <div class="d-card">
+                    <div class="d-card-header">
+                        <div class="d-card-title"><span class="material-symbols-outlined">account_circle</span> Profile Picture</div>
                     </div>
-                    
-                    <div class="dropzone" id="pfpDropzone">
-                        <span class="material-symbols-outlined">cloud_upload</span>
-                        <span class="dropzone-text">Drag & Drop image here or <strong>click to browse</strong></span>
-                        <span class="dropzone-sub">Max size: 5MB (PNG, JPG)</span>
-                        <input type="file" id="pfpInput" accept="image/*" class="hidden">
-                    </div>
-                    
-                    <form method="POST" id="pfpForm" class="hidden no-loader">
-                        <input type="hidden" name="update_pfp" value="1">
-                        <input type="hidden" name="cropped_image" id="croppedImageInput">
-                    </form>
-                </div>
-            </div>
-
-            <div class="d-card">
-                <div class="d-card-header">
-                    <div class="d-card-title"><span class="material-symbols-outlined">info</span> System Details</div>
-                </div>
-                <div class="d-card-body padded">
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                            <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">System Role</span>
-                            <span class="badge <?= $u['role'] === 'lead' ? 'badge-smoke' : 'badge-main' ?>" style="text-transform: uppercase;"><?= htmlspecialchars($u['role']) ?></span>
+                    <div class="d-card-body padded" style="text-align: center;">
+                        <div style="width: 100px; height: 100px; margin: 0 auto 20px; border-radius: 50%; padding: 4px; border: 2px solid var(--border);">
+                            <img src="<?= htmlspecialchars($pfp) ?>" class="pfp-img" alt="Profile">
                         </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Last Login</span>
-                            <span class="mono" style="font-size: 0.85rem; font-weight: 500;"><?= date('M d, Y g:i A', strtotime($u['last_login'])) ?></span>
+                        
+                        <div class="dropzone" id="pfpDropzone">
+                            <span class="material-symbols-outlined">cloud_upload</span>
+                            <span class="dropzone-text">Drag & Drop image here or <strong>click to browse</strong></span>
+                            <span class="dropzone-sub">Max size: 5MB (PNG, JPG)</span>
+                            <input type="file" id="pfpInput" accept="image/*" class="hidden">
                         </div>
+                        
+                        <form method="POST" id="pfpForm" class="hidden no-loader">
+                            <input type="hidden" name="update_pfp" value="1">
+                            <input type="hidden" name="cropped_image" id="croppedImageInput">
+                        </form>
                     </div>
                 </div>
+
+                <div class="d-card">
+                    <div class="d-card-header">
+                        <div class="d-card-title"><span class="material-symbols-outlined">info</span> System Details</div>
+                    </div>
+                    <div class="d-card-body padded">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">System Role</span>
+                                <span class="badge <?= $u['role'] === 'lead' ? 'badge-smoke' : 'badge-main' ?>" style="text-transform: uppercase;"><?= htmlspecialchars($u['role']) ?></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Last Login</span>
+                                <span class="mono" style="font-size: 0.85rem; font-weight: 500;"><?= date('M d, Y g:i A', strtotime($u['last_login'])) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
             </div>
+
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                
+                <div class="d-card">
+                    <div class="d-card-header">
+                        <div class="d-card-title"><span class="material-symbols-outlined">badge</span> Personal Information</div>
+                    </div>
+                    <div class="d-card-body padded">
+                        <form method="POST">
+                            <input type="hidden" name="update_info" value="1">
             
-        </div>
+                            <div class="form-group" style="margin-top: 10px;">
+                                <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($u['full_name']) ?>" autocomplete="off" required>
+                                <label class="form-label">Full Name</label>
+                            </div>
+                            
+                            <div class="form-group">
+                                <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($u['username']) ?>" autocomplete="off" required>
+                                <label class="form-label">Username</label>
+                            </div>
+                            
+                            <button type="submit" class="btn" style="width: auto; float: right;">Save Information</button>
+                            <div style="clear: both;"></div>
+                        </form>
+                    </div>
+                </div>
 
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-            
-            <div class="d-card">
-                <div class="d-card-header">
-                    <div class="d-card-title"><span class="material-symbols-outlined">badge</span> Personal Information</div>
+                <div class="d-card">
+                    <div class="d-card-header">
+                        <div class="d-card-title"><span class="material-symbols-outlined">lock</span> Account Security</div>
+                    </div>
+                    <div class="d-card-body padded">
+                        <form method="POST">
+                            <input type="hidden" name="update_password" value="1">
+                            
+                            <div class="form-group" style="margin-top: 10px;">
+                                <input type="password" name="current_password" class="form-control" required>
+                                <label class="form-label">Current Password</label>
+                            </div>
+                            
+                            <div style="height: 1px; background: var(--border); margin: 20px 0;"></div>
+                            
+                            <div class="form-group">
+                                <input type="password" name="new_password" class="form-control" required minlength="6">
+                                <label class="form-label">New Password</label>
+                            </div>
+                            
+                            <div class="form-group">
+                                <input type="password" name="confirm_password" class="form-control" required minlength="6">
+                                <label class="form-label">Confirm New Password</label>
+                            </div>
+                            
+                            <button type="submit" class="btn" style="width: auto; float: right;">Update Password</button>
+                            <div style="clear: both;"></div>
+                        </form>
+                    </div>
                 </div>
-                <div class="d-card-body padded">
-                    <form method="POST">
-                        <input type="hidden" name="update_info" value="1">
-           
-                        <div class="form-group" style="margin-top: 10px;">
-                            <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($u['full_name']) ?>" autocomplete="off" required>
-                            <label class="form-label">Full Name</label>
-                        </div>
-                        
-                        <div class="form-group">
-                            <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($u['username']) ?>" autocomplete="off" required>
-                            <label class="form-label">Username</label>
-                        </div>
-                        
-                        <button type="submit" class="btn" style="width: auto; float: right;">Save Information</button>
-                        <div style="clear: both;"></div>
-                    </form>
-                </div>
+
             </div>
-
-            <div class="d-card">
-                <div class="d-card-header">
-                    <div class="d-card-title"><span class="material-symbols-outlined">lock</span> Account Security</div>
-                </div>
-                <div class="d-card-body padded">
-                    <form method="POST">
-                        <input type="hidden" name="update_password" value="1">
-                        
-                        <div class="form-group" style="margin-top: 10px;">
-                            <input type="password" name="current_password" class="form-control" required>
-                            <label class="form-label">Current Password</label>
-                        </div>
-                        
-                        <div style="height: 1px; background: var(--border); margin: 20px 0;"></div>
-                        
-                        <div class="form-group">
-                            <input type="password" name="new_password" class="form-control" required minlength="6">
-                            <label class="form-label">New Password</label>
-                        </div>
-                        
-                        <div class="form-group">
-                            <input type="password" name="confirm_password" class="form-control" required minlength="6">
-                            <label class="form-label">Confirm New Password</label>
-                        </div>
-                        
-                        <button type="submit" class="btn" style="width: auto; float: right;">Update Password</button>
-                        <div style="clear: both;"></div>
-                    </form>
-                </div>
-            </div>
-
         </div>
     </div>
 </div>
-
 <div id="cropperModal" class="cropper-modal">
     <div class="cropper-content">
         <h3>Crop Profile Picture</h3>

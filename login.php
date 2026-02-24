@@ -12,12 +12,15 @@ require_once 'configs/helper.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In | Track Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,500,0,0" rel="stylesheet">
     <link rel="stylesheet" href="app.css">
     
     <script>
-        const savedTheme = localStorage.getItem('track-manager-theme') || 'light';
+        let savedTheme = localStorage.getItem('track-manager-theme');
+        if (!savedTheme) {
+            savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
 
@@ -251,7 +254,7 @@ require_once 'configs/helper.php';
             Good work today.
         </div>
     </div>
-
+    
     <script src="app.js" defer></script>
 </body>
 </html>
