@@ -629,7 +629,7 @@
                             labels: {
                                 usePointStyle: true,
                                 font: {
-                                    family: 'Inter',
+                                    family: 'DM Sans',
                                     size: 13
                                 },
                                 padding: 20
@@ -637,10 +637,10 @@
                         },
                         tooltip: {
                             bodyFont: {
-                                family: 'Inter'
+                                family: 'DM Sans'
                             },
                             titleFont: {
-                                family: 'Inter',
+                                family: 'DM Sans',
                                 weight: '700'
                             }
                         }
