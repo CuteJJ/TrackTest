@@ -276,7 +276,7 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
             <img id="imageToCrop" src="">
         </div>
         <div class="cropper-actions">
-            <button type="button" class="btn ghost" style="width: auto; background: #f1f5f9; color: var(--text-main); border: none;" onclick="closeCropper()">Cancel</button>
+            <button type="button" class="btn ghost" style="width: auto; background: var(--bg-body); color: var(--text-main); border: none;" onclick="closeCropper()">Cancel</button>
             <button type="button" class="btn" style="width: auto;" id="cropSubmitBtn">Apply Picture</button>
         </div>
     </div>
