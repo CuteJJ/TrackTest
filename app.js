@@ -80,6 +80,24 @@ function dismissToast(toast) {
     setTimeout(() => toast.remove(), 400); // Wait for transition, then delete from DOM
 }
 
+
+    function toggleAdminSidebar() {
+        const sidebar = document.getElementById('adminSidebar');
+        const overlay = document.getElementById('adminOverlay');
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+    }
+
+    function openModal(id) {
+        document.getElementById(id).classList.add('show');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('show');
+    }
+
+    
 // 1. Initialize PHP-generated Toasts on Page Load
 document.addEventListener('DOMContentLoaded', () => {
     const toast = document.querySelector('.flash-toast:not(.js-dynamic-toast)');
@@ -294,5 +312,4 @@ document.addEventListener('click', function(event) {
         if (btn) btn.classList.remove('active');
     }
 });
-
 });

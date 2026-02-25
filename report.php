@@ -2,7 +2,7 @@
 require_once 'configs/db.php';
 require_once 'configs/helper.php';
 
-Helper::requireRole('lead');
+Helper::requireRole(['lead', 'admin']);
 
 $task_id = $_GET['task_id'] ?? null;
 $printer_id = $_GET['printer_id'] ?? null;
@@ -593,7 +593,7 @@ $pct     = $total > 0 ? round($passed / $total * 100) : 0;
             Track Manager
         </div>
         <div class="rp-topbar-actions">
-            <a href="index.php" class="rp-btn ghost">
+            <a href="javascript:history.back()" class="rp-btn ghost">
                 <span class="material-symbols-outlined">arrow_back</span> Back
             </a>
             <?php if ($is_finalized): ?>

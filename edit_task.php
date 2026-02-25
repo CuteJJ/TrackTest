@@ -529,6 +529,7 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
                         <span class="micro-label">Tester Pool</span>
                         <div class="t-pool" id="globalPool">
                             <?php foreach ($data['users'] as $ui => $u):
+                            if ($u['role'] !== 'tester') continue;
                                 $fn = trim($u['full_name']);
                                 $parts = explode(' ', $fn);
                                 $initials = strtoupper(substr($parts[0],0,1)) . (isset($parts[1]) ? strtoupper(substr($parts[1],0,1)) : '');

@@ -334,6 +334,7 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
                         <span class="micro-label">Tester Pool</span>
                         <div class="t-pool" id="globalPool">
                             <?php foreach ($data['users'] as $u):
+                                if ($u['role'] !== 'tester') continue;
                                 $fn = trim($u['full_name']);
                                 $parts = explode(' ', $fn);
                                 $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
