@@ -1,7 +1,7 @@
 <?php
 require_once '../configs/db.php';
 require_once '../configs/helper.php';
-Helper::requireRole('admin');
+Helper::requireRole(['admin','lead']);
 
 // Handle Batch Delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['batch_delete']) && !empty($_POST['task_ids'])) {
@@ -151,24 +151,9 @@ function renderSortHeader($colKey, $label, $currentSort, $currentDir) {
 <body>
     <?php Helper::displayFlash(); ?>
     <?php Helper::displayLoader(); ?>
-    
-    <nav class="navbar">
-        <div class="nav-brand"><span class="nav-brand-dot"></span> Admin Center</div>
-        <div class="nav-right relative">
-            <a href="../logout.php" class="nav-logout"><span class="material-symbols-outlined" style="font-size: 16px; vertical-align: text-bottom;">logout</span> Exit</a>
-        </div>
-    </nav>
 
-    <button class="admin-burger" onclick="toggleAdminSidebar()"><span class="material-symbols-outlined">menu</span></button>
-    <div class="admin-overlay" id="adminOverlay" onclick="toggleAdminSidebar()"></div>
-    <aside class="admin-sidebar" id="adminSidebar">
-        <div style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); margin: 10px 0 10px 16px;">MANAGEMENT</div>
-        <a href="admin_dashboard.php" class="admin-nav-item"><span class="material-symbols-outlined">dashboard</span> Home Overview</a>
-        <a href="admin_history.php" class="admin-nav-item active"><span class="material-symbols-outlined">history</span> Global History</a>
-        <a href="admin_printers.php" class="admin-nav-item"><span class="material-symbols-outlined">print</span> Printers & Cases</a>
-        <a href="admin_users.php" class="admin-nav-item"><span class="material-symbols-outlined">group</span> User Directory</a>
-    </aside>
-
+    <!-- Include navbar and sidebar -->
+    <?php include 'admin_navbar.php'; ?>
     <div class="page-content-scroll">
         <main class="admin-content">
             

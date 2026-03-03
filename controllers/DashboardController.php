@@ -51,13 +51,13 @@ foreach ($printers as $p) {
     $branch = $stmt->fetchColumn() ?: '-';
     $stmt->execute([$pid, 'Trunk']);
     $trunk = $stmt->fetchColumn() ?: '-';
-    $firmware_overview[] = ['model' => $p['model_name'], 'branch' => $branch, 'trunk' => $trunk];
+    $firmware_overview[] = ['model' => $p['model_name'], 'printer_path' => $p['printer_path'], 'branch' => $branch, 'trunk' => $trunk];
 }
 
 // 3. Chart Data (FIXED: Calculates Pending from Total Cases minus Pass/Fail)
 $stats_sql = "
     SELECT 
-        p.model_name,
+        p.model_name,p.printer_path,
         COALESCE(SUM(tr_stats.passed), 0) as passed,
         COALESCE(SUM(tr_stats.failed), 0) as failed,
         COALESCE(SUM(
@@ -120,6 +120,7 @@ if ($user_role === 'lead') {
             t.fw_type,
             p.id as printer_id,
             p.model_name,
+            p.printer_path,
             MAX(ta.overall_status) as overall_status,
             (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = p.model_name) as total_cases,
             (SELECT COUNT(*) FROM test_results tr WHERE tr.task_id = t.id AND tr.printer_id = p.id AND tr.status IN ('Pass', 'Fail')) as completed_cases
@@ -171,6 +172,7 @@ if ($user_role !== 'lead') {
             t.fw_version_current,
             t.fw_type,
             p.model_name, 
+            p.printer_path,
             ta.printer_id, 
             ta.designation,
             ta.overall_status,

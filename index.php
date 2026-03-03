@@ -54,6 +54,12 @@
                     </div>
                 </div>
                 <div class="profile-menu-divider"></div>
+                <?php if ($_SESSION['role'] === 'lead' || $_SESSION['role'] === 'admin'): ?>
+                    <a href="admin/admin_dashboard.php" class="profile-menu-item">
+                        <span class="material-symbols-outlined">admin_panel_settings</span> Admin Panel
+                    </a>
+                <?php endif; ?>
+                <div class="profile-menu-divider"></div>
                 <a href="settings.php" class="profile-menu-item">
                     <span class="material-symbols-outlined">manage_accounts</span> Account Settings
                 </a>
@@ -412,7 +418,7 @@
                                             ?>
                                             <div class="p-card <?= $idx === 0 ? 'p-active' : '' ?>" data-idx="<?= $idx ?>" onclick="selectChartPrinter(<?= $idx ?>)">
                                                 <div class="p-card-icon">
-                                                    <span class="material-symbols-outlined"><?= $icon ?></span>
+                                                    <?= Helper::renderPrinterImage($data['printer_path'] ?? null, $pName, 20) ?>
                                                 </div>
                                                 <div class="p-card-name"><?= $pName ?></div>
                                             </div>
@@ -588,84 +594,92 @@
                     loadData(link.href);
                 }
             });
-        });
 
-        // ── Split Chart Logic (Printer Specific Doughnut) ──────
-        const rawData = <?= json_encode($chart_data) ?>;
-        let chartInstance = null;
-
-        function renderChart(index) {
-            if (!rawData || rawData.length === 0) return;
-            const data = rawData[index];
-            if (!data) return;
-
-            const passed = Number(data.passed);
-            const failed = Number(data.failed);
-            const pending = Number(data.pending);
-            const ctx = document.getElementById('progressChart').getContext('2d');
-
-            if (chartInstance) {
-                chartInstance.destroy();
+            function getCSSVar(name) {
+                return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
             }
 
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Passed', 'Failed', 'Pending'],
-                    datasets: [{
-                        data: [passed, failed, pending],
-                        backgroundColor: ['#15803d', '#b91c1c', '#d1d5db'],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%',
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                usePointStyle: true,
-                                font: {
-                                    family: 'DM Sans',
-                                    size: 13
-                                },
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            bodyFont: {
-                                family: 'DM Sans'
+            // Get font color from CSS variable
+            const fontColor = getCSSVar('--chart-font-color');
+            // ── Split Chart Logic (Printer Specific Doughnut) ──────
+            const rawData = <?= json_encode($chart_data) ?>;
+            let chartInstance = null;
+
+            function renderChart(index) {
+                if (!rawData || rawData.length === 0) return;
+                const data = rawData[index];
+                if (!data) return;
+
+                const passed = Number(data.passed);
+                const failed = Number(data.failed);
+                const pending = Number(data.pending);
+                const ctx = document.getElementById('progressChart').getContext('2d');
+
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Passed', 'Failed', 'Pending'],
+                        datasets: [{
+                            data: [passed, failed, pending],
+                            backgroundColor: ['#15803d', '#b91c1c', '#d1d5db'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    usePointStyle: true,
+                                    color: getCSSVar('--text-main'),
+                                    font: {
+                                        family: 'DM Sans',
+                                        size: 15
+                                    },
+                                    padding: 20
+                                }
                             },
-                            titleFont: {
-                                family: 'DM Sans',
-                                weight: '700'
+                            tooltip: {
+                                bodyFont: {
+                                    family: 'DM Sans'
+                                },
+                                titleFont: {
+                                    family: 'DM Sans',
+                                    weight: '700'
+                                }
                             }
                         }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        // Function called by clicking the side cards
-        window.selectChartPrinter = function(index) {
-            // 1. Update UI classes
-            document.querySelectorAll('#chartPrinterSelect .p-card').forEach(card => {
-                card.classList.remove('p-active');
-            });
-            const activeCard = document.querySelector(`#chartPrinterSelect .p-card[data-idx="${index}"]`);
-            if (activeCard) activeCard.classList.add('p-active');
+            // Function called by clicking the side cards
+            window.selectChartPrinter = function(index) {
+                // 1. Update UI classes
+                document.querySelectorAll('#chartPrinterSelect .p-card').forEach(card => {
+                    card.classList.remove('p-active');
+                });
+                const activeCard = document.querySelector(`#chartPrinterSelect .p-card[data-idx="${index}"]`);
+                if (activeCard) activeCard.classList.add('p-active');
 
-            // 2. Render Chart
-            renderChart(index);
-        };
+                // 2. Render Chart
+                renderChart(index);
+            };
 
-        // Initialize chart with the first printer on page load
-        if (rawData && rawData.length > 0) {
-            renderChart(0);
-        }
+            // Initialize chart with the first printer on page load
+            if (rawData && rawData.length > 0) {
+                renderChart(0);
+            }
+
+        });
     </script>
 </body>
 

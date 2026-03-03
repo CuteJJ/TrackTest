@@ -1,7 +1,7 @@
 <?php
 require_once '../configs/db.php';
 require_once '../configs/helper.php';
-Helper::requireRole('admin');
+Helper::requireRole(['admin','lead']);
 
 // Handle POST Requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -141,7 +141,7 @@ foreach ($all_testcases as $tc) {
     $tc_map[$tc['printer_model']][] = $tc;
 }
 
-// Icon Helper
+// Icon Helper -- Fallback icons based on printer name keywords if no image/icon is set
 function getPrinterIcon(string $name): string {
     $n = strtolower($name);
     if (str_contains($n, 'flare')) return 'local_fire_department';
@@ -281,23 +281,9 @@ function renderPrinterImage($p) {
 <body>
     <?php Helper::displayLoader(); ?>
     <?php Helper::displayFlash(); ?>
+    <!-- Include navbar and sidebar -->
+    <?php include 'admin_navbar.php'; ?>
     
-    <nav class="navbar">
-        <div class="nav-brand"><span class="nav-brand-dot"></span> Admin Center</div>
-        <div class="nav-right relative">
-            <a href="../logout.php" class="nav-logout"><span class="material-symbols-outlined" style="font-size: 16px; vertical-align: text-bottom;">logout</span> Exit</a>
-        </div>
-    </nav>
-    <button class="admin-burger" onclick="toggleAdminSidebar()"><span class="material-symbols-outlined">menu</span></button>
-    <div class="admin-overlay" id="adminOverlay" onclick="toggleAdminSidebar()"></div>
-    <aside class="admin-sidebar" id="adminSidebar">
-        <div style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); margin: 10px 0 10px 16px;">MANAGEMENT</div>
-        <a href="admin_dashboard.php" class="admin-nav-item"><span class="material-symbols-outlined">dashboard</span> Home Overview</a>
-        <a href="admin_history.php" class="admin-nav-item"><span class="material-symbols-outlined">history</span> Global History</a>
-        <a href="admin_printers.php" class="admin-nav-item active"><span class="material-symbols-outlined">print</span> Printers & Cases</a>
-        <a href="admin_users.php" class="admin-nav-item"><span class="material-symbols-outlined">group</span> User Directory</a>
-    </aside>
-
     <div class="page-content-scroll">
         <main class="admin-content">
             
@@ -416,7 +402,7 @@ function renderPrinterImage($p) {
                     <div id="dynamicTcList" style="max-height: 250px; overflow-y: auto; padding-right: 4px; margin-bottom: 12px;">
                         </div>
 
-                    <button type="button" class="btn ghost" onclick="addTcRow('dynamicTcList', 'case_code[]', 'case_title[]')" style="border: 1px dashed var(--border); color: var(--text-muted);">
+                    <button type="button" class="btn ghost" onclick="addTcRow('dynamicTcList', 'case_code[]', 'case_title[]')" style="border: 1px dashed var(--border); color: var(--text-main); background-color: var(--bg-body);">
                         <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle;">add</span> Add Test Case
                     </button>
                 </div>
@@ -461,7 +447,7 @@ function renderPrinterImage($p) {
                 <div id="dynamicExistingTcList" style="max-height: 300px; overflow-y: auto; padding-right: 4px; margin-bottom: 12px;">
                     </div>
 
-                <button type="button" class="btn ghost" onclick="addTcRow('dynamicExistingTcList', 'new_case_code[]', 'new_case_title[]')" style="border: 1px dashed var(--border); color: var(--text-muted);">
+                <button type="button" class="btn ghost" onclick="addTcRow('dynamicExistingTcList', 'new_case_code[]', 'new_case_title[]')" style="border: 1px dashed var(--border); color: var(--text-main); background-color: var(--bg-body);">
                     <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle;">add</span> Add Test Case
                 </button>
 

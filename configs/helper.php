@@ -83,4 +83,28 @@ class Helper {
             unset($_SESSION['flash']);
         }
     }
+
+    public static function renderPrinterImage($path, $modelName, $iconSize = 24) {
+        if (!empty($path) && (str_contains($path, '/') || str_contains($path, '.'))) {
+            $safePath = htmlspecialchars($path);
+            
+            // Auto-adjust path if we are inside the /admin/ subdirectory
+            $prefix = (str_contains($_SERVER['SCRIPT_NAME'], '/admin/')) ? '../' : '';
+            if (str_starts_with($safePath, 'http')) $prefix = ''; // External URL
+            
+            return "<img src='{$prefix}{$safePath}?v=" . time() . "' style='width:100%; height:100%; object-fit:cover; display:block;'>";
+        }
+        
+        $n = strtolower($modelName);
+        $icon = 'print';
+        if (str_contains($n, 'flare')) $icon = 'local_fire_department';
+        if (str_contains($n, 'ray'))   $icon = 'bolt';
+        if (str_contains($n, 'mfp'))   $icon = 'content_copy';
+        
+        if (!empty($path) && !str_contains($path, '/') && !str_contains($path, '.')) {
+            $icon = htmlspecialchars($path);
+        }
+        
+        return "<span class='material-symbols-outlined' style='font-size: {$iconSize}px;'>{$icon}</span>";
+    }
 }
