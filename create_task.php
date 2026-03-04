@@ -44,15 +44,6 @@ if ($form_data) {
     }
 }
 
-function getPrinterIcon(string $name): string {
-    $n = strtolower($name);
-    if (str_contains($n, 'flare')) return 'local_fire_department';
-    if (str_contains($n, 'ray'))   return 'bolt';
-    if (str_contains($n, 'mfp'))  return 'content_copy';
-    if (str_contains($n, 'sfp'))  return 'print';
-    return 'print';
-}
-
 $saved_assignments_json = json_encode((object)$saved_assignments);
 $saved_reg_urls_json = json_encode((object)$saved_reg_urls);
 ?>
@@ -75,7 +66,7 @@ $saved_reg_urls_json = json_encode((object)$saved_reg_urls);
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 .topbar { flex-shrink: 0; height: var(--nav-height); background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.06); z-index: 100; }
 .tb-brand { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 700; color: var(--text-main); text-decoration: none; }
@@ -147,6 +138,8 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
 .assignment-panel { flex: 0 0 auto; background: var(--bg-body); padding: 18px 16px; overflow-y: auto; max-height: 50%; }
 .assignment-placeholder { display: flex; align-items: center; justify-content: center; height: 100px; color: var(--text-muted); font-size: 0.8rem; text-align: center; background: var(--bg-surface); border-radius: 10px; padding: 20px; border: 1px solid var(--border); }
 .assignment-content { display: flex; flex-direction: column; gap: 22px; }
+.hidden { display: none !important; }
+
 .micro-label { display: block; font-size: 0.59rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
 .t-pool { display: flex; flex-wrap: wrap; gap: 12px; }
 .t-av-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: transform 0.15s, opacity 0.15s; }
@@ -302,12 +295,11 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
         <div class="printer-grid-container">
             <div class="printer-grid" id="printerGrid">
                 <?php foreach ($data['printers'] as $pi => $p):
-                    $icon = getPrinterIcon($p['model_name']);
                     $hasSaved = isset($saved_assignments[$p['id']]) || !empty($saved_reg_urls[$p['id']]);
                 ?>
                 <div class="p-card <?= $hasSaved ? 'p-selected' : '' ?>" data-pid="<?= $p['id'] ?>" id="pc_<?= $p['id'] ?>">
-                    <div class="p-card-icon">
-                        <span class="material-symbols-outlined"><?= $icon ?></span>
+                    <div class="p-card-icon" style="overflow: hidden; padding: 2px;">
+                        <?= Helper::renderPrinterImage($p['printer_path'] ?? null, $p['model_name'], 24) ?>
                     </div>
                     <div class="p-card-name"><?= htmlspecialchars($p['model_name']) ?></div>
                     <div class="selected-badge"><span class="material-symbols-outlined">check</span></div>

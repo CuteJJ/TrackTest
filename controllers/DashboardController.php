@@ -54,16 +54,20 @@ foreach ($printers as $p) {
     $firmware_overview[] = ['model' => $p['model_name'], 'printer_path' => $p['printer_path'], 'branch' => $branch, 'trunk' => $trunk];
 }
 
-// 3. Chart Data (FIXED: Calculates Pending from Total Cases minus Pass/Fail)
+// 3. Chart Data (Updated to include Blocked and N/A)
 $stats_sql = "
     SELECT 
-        p.model_name,p.printer_path,
+        p.model_name,
         COALESCE(SUM(tr_stats.passed), 0) as passed,
         COALESCE(SUM(tr_stats.failed), 0) as failed,
+        COALESCE(SUM(tr_stats.blocked), 0) as blocked,
+        COALESCE(SUM(tr_stats.na), 0) as na,
         COALESCE(SUM(
             GREATEST(0, (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = p.model_name) 
             - COALESCE(tr_stats.passed, 0) 
-            - COALESCE(tr_stats.failed, 0))
+            - COALESCE(tr_stats.failed, 0)
+            - COALESCE(tr_stats.blocked, 0)
+            - COALESCE(tr_stats.na, 0))
         ), 0) as pending
     FROM printers p
     JOIN (
@@ -75,7 +79,9 @@ $stats_sql = "
     LEFT JOIN (
         SELECT task_id, printer_id,
             SUM(CASE WHEN status = 'Pass' THEN 1 ELSE 0 END) as passed,
-            SUM(CASE WHEN status = 'Fail' THEN 1 ELSE 0 END) as failed
+            SUM(CASE WHEN status = 'Fail' THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN status = 'Blocked' THEN 1 ELSE 0 END) as blocked,
+            SUM(CASE WHEN status = 'N/A' THEN 1 ELSE 0 END) as na
         FROM test_results
         GROUP BY task_id, printer_id
     ) tr_stats ON t.id = tr_stats.task_id AND p.id = tr_stats.printer_id
@@ -123,7 +129,7 @@ if ($user_role === 'lead') {
             p.printer_path,
             MAX(ta.overall_status) as overall_status,
             (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = p.model_name) as total_cases,
-            (SELECT COUNT(*) FROM test_results tr WHERE tr.task_id = t.id AND tr.printer_id = p.id AND tr.status IN ('Pass', 'Fail')) as completed_cases
+            (SELECT COUNT(*) FROM test_results tr WHERE tr.task_id = t.id AND tr.printer_id = p.id AND tr.status IN ('Pass', 'Fail', 'Blocked', 'N/A')) as completed_cases
         FROM task_assignments ta
         JOIN tasks t ON ta.task_id = t.id
         JOIN printers p ON ta.printer_id = p.id

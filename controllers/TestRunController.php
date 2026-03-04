@@ -81,14 +81,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['unclaim_case'])) {
             $case_id = $_POST['case_id'];
             
-            // Set assigned_to NULL and reset status to Pending. 
-            // Only allow if currently assigned to this user.
-            $stmt = $pdo->prepare("
-                UPDATE test_results 
-                SET assigned_to = NULL, status = 'Pending', jira_url = NULL 
-                WHERE task_id=? AND printer_id=? AND test_case_id=? AND assigned_to=?
-            ");
-            $stmt->execute([$task_id, $printer_id, $case_id, $user_id]);
+            if ($_SESSION['role'] === 'lead' || $_SESSION['role'] === 'admin') {
+                // Leads can forcefully unassign/reset ANY case
+                $stmt = $pdo->prepare("UPDATE test_results SET assigned_to = NULL, status = 'Pending', jira_url = NULL WHERE task_id=? AND printer_id=? AND test_case_id=?");
+                $stmt->execute([$task_id, $printer_id, $case_id]);
+            } else {
+                // Testers can only drop their own cases
+                $stmt = $pdo->prepare("UPDATE test_results SET assigned_to = NULL, status = 'Pending', jira_url = NULL WHERE task_id=? AND printer_id=? AND test_case_id=? AND assigned_to=?");
+                $stmt->execute([$task_id, $printer_id, $case_id, $user_id]);
+            }
             
             echo json_encode(['success' => true]);
             exit();
@@ -161,15 +162,20 @@ $stmt = $pdo->prepare($sql_all);
 $stmt->execute([$task_id, $printer_id, $task_info['model_name']]);
 $all_cases = $stmt->fetchAll();
 
-// B. Filter: My Execution List (Step 2)
-$my_cases = array_filter($all_cases, function($c) use ($user_id) {
-    return $c['assigned_to'] == $user_id;
-});
+if ($_SESSION['role'] === 'lead' || $_SESSION['role'] === 'admin') {
+    // Leads & Admins bypass Step 1 and see ALL cases in their master list
+    $my_cases = $all_cases;
+    $available_cases = []; 
+} else {
+    // Testers must claim cases first
+    $my_cases = array_filter($all_cases, function($c) use ($user_id) {
+        return $c['assigned_to'] == $user_id;
+    });
 
-// C. Filter: Available/Unassigned Cases (Step 1)
-$available_cases = array_filter($all_cases, function($c) {
-    return empty($c['assigned_to']);
-});
+    $available_cases = array_filter($all_cases, function($c) {
+        return empty($c['assigned_to']);
+    });
+}
 
 $stmt = $pdo->prepare("
     SELECT u.id, u.full_name, u.pfp_path, ta.designation 

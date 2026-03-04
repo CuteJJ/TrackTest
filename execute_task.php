@@ -60,15 +60,22 @@
         .case-info { flex-grow: 1; font-family: 'Inter', sans-serif; }
         .case-title { font-weight: 600; color: var(--text-main); font-size: 0.95rem; line-height: 1.3; }
         .case-code { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
-        .status-actions { display: flex; gap: 8px; }
+        .status-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         .status-btn { padding: 8px 16px; border: 1.5px solid var(--border); background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
         .status-btn:hover { background: var(--bg-body); color: var(--text-main); }
         
         .case-card.status-Pass { border-left: 5px solid var(--success); }
         .case-card.status-Pass .btn-pass { background: var(--success); color: white; border-color: var(--success); }
+        
         .case-card.status-Fail { border-left: 5px solid var(--error); }
         .case-card.status-Fail .btn-fail { background: var(--error); color: white; border-color: var(--error); }
-        
+
+        .case-card.status-Blocked { border-left: 5px solid var(--blocked); }
+        .case-card.status-Blocked .btn-blocked { background: var(--blocked); color: white; border-color: var(--blocked); }
+
+        .case-card.status-NA { border-left: 5px solid var(--na); }
+        .case-card.status-NA .btn-na { background: var(--na); color: white; border-color: var(--na); }
+
         .jira-box { background: var(--bg-body); padding: 12px 20px; border-top: 1px solid var(--border); display: none; }
         .case-card.status-Fail .jira-box { display: block; }
         .jira-box input { width: 100%; padding: 10px 14px; background: var(--input-bg); color: var(--text-main); border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s; }
@@ -191,28 +198,34 @@
                     </div>
                 </div>
             </div>
+            
+<?php if ($_SESSION['role'] !== 'lead' && $_SESSION['role'] !== 'admin'): ?>
+                <div class="selection-box">
+                    <h3 class="section-title">Step 1: Select Cases to Execute</h3>
+                    <span class="section-sub">Click a case below to add it to your execution list.</span>
 
-            <div class="selection-box">
-                <h3 class="section-title">Step 1: Select Cases to Execute</h3>
-                <span class="section-sub">Click a case below to add it to your execution list.</span>
-
-                <?php if (empty($available_cases)): ?>
-                    <div style="font-size:0.9rem; padding:15px; color:var(--text-muted); font-style:italic; text-align:center; background:var(--bg-body); border-radius:8px;">
-                        All cases have been assigned. Good job!
-                    </div>
-                <?php else: ?>
-                    <div class="chip-grid">
-                        <?php foreach ($available_cases as $case): ?>
-                            <button class="case-chip" onclick="claimCase(<?= $case['case_id'] ?>, this)" title="ID: <?= $case['case_code'] ?>">
-                                <span class="material-symbols-outlined" style="font-size:18px; color:var(--primary); flex-shrink:0;">add_circle</span>
-                                <span><?= htmlspecialchars($case['title']) ?></span>
-                            </button>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <h3 class="section-title">Step 2: My Execution List</h3>
+                    <?php if (empty($available_cases)): ?>
+                        <div style="font-size:0.9rem; padding:15px; color:var(--text-muted); font-style:italic; text-align:center; background:var(--bg-body); border-radius:8px;">
+                            All cases have been assigned. Good job!
+                        </div>
+                    <?php else: ?>
+                        <div class="chip-grid">
+                            <?php foreach ($available_cases as $case): ?>
+                                <button class="case-chip" onclick="claimCase(<?= $case['case_id'] ?>, this)" title="ID: <?= $case['case_code'] ?>">
+                                    <span class="material-symbols-outlined" style="font-size:18px; color:var(--primary); flex-shrink:0;">add_circle</span>
+                                    <span><?= htmlspecialchars($case['title']) ?></span>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <h3 class="section-title">Step 2: My Execution List</h3>
+            <?php else: ?>
+                <div style="margin-bottom: 20px;">
+                    <h3 class="section-title">Master Evaluation Control</h3>
+                    <span class="section-sub">You have authority to view, evaluate, or override any case execution across the entire test suite.</span>
+                </div>
+            <?php endif; ?>
 
             <?php if (empty($my_cases)): ?>
                 <div style="text-align:center; padding:50px 20px; border:2px dashed var(--border); border-radius:12px; color:var(--text-muted); font-weight:500;">
@@ -220,9 +233,10 @@
                 </div>
             <?php else: ?>
                 <?php foreach ($my_cases as $case): ?>
-                    <div class="case-card status-<?= $case['status'] ?? 'Pending' ?>" id="card_<?= $case['case_id'] ?>">
+                    <?php $safeStatus = str_replace('/', '', $case['status'] ?? 'Pending'); ?>
+                    <div class="case-card status-<?= $safeStatus ?>" id="card_<?= $case['case_id'] ?>">
                         <div class="delete-panel" onclick="toggleDeleteMode('card_<?= $case['case_id'] ?>')">
-                            <div class="delete-btn" onclick="unclaimCase(event, <?= $case['case_id'] ?>)">
+                            <div class="delete-btn" onclick="unclaimCase(event, <?= $case['case_id'] ?>)" title="Reset to Pending">
                                 <span class="material-symbols-outlined">delete</span>
                             </div>
                         </div>
@@ -231,10 +245,14 @@
                             <div class="remove-trigger" onclick="toggleDeleteMode('card_<?= $case['case_id'] ?>')"></div>
                             <div class="case-row">
                                 <div class="status-icon">
-                                    <?php if (($case['status'] ?? '') == 'Pass'): ?>
+                                    <?php if ($safeStatus == 'Pass'): ?>
                                         <span class="material-symbols-outlined" style="color:var(--success); font-size: 28px;">check_circle</span>
-                                    <?php elseif (($case['status'] ?? '') == 'Fail'): ?>
+                                    <?php elseif ($safeStatus == 'Fail'): ?>
                                         <span class="material-symbols-outlined" style="color:var(--error); font-size: 28px;">cancel</span>
+                                    <?php elseif ($safeStatus == 'Blocked'): ?>
+                                        <span class="material-symbols-outlined" style="color:var(--blocked); font-size: 28px;">block</span>
+                                    <?php elseif ($safeStatus == 'NA'): ?>
+                                        <span class="material-symbols-outlined" style="color:var(--na); font-size: 28px;">do_not_disturb_on</span>
                                     <?php else: ?>
                                         <span class="material-symbols-outlined" style="color:var(--text-muted); font-size: 28px;">radio_button_unchecked</span>
                                     <?php endif; ?>
@@ -242,12 +260,24 @@
 
                                 <div class="case-info">
                                     <div class="case-title"><?= htmlspecialchars($case['title']) ?></div>
-                                    <div class="case-code">ID: #<?= htmlspecialchars($case['case_code']) ?></div>
+                                    <div class="case-code" style="display:flex; gap:10px; align-items:center;">
+                                        <span>ID: #<?= htmlspecialchars($case['case_code']) ?></span>
+                                        
+                                        <?php if ($_SESSION['role'] === 'lead' || $_SESSION['role'] === 'admin'): ?>
+                                            <span style="display:inline-block; width:4px; height:4px; background:var(--border); border-radius:50%;"></span>
+                                            <span style="color:var(--primary); font-family:var(--font-body); font-weight:600; display:flex; align-items:center; gap:4px;">
+                                                <span class="material-symbols-outlined" style="font-size:12px;">person</span>
+                                                <?= htmlspecialchars($case['assigned_name'] ?? 'Unassigned') ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
 
                                 <div class="status-actions">
                                     <button type="button" class="status-btn btn-pass" onclick="updateStatus(<?= $case['case_id'] ?>, 'Pass')">Pass</button>
                                     <button type="button" class="status-btn btn-fail" onclick="updateStatus(<?= $case['case_id'] ?>, 'Fail')">Fail</button>
+                                    <button type="button" class="status-btn btn-blocked" onclick="updateStatus(<?= $case['case_id'] ?>, 'Blocked')">Blocked</button>
+                                    <button type="button" class="status-btn btn-na" onclick="updateStatus(<?= $case['case_id'] ?>, 'N/A')">N/A</button>
                                 </div>
                             </div>
 
@@ -377,20 +407,27 @@
             const jiraInput = document.getElementById(`jira_${caseId}`);
             const jiraUrl = jiraInput ? jiraInput.value : '';
 
+            // Clean status for CSS class (N/A -> NA)
+            const safeStatus = status.replace('/', '');
+
             // Optimistic UI Update - Card
-            card.classList.remove('status-Pass', 'status-Fail', 'status-Pending');
-            card.classList.add(`status-${status}`);
+            card.classList.remove('status-Pass', 'status-Fail', 'status-Blocked', 'status-NA', 'status-Pending');
+            card.classList.add(`status-${safeStatus}`);
 
             const iconDiv = card.querySelector('.status-icon');
             if (status === 'Pass') iconDiv.innerHTML = '<span class="material-symbols-outlined" style="color:var(--success); font-size: 28px;">check_circle</span>';
-            if (status === 'Fail') iconDiv.innerHTML = '<span class="material-symbols-outlined" style="color:var(--error); font-size: 28px;">cancel</span>';
+            else if (status === 'Fail') iconDiv.innerHTML = '<span class="material-symbols-outlined" style="color:var(--error); font-size: 28px;">cancel</span>';
+            else if (status === 'Blocked') iconDiv.innerHTML = '<span class="material-symbols-outlined" style="color:var(--blocked); font-size: 28px;">block</span>';
+            else if (status === 'N/A') iconDiv.innerHTML = '<span class="material-symbols-outlined" style="color:var(--na); font-size: 28px;">do_not_disturb_on</span>';
 
-            // Optimistic UI Update - Grid (Using CSS Variables)
+            // Optimistic UI Update - Grid Tracker
             const gridCell = document.getElementById(`grid_cell_${caseId}`);
             if (gridCell) {
                 let color = 'var(--text-muted)'; let icon = 'more_horiz';
                 if (status === 'Pass') { color = 'var(--success)'; icon = 'check'; }
-                if (status === 'Fail') { color = 'var(--error)'; icon = 'close'; }
+                else if (status === 'Fail') { color = 'var(--error)'; icon = 'close'; }
+                else if (status === 'Blocked') { color = 'var(--blocked)'; icon = 'block'; }
+                else if (status === 'N/A') { color = 'var(--na)'; icon = 'do_not_disturb_on'; }
 
                 gridCell.setAttribute('data-status', status);
                 gridCell.setAttribute('data-color', color);

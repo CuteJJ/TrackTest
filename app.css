@@ -28,6 +28,10 @@
     --success-bg: #edf7ed;
     --warning: #ed6c02;
     --warning-bg: #fff3e0;
+    --blocked: #eab308;
+    --blocked-bg: #fef08a;
+    --na: #4b5563;
+    --na-bg: #e5e7eb;
 
     /* --- LAYOUT & TYPOGRAPHY (Only needed in base) --- */
     --radius: 8px; 
@@ -57,6 +61,10 @@
     --success-bg: rgba(16, 185, 129, 0.1);
     --warning: #f59e0b;
     --warning-bg: rgba(245, 158, 11, 0.1);
+    --blocked: #ca8a04;
+    --blocked-bg: rgba(202, 138, 4, 0.15);
+    --na: #9ca3af;
+    --na-bg: rgba(156, 163, 175, 0.15);
 }
 
 /* Midnight (Deep Purple / Dracula) Theme */
@@ -80,6 +88,10 @@
     --success-bg: rgba(16, 185, 129, 0.1);
     --warning: #f59e0b;
     --warning-bg: rgba(245, 158, 11, 0.1);
+    --blocked: #eab308;
+    --blocked-bg: rgba(234, 179, 8, 0.15);
+    --na: #94a3b8;
+    --na-bg: rgba(148, 163, 184, 0.15);
 }
 
 /* Catppuccin Frappé Theme */
@@ -108,10 +120,14 @@
     --success-bg: rgba(166, 209, 137, 0.1);
     --warning: #e5c890;
     --warning-bg: rgba(229, 200, 144, 0.1);
+    --blocked: #e5c890;
+    --blocked-bg: rgba(229, 200, 144, 0.15);
+    --na: #a5adce;
+    --na-bg: rgba(165, 173, 206, 0.15);
 }
 
 .theme-section {
-    padding: 10px 16px;
+    padding: 14px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -766,9 +782,9 @@ body {
 
 .profile-menu-header { padding: 14px 18px; font-size: 0.8rem; color: var(--text-muted); }
 .profile-menu-header strong { display: block; color: var(--text-main); font-size: 0.95rem; margin-top: 4px; }
-.profile-menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.profile-menu-divider { height: 1px; background: var(--border); margin: 0; }
 .profile-menu-item {
-    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
     font-size: 0.85rem; font-weight: 600; color: var(--text-main); text-decoration: none;
     transition: background 0.15s, color 0.15s;
 }
@@ -777,7 +793,7 @@ body {
 .profile-menu-item:hover .material-symbols-outlined { color: var(--primary); }
 
 .text-danger { color: var(--error) !important; }
-.text-danger:hover { background: var(--error-bg); }
+.text-danger:hover { background: var(--error-bg); border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
 .text-danger .material-symbols-outlined, .text-danger:hover .material-symbols-outlined { color: var(--error); }
 
 /* =========================================

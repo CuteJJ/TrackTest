@@ -54,12 +54,14 @@
                     </div>
                 </div>
                 <div class="profile-menu-divider"></div>
+                
                 <?php if ($_SESSION['role'] === 'lead' || $_SESSION['role'] === 'admin'): ?>
                     <a href="admin/admin_dashboard.php" class="profile-menu-item">
                         <span class="material-symbols-outlined">admin_panel_settings</span> Admin Panel
                     </a>
-                <?php endif; ?>
                 <div class="profile-menu-divider"></div>
+                <?php endif; ?>
+                
                 <a href="settings.php" class="profile-menu-item">
                     <span class="material-symbols-outlined">manage_accounts</span> Account Settings
                 </a>
@@ -157,7 +159,12 @@
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <strong style="font-size:0.88rem;" title="<?= $printerName ?>"><?= $printerName ?></strong>
+                                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                                            <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
+                                                                <?= Helper::renderPrinterImage($task['printer_path'] ?? null, $printerName, 16) ?>
+                                                            </div>
+                                                            <strong style="font-size:0.88rem;" title="<?= $printerName ?>"><?= $printerName ?></strong>
+                                                        </div>
                                                     </td>
                                                     <td>
                                                         <div class="prog-wrap">
@@ -214,6 +221,7 @@
                                                                         <span style="color:var(--error);"><?= htmlspecialchars($task['fw_version_rec']) ?></span>
                                                                     </span>
                                                                 </div>
+                                                                
                                                                 <div class="expand-actions">
                                                                     <?php if ($task['testing_type'] == 'Smoke'): ?>
                                                                         <?php if ($is_complete): ?>
@@ -227,10 +235,22 @@
                                                                         <?php endif; ?>
                                                                     <?php endif; ?>
                                                                     <span class="divider-line"></span>
-                                                                    <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn" title="Edit Task">
+
+                                                                    <?php if ($task['testing_type'] == 'Regression'): ?>
+                                                                        <a href="<?= htmlspecialchars($task['regression_url'] ?? '#') ?>" target="_blank" class="icon-btn tooltip-trigger" data-tip="Open TestRail">
+                                                                            <span class="material-symbols-outlined">open_in_new</span>
+                                                                        </a>
+                                                                    <?php else: ?>
+                                                                        <a href="execute_task.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="icon-btn tooltip-trigger" data-tip="Update Results">
+                                                                            <span class="material-symbols-outlined">fact_check</span>
+                                                                        </a>
+                                                                    <?php endif; ?>
+
+                                                                    <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn tooltip-trigger" data-tip="Edit Task">
                                                                         <span class="material-symbols-outlined">edit</span>
                                                                     </a>
-                                                                    <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete" title="Delete Task" onclick="return confirm('Delete this task?');">
+
+                                                                    <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete tooltip-trigger" data-tip="Delete Task" onclick="return confirm('Delete this task?');">
                                                                         <span class="material-symbols-outlined">delete</span>
                                                                     </a>
                                                                 </div>
@@ -289,7 +309,14 @@
                                                             <?= htmlspecialchars($task['testing_type']) ?>
                                                         </span>
                                                     </td>
-                                                    <td><strong style="font-size:0.88rem;" title="<?= $printerName ?>"><?= $printerName ?></strong></td>
+                                                    <td>
+                                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                                            <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
+                                                                <?= Helper::renderPrinterImage($task['printer_path'] ?? null, $printerName, 16) ?>
+                                                            </div>
+                                                            <strong style="font-size:0.88rem;" title="<?= $printerName ?>"><?= $printerName ?></strong>
+                                                        </div>
+                                                    </td>
                                                     <td>
                                                         <span class="mono" style="font-size:0.82rem; color:var(--primary); font-weight:600;">
                                                             <?= htmlspecialchars($task['fw_version_current']) ?>
@@ -379,7 +406,12 @@
                         <div class="fw-grid">
                             <?php foreach ($firmware_overview as $fw): ?>
                                 <div class="fw-card">
-                                    <div class="fw-model"><?= htmlspecialchars($fw['model']) ?></div>
+                                    <div class="fw-model" style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden;">
+                                            <?= Helper::renderPrinterImage($fw['printer_path'] ?? null, $fw['model'], 14) ?>
+                                        </div>
+                                        <?= htmlspecialchars($fw['model']) ?>
+                                    </div>
                                     <div class="fw-row">
                                         <span class="fw-label">Branch</span>
                                         <span class="fw-value"><?= htmlspecialchars($fw['branch']) ?></span>
@@ -410,14 +442,9 @@
                                         <?php foreach ($chart_data as $idx => $data): ?>
                                             <?php
                                             $pName = htmlspecialchars($data['model_name']);
-                                            $n = strtolower($pName);
-                                            $icon = 'print';
-                                            if (str_contains($n, 'flare')) $icon = 'local_fire_department';
-                                            if (str_contains($n, 'ray'))   $icon = 'bolt';
-                                            if (str_contains($n, 'mfp'))  $icon = 'content_copy';
                                             ?>
                                             <div class="p-card <?= $idx === 0 ? 'p-active' : '' ?>" data-idx="<?= $idx ?>" onclick="selectChartPrinter(<?= $idx ?>)">
-                                                <div class="p-card-icon">
+                                                <div class="p-card-icon" style="overflow: hidden; padding: 2px;">
                                                     <?= Helper::renderPrinterImage($data['printer_path'] ?? null, $pName, 20) ?>
                                                 </div>
                                                 <div class="p-card-name"><?= $pName ?></div>
@@ -454,10 +481,7 @@
                         </div>
                         <div class="d-card-body" style="max-height: 620px; overflow-y: auto;">
                             <?php
-                            $memberColors = ['av-blue', 'av-green', 'av-violet', 'av-rose', 'av-amber', 'av-teal'];
                             foreach ($team_members as $idx => $member):
-                                $mInitials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $member['full_name']), 0, 2)));
-                                $mColor = $memberColors[$idx % count($memberColors)];
                                 $lastSeen = $member['last_login'] ? time_ago($member['last_login']) : 'Never';
                                 $lastFull = $member['last_login'] ? date('M d, Y g:i A', strtotime($member['last_login'])) : 'No login recorded';
                                 $pfp = !empty($member['pfp_path']) ? $member['pfp_path'] : 'imgs/default_pfp.svg';
@@ -594,92 +618,86 @@
                     loadData(link.href);
                 }
             });
+        });
 
-            function getCSSVar(name) {
-                return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        // ── Split Chart Logic (Printer Specific Doughnut) ──────
+        const rawData = <?= json_encode($chart_data) ?>;
+        let chartInstance = null;
+
+        function renderChart(index) {
+            if (!rawData || rawData.length === 0) return;
+            const data = rawData[index];
+            if (!data) return;
+
+            const passed = Number(data.passed);
+            const failed = Number(data.failed);
+            const blocked = Number(data.blocked);
+            const na = Number(data.na);
+            const pending = Number(data.pending);
+            const ctx = document.getElementById('progressChart').getContext('2d');
+
+            if (chartInstance) {
+                chartInstance.destroy();
             }
 
-            // Get font color from CSS variable
-            const fontColor = getCSSVar('--chart-font-color');
-            // ── Split Chart Logic (Printer Specific Doughnut) ──────
-            const rawData = <?= json_encode($chart_data) ?>;
-            let chartInstance = null;
-
-            function renderChart(index) {
-                if (!rawData || rawData.length === 0) return;
-                const data = rawData[index];
-                if (!data) return;
-
-                const passed = Number(data.passed);
-                const failed = Number(data.failed);
-                const pending = Number(data.pending);
-                const ctx = document.getElementById('progressChart').getContext('2d');
-
-                if (chartInstance) {
-                    chartInstance.destroy();
-                }
-
-                chartInstance = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Passed', 'Failed', 'Pending'],
-                        datasets: [{
-                            data: [passed, failed, pending],
-                            backgroundColor: ['#15803d', '#b91c1c', '#d1d5db'],
-                            borderWidth: 0,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '75%',
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                                labels: {
-                                    usePointStyle: true,
-                                    color: getCSSVar('--text-main'),
-                                    font: {
-                                        family: 'DM Sans',
-                                        size: 15
-                                    },
-                                    padding: 20
-                                }
-                            },
-                            tooltip: {
-                                bodyFont: {
-                                    family: 'DM Sans'
-                                },
-                                titleFont: {
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Passed', 'Failed', 'Blocked', 'N/A', 'Pending'],
+                    datasets: [{
+                        data: [passed, failed, blocked, na, pending],
+                        backgroundColor: ['#15803d', '#b91c1c', '#eab308', '#4b5563', '#d1d5db'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                usePointStyle: true,
+                                font: {
                                     family: 'DM Sans',
-                                    weight: '700'
-                                }
+                                    size: 13
+                                },
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            bodyFont: {
+                                family: 'DM Sans'
+                            },
+                            titleFont: {
+                                family: 'DM Sans',
+                                weight: '700'
                             }
                         }
                     }
-                });
-            }
+                }
+            });
+        }
 
-            // Function called by clicking the side cards
-            window.selectChartPrinter = function(index) {
-                // 1. Update UI classes
-                document.querySelectorAll('#chartPrinterSelect .p-card').forEach(card => {
-                    card.classList.remove('p-active');
-                });
-                const activeCard = document.querySelector(`#chartPrinterSelect .p-card[data-idx="${index}"]`);
-                if (activeCard) activeCard.classList.add('p-active');
+        // Function called by clicking the side cards
+        window.selectChartPrinter = function(index) {
+            // 1. Update UI classes
+            document.querySelectorAll('#chartPrinterSelect .p-card').forEach(card => {
+                card.classList.remove('p-active');
+            });
+            const activeCard = document.querySelector(`#chartPrinterSelect .p-card[data-idx="${index}"]`);
+            if (activeCard) activeCard.classList.add('p-active');
 
-                // 2. Render Chart
-                renderChart(index);
-            };
+            // 2. Render Chart
+            renderChart(index);
+        };
 
-            // Initialize chart with the first printer on page load
-            if (rawData && rawData.length > 0) {
-                renderChart(0);
-            }
-
-        });
+        // Initialize chart with the first printer on page load
+        if (rawData && rawData.length > 0) {
+            renderChart(0);
+        }
     </script>
 </body>
 

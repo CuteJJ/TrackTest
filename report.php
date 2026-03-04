@@ -753,14 +753,18 @@ $pct     = $total > 0 ? round($passed / $total * 100) : 0;
                             <tr>
                                 <td><span class="mono"><?= htmlspecialchars($row['case_code']) ?></span></td>
                                 <td style="font-size:0.85rem;"><?= htmlspecialchars($row['title']) ?></td>
-                                <td style="text-align:center;">
+                                <td style="text-align: center;">
                                     <?php if ($row['status'] == 'Pass'): ?>
-                                        <span class="rp-badge pass">
-                                            <span class="material-symbols-outlined">check_circle</span> PASS
+                                        <span class="rp-badge pass"><span class="material-symbols-outlined">check_circle</span> PASS</span>
+                                    <?php elseif ($row['status'] == 'Fail'): ?>
+                                        <span class="rp-badge fail"><span class="material-symbols-outlined">cancel</span> FAIL</span>
+                                    <?php elseif ($row['status'] == 'Blocked'): ?>
+                                        <span class="rp-badge" style="background: var(--blocked-bg); color: var(--blocked); border: 1px solid var(--blocked);">
+                                            <span class="material-symbols-outlined">block</span> BLOCKED
                                         </span>
-                                    <?php else: ?>
-                                        <span class="rp-badge fail">
-                                            <span class="material-symbols-outlined">cancel</span> FAIL
+                                    <?php elseif ($row['status'] == 'N/A'): ?>
+                                        <span class="rp-badge" style="background: var(--na-bg); color: var(--na); border: 1px solid var(--na);">
+                                            <span class="material-symbols-outlined">do_not_disturb_on</span> N/A
                                         </span>
                                     <?php endif; ?>
                                 </td>
