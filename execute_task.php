@@ -16,7 +16,7 @@
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { background: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         .topbar { flex-shrink: 0; height: var(--nav-height); background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.06); z-index: 100; }
         .tb-brand { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 700; color: var(--text-main); text-decoration: none; }
         .tb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
@@ -34,8 +34,7 @@
         .role-main { background: var(--primary); color: white; border: 1px solid var(--primary); }
         .role-support { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
         
-        .task-info-grid { display: grid; grid-template-columns: 2fr 1.5fr 1fr; gap: 16px; margin-bottom: 30px; }
-        .info-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .task-info-grid { display: grid; grid-template-columns: 1.8fr 1.2fr 1.2fr; gap: 16px; margin-bottom: 30px; }        .info-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         .info-card.highlight { background: var(--bg-body); border-color: var(--border); }
         .info-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; margin-bottom: 8px; letter-spacing: 0.05em; }
         .fw-transition { display: flex; align-items: center; gap: 16px; }
@@ -44,7 +43,7 @@
         .fw-ver strong { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: var(--text-main); }
         .fw-ver.new strong { color: var(--primary); font-weight: 700; }
         .fw-ver.old strong { color: var(--text-muted); text-decoration: line-through; opacity: 0.8; font-size: 0.95rem; }
-        .mini-row { display: flex; gap: 32px; }
+        .mini-row { display: flex; gap: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .mini-row strong { font-size: 1rem; color: var(--text-main); font-weight: 600; font-family: 'Inter', sans-serif;}
         
         .section-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0 0 12px; }
@@ -175,11 +174,11 @@
                 <div class="info-card">
                     <div class="mini-row">
                         <div>
-                            <span class="info-label">Recovery FW</span>
-                            <strong style="color: var(--error);"><?= htmlspecialchars($task_info['fw_version_rec']) ?></strong>
+                            <span class="info-label">Recovery FW</span><br>
+                            <strong style="font-family: 'JetBrains Mono', monospace; color: var(--error);"><?= htmlspecialchars($task_info['fw_version_rec']) ?></strong>
                         </div>
                         <div>
-                            <span class="info-label">FW Type</span>
+                            <span class="info-label">FW Type</span><br>
                             <strong><?= htmlspecialchars($task_info['fw_type']) ?></strong>
                         </div>
                     </div>
@@ -188,11 +187,11 @@
                 <div class="info-card">
                     <div class="mini-row">
                         <div>
-                            <span class="info-label">Task Date</span>
+                            <span class="info-label">Task Date</span><br>
                             <strong><?= date('M d', strtotime($task_info['task_date'])) ?></strong>
                         </div>
                         <div>
-                            <span class="info-label">Due Date</span>
+                            <span class="info-label">Due Date</span><br>
                             <strong style="color: var(--primary);"><?= date('M d', strtotime($task_info['due_date'])) ?></strong>
                         </div>
                     </div>
@@ -322,6 +321,8 @@
                             $icon = match ($c['status']) {
                                 'Pass' => 'check',
                                 'Fail' => 'close',
+                                'Blocked' => 'block',
+                                'N/A' => 'do_not_disturb_on',
                                 default => 'more_horiz'
                             };
                             $testerName = htmlspecialchars($c['assigned_name'] ?? 'Unassigned');

@@ -12,6 +12,87 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,500,0,0" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="app.css">
+    
+    <style>
+        .custom-chart-layout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .custom-chart-legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 20px;
+            row-gap: 16px;
+            flex: 1;
+            min-width: 250px;
+        }
+        .leg-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .leg-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+        .leg-item div {
+            display: flex;
+            flex-direction: column;
+        }
+        .leg-item strong {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.2;
+            margin-bottom: 2px;
+        }
+        .leg-item span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .custom-chart-summary {
+            border-left: 1px solid var(--border);
+            padding-left: 32px;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .summary-val {
+            font-size: 3.5rem;
+            font-weight: 300;
+            line-height: 1;
+            color: var(--text-main);
+            letter-spacing: -2px;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .summary-label {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 400;
+        }
+        .summary-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+        @media (max-width: 1100px) {
+            .custom-chart-layout { justify-content: center; }
+            .custom-chart-summary { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 20px; width: 100%; text-align: center; }
+        }
+        @media (max-width: 600px) {
+            .custom-chart-legend { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 
 <body>
@@ -186,6 +267,14 @@
                                                             <span class="badge badge-fail">
                                                                 <span class="material-symbols-outlined">cancel</span> FAILED
                                                             </span>
+                                                        <?php elseif ($task['overall_status'] == 'Blocked'): ?>
+                                                            <span class="badge" style="background: var(--blocked-bg); color: var(--blocked); border: 1px solid var(--blocked);">
+                                                                <span class="material-symbols-outlined">block</span> BLOCKED
+                                                            </span>
+                                                        <?php elseif ($task['overall_status'] == 'N/A'): ?>
+                                                            <span class="badge" style="background: var(--na-bg); color: var(--na); border: 1px solid var(--na);">
+                                                                <span class="material-symbols-outlined">do_not_disturb_on</span> N/A
+                                                            </span>
                                                         <?php else: ?>
                                                             <span class="badge badge-pending">
                                                                 <span class="material-symbols-outlined">schedule</span> Pending
@@ -339,6 +428,14 @@
                                                             <span class="badge badge-pass"><span class="material-symbols-outlined">check_circle</span> PASSED</span>
                                                         <?php elseif ($task['overall_status'] == 'Fail'): ?>
                                                             <span class="badge badge-fail"><span class="material-symbols-outlined">cancel</span> FAILED</span>
+                                                        <?php elseif ($task['overall_status'] == 'Blocked'): ?>
+                                                            <span class="badge" style="background: var(--blocked-bg); color: var(--blocked); border: 1px solid var(--blocked);">
+                                                                <span class="material-symbols-outlined">block</span> BLOCKED
+                                                            </span>
+                                                        <?php elseif ($task['overall_status'] == 'N/A'): ?>
+                                                            <span class="badge" style="background: var(--na-bg); color: var(--na); border: 1px solid var(--na);">
+                                                                <span class="material-symbols-outlined">do_not_disturb_on</span> N/A
+                                                            </span>
                                                         <?php else: ?>
                                                             <span class="badge badge-pending"><span class="material-symbols-outlined">schedule</span> Pending</span>
                                                         <?php endif; ?>
@@ -440,9 +537,7 @@
                                 <?php else: ?>
                                     <div class="p-card-grid" id="chartPrinterSelect">
                                         <?php foreach ($chart_data as $idx => $data): ?>
-                                            <?php
-                                            $pName = htmlspecialchars($data['model_name']);
-                                            ?>
+                                            <?php $pName = htmlspecialchars($data['model_name']); ?>
                                             <div class="p-card <?= $idx === 0 ? 'p-active' : '' ?>" data-idx="<?= $idx ?>" onclick="selectChartPrinter(<?= $idx ?>)">
                                                 <div class="p-card-icon" style="overflow: hidden; padding: 2px;">
                                                     <?= Helper::renderPrinterImage($data['printer_path'] ?? null, $pName, 20) ?>
@@ -456,12 +551,19 @@
 
                             <div class="chart-display">
                                 <?php if (empty($chart_data)): ?>
-                                    <div class="empty-state" style="padding:0;">
+                                    <div class="empty-state" style="padding:0; width:100%;">
                                         <span class="material-symbols-outlined" style="font-size:48px;">pie_chart_outline</span>
+                                        <p>No testing data available.</p>
                                     </div>
                                 <?php else: ?>
-                                    <div class="chart-canvas-wrap">
-                                        <canvas id="progressChart"></canvas>
+                                    <div class="custom-chart-layout">
+                                        <div class="chart-canvas-wrap" style="width: 200px; height: 200px; flex-shrink: 0; margin: 0 auto;">
+                                            <canvas id="progressChart"></canvas>
+                                        </div>
+                                        <div class="custom-chart-legend" id="customChartLegend">
+                                            </div>
+                                        <div class="custom-chart-summary" id="customChartSummary">
+                                            </div>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -620,9 +722,19 @@
             });
         });
 
-        // ── Split Chart Logic (Printer Specific Doughnut) ──────
+        // ── Custom Analytical Chart Logic ──────────────────────
         const rawData = <?= json_encode($chart_data) ?>;
         let chartInstance = null;
+
+        // Custom Semantic Colors matching Theme/Image
+        const colors = {
+            pass: '#10b981',    // Green
+            fail: '#ef4444',    // Red
+            blocked: '#f59e0b', // Yellow
+            na: '#6b7280',      // Dark Grey
+            pending: '#cbd5e1'  // Light Grey
+        };
+        const chartColorArray = [colors.pass, colors.fail, colors.blocked, colors.na, colors.pending];
 
         function renderChart(index) {
             if (!rawData || rawData.length === 0) return;
@@ -634,8 +746,49 @@
             const blocked = Number(data.blocked);
             const na = Number(data.na);
             const pending = Number(data.pending);
-            const ctx = document.getElementById('progressChart').getContext('2d');
+            const total = passed + failed + blocked + na + pending;
 
+            const passPct = total > 0 ? Math.round((passed / total) * 100) : 0;
+            const failPct = total > 0 ? Math.round((failed / total) * 100) : 0;
+            const blockPct = total > 0 ? Math.round((blocked / total) * 100) : 0;
+            const naPct = total > 0 ? Math.round((na / total) * 100) : 0;
+            const pendPct = total > 0 ? Math.round((pending / total) * 100) : 0;
+
+            // 1. Inject Custom HTML Legend
+            const legendHtml = `
+                <div class="leg-item">
+                    <span class="leg-color" style="background:${colors.pending};"></span>
+                    <div><strong>${pending} Pending</strong><span>${pendPct}% set to Pending</span></div>
+                </div>
+                <div class="leg-item">
+                    <span class="leg-color" style="background:${colors.pass};"></span>
+                    <div><strong>${passed} Passed</strong><span>${passPct}% set to Passed</span></div>
+                </div>
+                <div class="leg-item">
+                    <span class="leg-color" style="background:${colors.blocked};"></span>
+                    <div><strong>${blocked} Blocked</strong><span>${blockPct}% set to Blocked</span></div>
+                </div>
+                <div class="leg-item">
+                    <span class="leg-color" style="background:${colors.fail};"></span>
+                    <div><strong>${failed} Failed</strong><span>${failPct}% set to Failed</span></div>
+                </div>
+                <div class="leg-item">
+                    <span class="leg-color" style="background:${colors.na};"></span>
+                    <div><strong>${na} N/A</strong><span>${naPct}% set to N/A</span></div>
+                </div>
+            `;
+            document.getElementById('customChartLegend').innerHTML = legendHtml;
+
+            // 2. Inject Custom HTML Summary
+            const summaryHtml = `
+                <div class="summary-val">${passPct}%</div>
+                <div class="summary-label">passed</div>
+                <div class="summary-sub">${pending} / ${total} untested<br>(${pendPct}%).</div>
+            `;
+            document.getElementById('customChartSummary').innerHTML = summaryHtml;
+
+            // 3. Render Solid Pie Chart
+            const ctx = document.getElementById('progressChart').getContext('2d');
             if (chartInstance) {
                 chartInstance.destroy();
             }
@@ -646,59 +799,41 @@
                     labels: ['Passed', 'Failed', 'Blocked', 'N/A', 'Pending'],
                     datasets: [{
                         data: [passed, failed, blocked, na, pending],
-                        backgroundColor: ['#15803d', '#b91c1c', '#eab308', '#4b5563', '#d1d5db'],
-                        borderWidth: 0,
-                        hoverOffset: 4
+                        backgroundColor: chartColorArray,
+                        borderWidth: 1,
+                        borderColor: 'var(--bg-surface)',
+                        hoverOffset: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '75%',
                     plugins: {
                         legend: {
-                            position: 'right',
-                            labels: {
-                                usePointStyle: true,
-                                font: {
-                                    family: 'DM Sans',
-                                    size: 13
-                                },
-                                padding: 20
-                            }
+                            display: false // We use our custom HTML legend
                         },
                         tooltip: {
-                            bodyFont: {
-                                family: 'DM Sans'
-                            },
-                            titleFont: {
-                                family: 'DM Sans',
-                                weight: '700'
-                            }
+                            bodyFont: { family: 'DM Sans' },
+                            titleFont: { family: 'DM Sans', weight: '700' }
                         }
                     }
                 }
             });
         }
 
-        // Function called by clicking the side cards
         window.selectChartPrinter = function(index) {
-            // 1. Update UI classes
             document.querySelectorAll('#chartPrinterSelect .p-card').forEach(card => {
                 card.classList.remove('p-active');
             });
             const activeCard = document.querySelector(`#chartPrinterSelect .p-card[data-idx="${index}"]`);
             if (activeCard) activeCard.classList.add('p-active');
-
-            // 2. Render Chart
+            
             renderChart(index);
         };
 
-        // Initialize chart with the first printer on page load
         if (rawData && rawData.length > 0) {
             renderChart(0);
         }
     </script>
 </body>
-
 </html>
