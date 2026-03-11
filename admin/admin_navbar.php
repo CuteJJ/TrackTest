@@ -1,3 +1,7 @@
+<?php 
+// Get the current page file name (e.g., 'admin_dashboard.php')
+$currentPage = basename($_SERVER['PHP_SELF']); 
+?>
     <nav class="navbar">
         <div class="nav-brand"><span class="nav-brand-dot"></span> Admin Center</div>
         <div class="nav-right relative">
@@ -33,8 +37,17 @@
     <div class="admin-overlay" id="adminOverlay" onclick="toggleAdminSidebar()"></div>
     <aside class="admin-sidebar" id="adminSidebar">
         <div style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); margin: 10px 0 10px 16px;">MANAGEMENT</div>
-        <a href="admin_dashboard.php" class="admin-nav-item"><span class="material-symbols-outlined">dashboard</span> Home Overview</a>
-        <a href="admin_history.php" class="admin-nav-item active"><span class="material-symbols-outlined">history</span> Global History</a>
-        <a href="admin_printers.php" class="admin-nav-item"><span class="material-symbols-outlined">print</span> Printers & Cases</a>
-        <a href="admin_users.php" class="admin-nav-item"><span class="material-symbols-outlined">group</span> User Directory</a>
+        
+        <a href="admin_dashboard.php" class="admin-nav-item <?= $currentPage === 'admin_dashboard.php' ? 'active' : '' ?>">
+            <span class="material-symbols-outlined">dashboard</span> Home Overview
+        </a>
+        <a href="admin_history.php" class="admin-nav-item <?= $currentPage === 'admin_history.php' ? 'active' : '' ?>">
+            <span class="material-symbols-outlined">history</span> Global History
+        </a>
+        <a href="admin_printers.php" class="admin-nav-item <?= $currentPage === 'admin_printers.php' ? 'active' : '' ?>">
+            <span class="material-symbols-outlined">print</span> Printers & Cases
+        </a>
+        <a href="admin_users.php" class="admin-nav-item <?= $currentPage === 'admin_users.php' ? 'active' : '' ?>">
+            <span class="material-symbols-outlined">group</span> User Directory
+        </a>
     </aside>
