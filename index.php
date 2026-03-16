@@ -1,18 +1,9 @@
-<?php require_once 'controllers/DashboardController.php'; ?>
-<!DOCTYPE html>
-<html lang="en">
+<?php 
+require_once 'controllers/DashboardController.php'; 
+$TITLE = "Dashboard | Track Manager";
+require_once 'configs/header.php';
+?>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Track Manager</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,500,0,0" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="app.css">
-    
     <style>
         .custom-chart-layout {
             display: flex;
@@ -93,66 +84,9 @@
             .custom-chart-legend { grid-template-columns: 1fr; }
         }
     </style>
-</head>
 
-<body>
+<?php require_once 'configs/nav.php'; ?>
 
-    <?php Helper::displayLoader(); ?>
-    <?php Helper::displayFlash(); ?>
-    <div id="custom-tooltip"></div>
-
-    <nav class="navbar">
-        <div class="nav-brand">
-            <span class="nav-brand-dot"></span>
-            Track Manager
-        </div>
-
-        <div class="nav-right relative" style="display: flex; align-items: center;">
-            <div class="nav-user-dropdown" id="profileDropdownBtn" onclick="toggleProfileMenu(event)">
-                <div class="nav-avatar" style="background: transparent; border: 1px solid var(--border);">
-                    <img src="<?= htmlspecialchars($_SESSION['pfp_path'] ?? 'imgs/default_pfp.svg') ?>" alt="Profile" class="pfp-img">
-                </div>
-                <div class="nav-user-info">
-                    <div class="nav-user-name"><?= htmlspecialchars($_SESSION['full_name']) ?></div>
-                    <div class="nav-user-role"><?= htmlspecialchars($_SESSION['role']) ?></div>
-                </div>
-                <span class="material-symbols-outlined dropdown-chevron">expand_more</span>
-            </div>
-
-            <div class="profile-menu" id="profileMenu">
-                <div class="profile-menu-header">
-                    Signed in as<br>
-                    <strong><?= htmlspecialchars($_SESSION['username'] ?? $_SESSION['full_name']) ?></strong>
-                </div>
-                <div class="profile-menu-divider"></div>
-                <div class="theme-section">
-                    <span class="theme-label">Theme</span>
-                    <div class="theme-swatches">
-                        <div class="theme-swatch active" data-set-theme="light" style="background: #f0f2f5; border: 1px solid #d1d5db;" title="Light"></div>
-                        <div class="theme-swatch" data-set-theme="dark" style="background: #111827; border: 1px solid #374151;" title="Dark"></div>
-                        <div class="theme-swatch" data-set-theme="midnight" style="background: #0f172a; border: 1px solid #334155;" title="Midnight"></div>
-                        <div class="theme-swatch" data-set-theme="catppuccin" style="background-color: #303446; background-image: url('https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/catppuccin.svg'); background-size: cover; border: 1px solid #51576d;" title="Catppuccin Frappé"></div>
-                    </div>
-                </div>
-                <div class="profile-menu-divider"></div>
-                
-                <?php if ($_SESSION['role'] === 'lead' || $_SESSION['role'] === 'admin'): ?>
-                    <a href="admin/admin_dashboard.php" class="profile-menu-item">
-                        <span class="material-symbols-outlined">admin_panel_settings</span> Admin Panel
-                    </a>
-                <div class="profile-menu-divider"></div>
-                <?php endif; ?>
-                
-                <a href="settings.php" class="profile-menu-item">
-                    <span class="material-symbols-outlined">manage_accounts</span> Account Settings
-                </a>
-                <div class="profile-menu-divider"></div>
-                <a href="logout.php" class="profile-menu-item text-danger">
-                    <span class="material-symbols-outlined">logout</span> Sign out
-                </a>
-            </div>
-        </div>
-    </nav>
     <div class="page-content-scroll">
         <div class="dash-wrapper">
 
@@ -794,13 +728,13 @@
             }
 
             chartInstance = new Chart(ctx, {
-                type: 'doughnut',
+                type: 'pie',
                 data: {
                     labels: ['Passed', 'Failed', 'Blocked', 'N/A', 'Pending'],
                     datasets: [{
                         data: [passed, failed, blocked, na, pending],
                         backgroundColor: chartColorArray,
-                        borderWidth: 1,
+                        borderWidth: 2,
                         borderColor: 'var(--bg-surface)',
                         hoverOffset: 6
                     }]
