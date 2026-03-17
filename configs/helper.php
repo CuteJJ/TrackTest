@@ -85,6 +85,67 @@ class Helper {
     }
 
     /**
+     * Renders a modular pagination block with a rows-per-page selector.
+     */
+    public static function renderPagination($totalRows, $perPage, $currentPage, $options = [5, 15, 30, 50]) {
+        $totalPages = ceil($totalRows / $perPage);
+        if ($totalRows == 0) return '';
+
+        $html = '<div class="pagination-wrapper" style="display:flex; justify-content:space-between; align-items:center; padding: 16px 20px; border-top: 1px solid var(--border); background: var(--bg-body); flex-wrap: wrap; gap: 16px;">';
+
+        // 1. Rows Per Page Selector
+        $html .= '<div style="display:flex; align-items:center; gap:8px;">';
+        $html .= '<span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Rows:</span>';
+        $html .= '<select class="per-page-select form-control" style="padding: 4px 28px 4px 10px; width:auto; font-size:0.8rem; min-height: 30px;">';
+        foreach ($options as $opt) {
+            $sel = ($opt == $perPage) ? 'selected' : '';
+            $html .= "<option value=\"$opt\" $sel>$opt</option>";
+        }
+        $html .= '</select>';
+        $html .= '</div>';
+
+        // 2. Page Links
+        if ($totalPages > 1) {
+            $html .= '<div class="pagination" style="margin:0;">';
+            $getParams = $_GET;
+
+            if ($currentPage > 1) {
+                $getParams['page'] = $currentPage - 1;
+                $html .= '<a href="?' . http_build_query($getParams) . '" class="page-link prev">←</a>';
+            }
+
+            // Windowed pagination (keeps it clean if there are 100 pages)
+            $startPage = max(1, $currentPage - 2);
+            $endPage = min($totalPages, $currentPage + 2);
+
+            for ($i = $startPage; $i <= $endPage; $i++) {
+                if ($i == $currentPage) {
+                    $html .= '<span class="page-link active">' . $i . '</span>';
+                } else {
+                    $getParams['page'] = $i;
+                    $html .= '<a href="?' . http_build_query($getParams) . '" class="page-link">' . $i . '</a>';
+                }
+            }
+
+            if ($currentPage < $totalPages) {
+                $getParams['page'] = $currentPage + 1;
+                $html .= '<a href="?' . http_build_query($getParams) . '" class="page-link next">→</a>';
+            }
+            $html .= '</div>';
+        } else {
+            $html .= '<div></div>'; // Spacer
+        }
+
+        // 3. Info Text
+        $start = ($currentPage - 1) * $perPage + 1;
+        $end = min($currentPage * $perPage, $totalRows);
+        $html .= "<div style=\"font-size:0.75rem; color:var(--text-muted); font-weight:600;\">Showing $start – $end of $totalRows</div>";
+
+        $html .= '</div>';
+        return $html;
+    }
+    
+    /**
      * Enhanced Dropdown Component
      * * @param array $config {
      * @type string $id          Unique DOM ID

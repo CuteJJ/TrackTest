@@ -5,84 +5,30 @@ require_once 'configs/header.php';
 ?>
 
     <style>
-        .custom-chart-layout {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            gap: 24px;
-            flex-wrap: wrap;
-        }
-        .custom-chart-legend {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            column-gap: 20px;
-            row-gap: 16px;
-            flex: 1;
-            min-width: 250px;
-        }
-        .leg-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-        .leg-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-top: 3px;
-            flex-shrink: 0;
-        }
-        .leg-item div {
-            display: flex;
-            flex-direction: column;
-        }
-        .leg-item strong {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--text-main);
-            line-height: 1.2;
-            margin-bottom: 2px;
-        }
-        .leg-item span {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-        .custom-chart-summary {
-            border-left: 1px solid var(--border);
-            padding-left: 32px;
-            min-width: 150px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .summary-val {
-            font-size: 3.5rem;
-            font-weight: 300;
-            line-height: 1;
-            color: var(--text-main);
-            letter-spacing: -2px;
-            font-family: 'DM Sans', sans-serif;
-        }
-        .summary-label {
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            font-weight: 400;
-        }
-        .summary-sub {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
+        .custom-chart-layout { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 24px; flex-wrap: wrap; }
+        .custom-chart-legend { display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; row-gap: 16px; flex: 1; min-width: 250px; }
+        .leg-item { display: flex; align-items: flex-start; gap: 12px; }
+        .leg-color { width: 16px; height: 16px; border-radius: 50%; display: inline-block; margin-top: 3px; flex-shrink: 0; }
+        .leg-item div { display: flex; flex-direction: column; }
+        .leg-item strong { font-size: 0.95rem; font-weight: 700; color: var(--text-main); line-height: 1.2; margin-bottom: 2px; }
+        .leg-item span { font-size: 0.8rem; color: var(--text-muted); }
+        .custom-chart-summary { border-left: 1px solid var(--border); padding-left: 32px; min-width: 150px; display: flex; flex-direction: column; justify-content: center; }
+        .summary-val { font-size: 3.5rem; font-weight: 300; line-height: 1; color: var(--text-main); letter-spacing: -2px; font-family: 'DM Sans', sans-serif; }
+        .summary-label { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 400; }
+        .summary-sub { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
         @media (max-width: 1100px) {
             .custom-chart-layout { justify-content: center; }
             .custom-chart-summary { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 20px; width: 100%; text-align: center; }
         }
-        @media (max-width: 600px) {
-            .custom-chart-legend { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 600px) { .custom-chart-legend { grid-template-columns: 1fr; } }
+        
+        /* Interactive FW Card */
+        .fw-card { transition: all 0.2s ease; cursor: pointer; }
+        .fw-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(2,136,209,0.1); transform: translateY(-2px); }
+        
+        /* Modal Table Overrides for cleaner look */
+        .fw-modal-table th { padding: 14px 24px !important; background: var(--bg-surface) !important; }
+        .fw-modal-table td { padding: 14px 24px !important; }
     </style>
 
 <?php require_once 'configs/nav.php'; ?>
@@ -94,43 +40,21 @@ require_once 'configs/header.php';
                 <div class="d-card-header">
                     <div class="d-card-title">
                         <span class="material-symbols-outlined">task_alt</span>
-                        <?= $_SESSION['role'] === 'lead' ? 'Active Testing Tasks' : 'My Assignments' ?>
+                        <?php if ($_SESSION['role'] === 'lead'): ?>
+                            Active Testing Tasks <span class="badge badge-smoke" style="margin-left: 10px; font-size: 0.7rem;">This Week</span>
+                        <?php else: ?>
+                            My Assignments <span class="badge badge-smoke" style="margin-left: 10px; font-size: 0.7rem;">Today</span>
+                        <?php endif; ?>
                     </div>
-                    <?php if ($_SESSION['role'] === 'lead'): ?>
-                        <a href="create_task.php" class="btn-mini">
-                            <span class="material-symbols-outlined">add</span> Create Task
-                        </a>
-                    <?php endif; ?>
                 </div>
 
-                <div class="d-card-body">
-                    <form method="get" class="filter-bar no-loader" id="ajax-filter-form">
-                        <div class="filter-group">
-                            <label for="start_date">From</label>
-                            <input type="date" id="start_date" name="start_date" value="<?= htmlspecialchars($_GET['start_date'] ?? date('Y-m-d')) ?>">
-                        </div>
-                        <div class="filter-group">
-                            <label for="end_date">To</label>
-                            <input type="date" id="end_date" name="end_date" value="<?= htmlspecialchars($_GET['end_date'] ?? '') ?>">
-                        </div>
-                        <div class="filter-group">
-                            <label for="type">Type</label>
-                            <select id="type" name="type">
-                                <option value="" <?= empty($_GET['type']) ? 'selected' : '' ?>>All</option>
-                                <option value="Smoke" <?= ($_GET['type'] ?? '') == 'Smoke' ? 'selected' : '' ?>>Smoke</option>
-                                <option value="Regression" <?= ($_GET['type'] ?? '') == 'Regression' ? 'selected' : '' ?>>Regression</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-mini" style="width: auto;">Apply Filters</button>
-                        <button type="button" id="reset-filter" class="btn-mini ghost" style="width: auto;">Reset</button>
-                    </form>
-
+                <div class="d-card-body" style="padding-top: 0;">
                     <div id="tasks-container">
                         <?php if ($_SESSION['role'] === 'lead'): ?>
                             <?php if (empty($lead_tasks)): ?>
                                 <div class="empty-state">
                                     <span class="material-symbols-outlined">inbox</span>
-                                    <p>No active tasks found matching criteria.</p>
+                                    <p>No active tasks scheduled for this week.</p>
                                 </div>
                             <?php else: ?>
                                 <div class="table-responsive">
@@ -221,7 +145,7 @@ require_once 'configs/header.php';
                                                 </tr>
 
                                                 <tr class="expanded-row">
-                                                    <td colspan="6">
+                                                    <td colspan="6" style="padding: 0;">
                                                         <div class="accordion-wrapper" id="<?= $rowId ?>">
                                                             <div class="expanded-content">
                                                                 <div class="expand-detail">
@@ -268,14 +192,6 @@ require_once 'configs/header.php';
                                                                             <span class="material-symbols-outlined">fact_check</span>
                                                                         </a>
                                                                     <?php endif; ?>
-
-                                                                    <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn tooltip-trigger" data-tip="Edit Task">
-                                                                        <span class="material-symbols-outlined">edit</span>
-                                                                    </a>
-
-                                                                    <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete tooltip-trigger" data-tip="Delete Task" onclick="return confirm('Delete this task?');">
-                                                                        <span class="material-symbols-outlined">delete</span>
-                                                                    </a>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -285,13 +201,14 @@ require_once 'configs/header.php';
                                         </tbody>
                                     </table>
                                 </div>
+                                <?= Helper::renderPagination($pagination['leadRows'], $pagination['perPage'], $pagination['currentPage']) ?>
                             <?php endif; ?>
 
                         <?php else: ?>
                             <?php if (empty($my_tasks)): ?>
                                 <div class="empty-state">
                                     <span class="material-symbols-outlined">assignment</span>
-                                    <p>No tasks found matching criteria.</p>
+                                    <p>No tasks assigned to you for today.</p>
                                 </div>
                             <?php else: ?>
                                 <div class="table-responsive">
@@ -390,34 +307,8 @@ require_once 'configs/header.php';
                                         </tbody>
                                     </table>
                                 </div>
+                                <?= Helper::renderPagination($pagination['myRows'], $pagination['perPage'], $pagination['currentPage']) ?>
                             <?php endif; ?>
-                        <?php endif; ?>
-
-                        <?php
-                        $totalRows = ($_SESSION['role'] === 'lead') ? $pagination['leadRows'] : $pagination['myRows'];
-                        $totalPages = ($_SESSION['role'] === 'lead') ? $pagination['leadPages'] : $pagination['myPages'];
-                        $currentPage = $pagination['currentPage'];
-
-                        if ($totalPages > 1):
-                        ?>
-                            <div class="pagination">
-                                <?php if ($currentPage > 1): ?>
-                                    <a href="?<?= http_build_query(array_merge($_GET, ['page' => $currentPage - 1])) ?>" class="page-link prev">← Prev</a>
-                                <?php endif; ?>
-
-                                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                    <?php if ($i == $currentPage): ?>
-                                        <span class="page-link active"><?= $i ?></span>
-                                    <?php else: ?>
-                                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>" class="page-link"><?= $i ?></a>
-                                    <?php endif; ?>
-                                <?php endfor; ?>
-
-                                <?php if ($currentPage < $totalPages): ?>
-                                    <a href="?<?= http_build_query(array_merge($_GET, ['page' => $currentPage + 1])) ?>" class="page-link next">Next →</a>
-                                <?php endif; ?>
-                            </div>
-                            <p class="pagination-info">Showing <?= min(($currentPage - 1) * $perPage + 1, $totalRows) ?> – <?= min($currentPage * $perPage, $totalRows) ?> of <?= $totalRows ?> tasks</p>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -436,7 +327,7 @@ require_once 'configs/header.php';
                         </div>
                         <div class="fw-grid">
                             <?php foreach ($firmware_overview as $fw): ?>
-                                <div class="fw-card">
+                                <div class="fw-card tooltip-trigger" data-tip="View History" onclick="openFwModal(<?= $fw['printer_id'] ?>, '<?= htmlspecialchars($fw['model'], ENT_QUOTES) ?>')">
                                     <div class="fw-model" style="display: flex; align-items: center; gap: 8px;">
                                         <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden;">
                                             <?= Helper::renderPrinterImage($fw['printer_path'] ?? null, $fw['model'], 14) ?>
@@ -543,6 +434,46 @@ require_once 'configs/header.php';
 
         </div>
     </div>
+
+    <div class="modal-overlay" id="fwModal">
+        <div class="modal-box" style="max-width: 480px;">
+            
+            <div class="modal-header">
+                <h3 style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-symbols-outlined" style="color:var(--primary);">memory</span>
+                    <span id="fwModalTitle">Firmware History</span>
+                </h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('fwModal')" title="Close">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="modal-body" style="padding: 0;">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border-radius: 0 0 16px 16px;">
+                    <table class="d-table fw-modal-table" style="margin: 0; border: none;">
+                        <thead style="position: sticky; top: 0; z-index: 10;">
+                            <tr>
+                                <th style="cursor:pointer; user-select:none; width: 50%;" onclick="sortFw('branch')">
+                                    <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem;">
+                                        Branch <span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);" id="sortIcon_branch">arrow_downward</span>
+                                    </div>
+                                </th>
+                                <th style="cursor:pointer; user-select:none; width: 50%;" onclick="sortFw('trunk')">
+                                    <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem;">
+                                        Trunk <span class="material-symbols-outlined" style="font-size:16px; color:var(--text-muted);" id="sortIcon_trunk">arrow_downward</span>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="fwModalBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
     <?php
     function time_ago($datetime)
     {
@@ -553,6 +484,7 @@ require_once 'configs/header.php';
         return floor($interval / 86400) . 'd ago';
     }
     ?>
+
     <script>
         // ── Row Toggle ───────────────────────────────────────
         function toggleRow(rowId, triggerElement) {
@@ -560,12 +492,10 @@ require_once 'configs/header.php';
             const chevron = document.getElementById('chev-' + rowId);
             const isOpen = wrapper.classList.contains('open');
 
-            // Close all
             document.querySelectorAll('.accordion-wrapper.open').forEach(el => el.classList.remove('open'));
             document.querySelectorAll('.chevron-icon.open').forEach(el => el.classList.remove('open'));
             document.querySelectorAll('.main-row.is-open').forEach(el => el.classList.remove('is-open'));
 
-            // Open target if it wasn't already open
             if (!isOpen) {
                 wrapper.classList.add('open');
                 if (chevron) chevron.classList.add('open');
@@ -591,32 +521,21 @@ require_once 'configs/header.php';
         }
         attachTooltips();
 
-        // ── AJAX Filter & Pagination ─────────────────────────
+        // ── AJAX Pagination ─────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
-            const filterForm = document.getElementById('ajax-filter-form');
             const tasksContainer = document.getElementById('tasks-container');
-
-            if (!filterForm || !tasksContainer) return;
 
             function loadData(url) {
                 window.showLoader();
-                fetch(url, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                     .then(res => res.text())
                     .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
+                        const doc = new DOMParser().parseFromString(html, 'text/html');
                         const newContainer = doc.getElementById('tasks-container');
-                        if (newContainer) {
-                            tasksContainer.innerHTML = newContainer.innerHTML;
-                        }
+                        if (newContainer) tasksContainer.innerHTML = newContainer.innerHTML;
 
                         window.history.pushState({}, '', url);
-                        attachTooltips(); // Reattach tooltips to new DOM elements
+                        attachTooltips(); 
                         window.hideLoader();
                     })
                     .catch(err => {
@@ -625,26 +544,7 @@ require_once 'configs/header.php';
                     });
             }
 
-            filterForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const url = new URL(window.location.href);
-                const formData = new FormData(this);
-                url.searchParams.set('start_date', formData.get('start_date'));
-                url.searchParams.set('end_date', formData.get('end_date'));
-                url.searchParams.set('type', formData.get('type'));
-                url.searchParams.set('page', '1'); // Reset to page 1 on filter
-                loadData(url);
-            });
-
-            document.getElementById('reset-filter').addEventListener('click', function(e) {
-                e.preventDefault();
-                document.getElementById('start_date').value = '<?= date('Y-m-d') ?>';
-                document.getElementById('end_date').value = '';
-                document.getElementById('type').value = '';
-                filterForm.dispatchEvent(new Event('submit'));
-            });
-
-            // Delegate pagination clicks inside container
+            // Capture Page Links and Rows-Per-Page Selects
             document.addEventListener('click', function(e) {
                 const link = e.target.closest('.page-link');
                 if (link && link.tagName === 'A') {
@@ -652,19 +552,89 @@ require_once 'configs/header.php';
                     loadData(link.href);
                 }
             });
+
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('per-page-select')) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('per_page', e.target.value);
+                    url.searchParams.set('page', '1');
+                    loadData(url);
+                }
+            });
         });
+
+        // ── Firmware Modal Logic ─────────────────────────
+        let fwData = { branch: [], trunk: [] };
+        let sortState = { branch: 'desc', trunk: 'desc' };
+
+        function openFwModal(printerId, printerName) {
+            document.getElementById('fwModalTitle').textContent = printerName;
+            document.getElementById('fwModalBody').innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px;"><div class="loader-spinner"></div></td></tr>';
+            openModal('fwModal');
+
+            fetch(`index.php?fetch_firmware_history=1&printer_id=${printerId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        fwData.branch = data.branch;
+                        fwData.trunk = data.trunk;
+                        sortState = { branch: 'desc', trunk: 'desc' }; // Reset sort
+                        renderFwTable();
+                    } else {
+                        document.getElementById('fwModalBody').innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--error); padding: 40px;">Failed to load data.</td></tr>';
+                    }
+                });
+        }
+
+        function sortFw(column) {
+            // Flip state
+            sortState[column] = sortState[column] === 'desc' ? 'asc' : 'desc';
+            
+            // Update Icons
+            document.getElementById('sortIcon_branch').style.color = column === 'branch' ? 'var(--primary)' : 'var(--text-muted)';
+            document.getElementById('sortIcon_branch').textContent = sortState.branch === 'desc' ? 'arrow_downward' : 'arrow_upward';
+            
+            document.getElementById('sortIcon_trunk').style.color = column === 'trunk' ? 'var(--primary)' : 'var(--text-muted)';
+            document.getElementById('sortIcon_trunk').textContent = sortState.trunk === 'desc' ? 'arrow_downward' : 'arrow_upward';
+
+            // JS Memory Sort
+            fwData[column].reverse();
+            renderFwTable();
+        }
+
+        function renderFwTable() {
+            const tbody = document.getElementById('fwModalBody');
+            tbody.innerHTML = '';
+            
+            const maxRows = Math.max(fwData.branch.length, fwData.trunk.length);
+            
+            if (maxRows === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; font-style:italic; color:var(--text-muted); padding: 40px;">No firmware history found.</td></tr>';
+                return;
+            }
+
+            for (let i = 0; i < maxRows; i++) {
+                const bVal = fwData.branch[i] || '-';
+                const tVal = fwData.trunk[i] || '-';
+                
+                const bStyle = bVal === '-' ? 'color:var(--border);' : 'font-family:var(--font-mono); font-weight:600; color:var(--text-main);';
+                const tStyle = tVal === '-' ? 'color:var(--border);' : 'font-family:var(--font-mono); font-weight:600; color:var(--text-main);';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="${bStyle}">${bVal}</td>
+                        <td style="${tStyle}">${tVal}</td>
+                    </tr>
+                `;
+            }
+        }
 
         // ── Custom Analytical Chart Logic ──────────────────────
         const rawData = <?= json_encode($chart_data) ?>;
         let chartInstance = null;
 
-        // Custom Semantic Colors matching Theme/Image
         const colors = {
-            pass: '#10b981',    // Green
-            fail: '#ef4444',    // Red
-            blocked: '#f59e0b', // Yellow
-            na: '#6b7280',      // Dark Grey
-            pending: '#cbd5e1'  // Light Grey
+            pass: '#10b981', fail: '#ef4444', blocked: '#f59e0b', na: '#6b7280', pending: '#cbd5e1' 
         };
         const chartColorArray = [colors.pass, colors.fail, colors.blocked, colors.na, colors.pending];
 
@@ -686,32 +656,15 @@ require_once 'configs/header.php';
             const naPct = total > 0 ? Math.round((na / total) * 100) : 0;
             const pendPct = total > 0 ? Math.round((pending / total) * 100) : 0;
 
-            // 1. Inject Custom HTML Legend
             const legendHtml = `
-                <div class="leg-item">
-                    <span class="leg-color" style="background:${colors.pending};"></span>
-                    <div><strong>${pending} Pending</strong><span>${pendPct}% set to Pending</span></div>
-                </div>
-                <div class="leg-item">
-                    <span class="leg-color" style="background:${colors.pass};"></span>
-                    <div><strong>${passed} Passed</strong><span>${passPct}% set to Passed</span></div>
-                </div>
-                <div class="leg-item">
-                    <span class="leg-color" style="background:${colors.blocked};"></span>
-                    <div><strong>${blocked} Blocked</strong><span>${blockPct}% set to Blocked</span></div>
-                </div>
-                <div class="leg-item">
-                    <span class="leg-color" style="background:${colors.fail};"></span>
-                    <div><strong>${failed} Failed</strong><span>${failPct}% set to Failed</span></div>
-                </div>
-                <div class="leg-item">
-                    <span class="leg-color" style="background:${colors.na};"></span>
-                    <div><strong>${na} N/A</strong><span>${naPct}% set to N/A</span></div>
-                </div>
+                <div class="leg-item"><span class="leg-color" style="background:${colors.pending};"></span><div><strong>${pending} Pending</strong><span>${pendPct}% set to Pending</span></div></div>
+                <div class="leg-item"><span class="leg-color" style="background:${colors.pass};"></span><div><strong>${passed} Passed</strong><span>${passPct}% set to Passed</span></div></div>
+                <div class="leg-item"><span class="leg-color" style="background:${colors.blocked};"></span><div><strong>${blocked} Blocked</strong><span>${blockPct}% set to Blocked</span></div></div>
+                <div class="leg-item"><span class="leg-color" style="background:${colors.fail};"></span><div><strong>${failed} Failed</strong><span>${failPct}% set to Failed</span></div></div>
+                <div class="leg-item"><span class="leg-color" style="background:${colors.na};"></span><div><strong>${na} N/A</strong><span>${naPct}% set to N/A</span></div></div>
             `;
             document.getElementById('customChartLegend').innerHTML = legendHtml;
 
-            // 2. Inject Custom HTML Summary
             const summaryHtml = `
                 <div class="summary-val">${passPct}%</div>
                 <div class="summary-label">passed</div>
@@ -719,11 +672,8 @@ require_once 'configs/header.php';
             `;
             document.getElementById('customChartSummary').innerHTML = summaryHtml;
 
-            // 3. Render Solid Pie Chart
             const ctx = document.getElementById('progressChart').getContext('2d');
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
+            if (chartInstance) chartInstance.destroy();
 
             chartInstance = new Chart(ctx, {
                 type: 'pie',
@@ -738,34 +688,23 @@ require_once 'configs/header.php';
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false // We use our custom HTML legend
-                        },
-                        tooltip: {
-                            bodyFont: { family: 'DM Sans' },
-                            titleFont: { family: 'DM Sans', weight: '700' }
-                        }
+                        legend: { display: false },
+                        tooltip: { bodyFont: { family: 'DM Sans' }, titleFont: { family: 'DM Sans', weight: '700' } }
                     }
                 }
             });
         }
 
         window.selectChartPrinter = function(index) {
-            document.querySelectorAll('#chartPrinterSelect .p-card').forEach(card => {
-                card.classList.remove('p-active');
-            });
+            document.querySelectorAll('#chartPrinterSelect .p-card').forEach(card => card.classList.remove('p-active'));
             const activeCard = document.querySelector(`#chartPrinterSelect .p-card[data-idx="${index}"]`);
             if (activeCard) activeCard.classList.add('p-active');
-            
             renderChart(index);
         };
 
-        if (rawData && rawData.length > 0) {
-            renderChart(0);
-        }
+        if (rawData && rawData.length > 0) renderChart(0);
     </script>
 </body>
 </html>

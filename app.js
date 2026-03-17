@@ -3,15 +3,15 @@
 // ==========================================
 const initTheme = () => {
     let savedTheme = localStorage.getItem('track-manager-theme');
-    
+
     // If nothing is saved, detect the OS System Theme
     if (!savedTheme) {
         savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
-    
+
     // Apply immediately to the HTML tag
     document.documentElement.setAttribute('data-theme', savedTheme);
-    
+
     // Update the UI Swatches to show which one is active
     updateThemeUI(savedTheme);
 };
@@ -34,13 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.theme-swatch').forEach(swatch => {
         swatch.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevents dropdown from closing when selecting a theme
-            
+
             const selectedTheme = swatch.dataset.setTheme;
-            
+
             // Set HTML attribute and save to LocalStorage
             document.documentElement.setAttribute('data-theme', selectedTheme);
             localStorage.setItem('track-manager-theme', selectedTheme);
-            
+
             // Update the rings around the swatches
             updateThemeUI(selectedTheme);
         });
@@ -57,7 +57,7 @@ class EnhancedDropdown {
     constructor(element) {
         this.el = element;
         this.config = JSON.parse(this.el.dataset.config);
-        
+
         // DOM Elements
         this.trigger = this.el.querySelector('.enh-trigger');
         this.content = this.el.querySelector('.enh-trigger-content');
@@ -66,24 +66,24 @@ class EnhancedDropdown {
         this.optionsContainer = this.el.querySelector('.enh-options');
         this.options = Array.from(this.el.querySelectorAll('.enh-option'));
         this.hiddenContainer = this.el.querySelector('.enh-hidden-inputs');
-        
+
         this.createOpt = this.el.querySelector('.enh-create-opt');
         this.createText = this.el.querySelector('.enh-create-text');
-        
+
         // State
         this.isOpen = false;
         this.selectedValues = this.getInitialSelected();
-        
+
         this.init();
     }
 
     init() {
         this.renderTrigger();
-        
+
         // Events
         this.trigger.addEventListener('click', (e) => {
             // Ignore click if clicking a chip close button
-            if(e.target.closest('.enh-chip-close')) return;
+            if (e.target.closest('.enh-chip-close')) return;
             this.toggle();
         });
 
@@ -99,7 +99,7 @@ class EnhancedDropdown {
         this.optionsContainer.addEventListener('click', (e) => {
             const opt = e.target.closest('.enh-option');
             if (opt) this.handleSelect(opt.dataset.value, opt.querySelector('.enh-opt-label').textContent);
-            
+
             const createOpt = e.target.closest('.enh-create-opt');
             if (createOpt) this.handleCreate();
         });
@@ -139,9 +139,9 @@ class EnhancedDropdown {
     open() {
         // Close other open dropdowns first
         document.querySelectorAll('.enh-dropdown').forEach(el => {
-            if(el !== this.el) el.classList.remove('open');
+            if (el !== this.el) el.classList.remove('open');
             const menu = el.querySelector('.enh-menu');
-            if(menu && el !== this.el) {
+            if (menu && el !== this.el) {
                 menu.classList.add('hidden');
                 menu.classList.remove('drop-up'); // Reset position
             }
@@ -149,12 +149,12 @@ class EnhancedDropdown {
 
         this.isOpen = true;
         this.el.classList.add('open');
-        
+
         // --- SMART POSITIONING LOGIC ---
         // Temporarily remove hidden to calculate actual height
-        this.menu.style.visibility = 'hidden'; 
+        this.menu.style.visibility = 'hidden';
         this.menu.classList.remove('hidden');
-        
+
         const triggerRect = this.trigger.getBoundingClientRect();
         const menuHeight = this.menu.offsetHeight;
         const spaceBelow = window.innerHeight - triggerRect.bottom;
@@ -168,8 +168,8 @@ class EnhancedDropdown {
         }
 
         // Restore visibility and animate in
-        this.menu.style.visibility = ''; 
-        
+        this.menu.style.visibility = '';
+
         this.searchInput.value = '';
         this.filterOptions();
         setTimeout(() => this.searchInput.focus(), 50);
@@ -189,7 +189,7 @@ class EnhancedDropdown {
         this.options.forEach(opt => {
             const label = opt.querySelector('.enh-opt-label').textContent.toLowerCase();
             const val = opt.dataset.value.toLowerCase();
-            
+
             if (label.includes(query) || val.includes(query)) {
                 opt.classList.remove('hidden');
                 visibleCount++;
@@ -346,23 +346,49 @@ function dismissToast(toast) {
 }
 
 
-    function toggleAdminSidebar() {
-        const sidebar = document.getElementById('adminSidebar');
-        const overlay = document.getElementById('adminOverlay');
-        if (sidebar && overlay) {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('show');
-        }
+function toggleAdminSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('adminOverlay');
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('show');
     }
+}
 
-    function openModal(id) {
-        document.getElementById(id).classList.add('show');
+function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
     }
-    function closeModal(id) {
-        document.getElementById(id).classList.remove('show');
-    }
+}
 
-    
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+}
+
+// Close on outside click
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('modal-overlay')) {
+        e.target.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+});
+
+// Close on Escape key
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.show').forEach(modal => {
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+        });
+    }
+});
+
 // 1. Initialize PHP-generated Toasts on Page Load
 document.addEventListener('DOMContentLoaded', () => {
     const toast = document.querySelector('.flash-toast:not(.js-dynamic-toast)');
@@ -375,13 +401,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function showDynamicToast(message, type = 'error') {
     // Remove old dynamic toast if one is already showing
     const existing = document.querySelector('.flash-toast.js-dynamic-toast');
-    if(existing) dismissToast(existing);
+    if (existing) dismissToast(existing);
 
     const toast = document.createElement('div');
     toast.className = `flash-toast js-dynamic-toast ${type}`;
-    
+
     // Choose the SVG based on the type
-    const iconHtml = type === 'error' 
+    const iconHtml = type === 'error'
         ? `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16"><path fill="currentColor" d="M8 1C4.14 1 1 4.14 1 8s3.14 7 7 7s7-3.14 7-7s-3.14-7-7-7m0 13c-3.309 0-6-2.691-6-6s2.691-6 6-6s6 2.691 6 6s-2.691 6-6 6m2.854-8.146L8.708 8l2.146 2.146a.5.5 0 0 1-.708.707L8 8.707l-2.146 2.146a.5.5 0 0 1-.708 0a.5.5 0 0 1 0-.707L7.292 8L5.146 5.854a.5.5 0 0 1 .707-.707l2.146 2.146l2.146-2.146a.5.5 0 0 1 .707.707z" stroke-width="0.2" stroke="currentColor"></path></svg>`
         : `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"><path d="m14.25 8.75c-.5 2.5-2.3849 4.85363-5.03069 5.37991-2.64578.5263-5.33066-.7044-6.65903-3.0523-1.32837-2.34784-1.00043-5.28307.81336-7.27989 1.81379-1.99683 4.87636-2.54771 7.37636-1.54771"/><polyline points="5.75 7.75 8.25 10.25 14.25 3.75"/></g></svg>`;
 
@@ -394,43 +420,43 @@ function showDynamicToast(message, type = 'error') {
         </button>
         <div class="toast-progress"></div>
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     // Kick off the lifecycle (slide in, start 7s timer)
     initToast(toast);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     // --- 1. Workflow Toggle ---
     const typeSelect = document.getElementById('testingType');
-    
+
     // Initial Run
-    if(typeSelect) {
+    if (typeSelect) {
         toggleWorkflow(typeSelect.value);
         typeSelect.addEventListener('change', (e) => toggleWorkflow(e.target.value));
     }
 
     function toggleWorkflow(type) {
         const isReg = (type === 'Regression');
-        
+
         // Toggle Global Visibility Classes
         document.querySelectorAll('.smoke-area').forEach(el => {
-            if(isReg) el.classList.add('hidden');
+            if (isReg) el.classList.add('hidden');
             else {
                 // Only show if parent card is selected
                 const card = el.closest('.printer-card');
-                if(card.classList.contains('selected')) el.classList.remove('hidden');
+                if (card.classList.contains('selected')) el.classList.remove('hidden');
             }
         });
 
         document.querySelectorAll('.regression-area').forEach(el => {
-            if(!isReg) el.classList.add('hidden');
+            if (!isReg) el.classList.add('hidden');
             else {
                 // Only show if parent card is selected
                 const card = el.closest('.printer-card');
-                if(card.classList.contains('selected')) el.classList.remove('hidden');
+                if (card.classList.contains('selected')) el.classList.remove('hidden');
             }
         });
     }
@@ -469,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Prevent Duplicates
         if (list.querySelector(`input[value="${userId}"]`)) {
             // Optional: Shake animation or toast here
-            alert('User already assigned'); 
+            alert('User already assigned');
             return;
         }
 
@@ -506,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const row = btn.closest('.tester-row');
         const radio = row.querySelector('input[type="radio"]');
         const wasMain = radio.checked;
-        
+
         row.remove();
 
         // Smart Reassignment: If Main left, promote the first Support
@@ -528,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rows.forEach(row => {
             const radio = row.querySelector('input[type="radio"]');
             const badge = row.querySelector('.role-badge');
-            
+
             if (radio.checked) {
                 row.classList.add('is-main');
                 badge.textContent = 'Main';
@@ -552,29 +578,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loader) loader.classList.remove('active');
     };
 
-//    Auto-Loader for all standard form submissions:
+    //    Auto-Loader for all standard form submissions:
     document.addEventListener('submit', (e) => {
-        if(!e.target.classList.contains('no-loader')) {
+        if (!e.target.classList.contains('no-loader')) {
             window.showLoader();
         }
     });
 
-// --- PROFILE DROPDOWN LOGIC ---
-window.toggleProfileMenu = function(event) {
-    event.stopPropagation();
-    const menu = document.getElementById('profileMenu');
-    const btn = document.getElementById('profileDropdownBtn');
-    if (menu) menu.classList.toggle('show');
-    if (btn) btn.classList.toggle('active');
-};
+    // --- PROFILE DROPDOWN LOGIC ---
+    window.toggleProfileMenu = function (event) {
+        event.stopPropagation();
+        const menu = document.getElementById('profileMenu');
+        const btn = document.getElementById('profileDropdownBtn');
+        if (menu) menu.classList.toggle('show');
+        if (btn) btn.classList.toggle('active');
+    };
 
-// Close dropdown when clicking outside
-document.addEventListener('click', function(event) {
-    const menu = document.getElementById('profileMenu');
-    const btn = document.getElementById('profileDropdownBtn');
-    if (menu && menu.classList.contains('show') && !menu.contains(event.target)) {
-        menu.classList.remove('show');
-        if (btn) btn.classList.remove('active');
-    }
-});
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (event) {
+        const menu = document.getElementById('profileMenu');
+        const btn = document.getElementById('profileDropdownBtn');
+        if (menu && menu.classList.contains('show') && !menu.contains(event.target)) {
+            menu.classList.remove('show');
+            if (btn) btn.classList.remove('active');
+        }
+    });
 });
