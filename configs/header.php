@@ -19,6 +19,7 @@ if (!isset($TITLE)) {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="app.css">
     
+    <script src="app.js" defer></script>
     <script>
         let savedTheme = localStorage.getItem('track-manager-theme');
         if (!savedTheme) {

@@ -50,6 +50,271 @@ document.addEventListener('DOMContentLoaded', () => {
 // Immediately invoke initTheme so it runs before the body even finishes rendering
 initTheme();
 
+// ==========================================================================
+// ENHANCED DROPDOWN CONTROLLER
+// ==========================================================================
+class EnhancedDropdown {
+    constructor(element) {
+        this.el = element;
+        this.config = JSON.parse(this.el.dataset.config);
+        
+        // DOM Elements
+        this.trigger = this.el.querySelector('.enh-trigger');
+        this.content = this.el.querySelector('.enh-trigger-content');
+        this.menu = this.el.querySelector('.enh-menu');
+        this.searchInput = this.el.querySelector('.enh-search');
+        this.optionsContainer = this.el.querySelector('.enh-options');
+        this.options = Array.from(this.el.querySelectorAll('.enh-option'));
+        this.hiddenContainer = this.el.querySelector('.enh-hidden-inputs');
+        
+        this.createOpt = this.el.querySelector('.enh-create-opt');
+        this.createText = this.el.querySelector('.enh-create-text');
+        
+        // State
+        this.isOpen = false;
+        this.selectedValues = this.getInitialSelected();
+        
+        this.init();
+    }
+
+    init() {
+        this.renderTrigger();
+        
+        // Events
+        this.trigger.addEventListener('click', (e) => {
+            // Ignore click if clicking a chip close button
+            if(e.target.closest('.enh-chip-close')) return;
+            this.toggle();
+        });
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (this.isOpen && !this.el.contains(e.target)) this.close();
+        });
+
+        // Search filtering
+        this.searchInput.addEventListener('input', () => this.filterOptions());
+
+        // Option clicks
+        this.optionsContainer.addEventListener('click', (e) => {
+            const opt = e.target.closest('.enh-option');
+            if (opt) this.handleSelect(opt.dataset.value, opt.querySelector('.enh-opt-label').textContent);
+            
+            const createOpt = e.target.closest('.enh-create-opt');
+            if (createOpt) this.handleCreate();
+        });
+
+        // Keyboard support (Enter in search)
+        this.searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // If create is visible and active
+                if (this.config.creatable && this.createOpt && !this.createOpt.classList.contains('hidden')) {
+                    this.handleCreate();
+                } else {
+                    // Select first visible option
+                    const firstVisible = this.options.find(o => !o.classList.contains('hidden'));
+                    if (firstVisible) this.handleSelect(firstVisible.dataset.value, firstVisible.querySelector('.enh-opt-label').textContent);
+                }
+            }
+        });
+    }
+
+    getInitialSelected() {
+        return Array.from(this.hiddenContainer.querySelectorAll('input')).map(inp => ({
+            value: inp.value,
+            label: this.getLabelForValue(inp.value)
+        }));
+    }
+
+    getLabelForValue(val) {
+        const opt = this.options.find(o => o.dataset.value === val);
+        return opt ? opt.querySelector('.enh-opt-label').textContent : val;
+    }
+
+    toggle() {
+        this.isOpen ? this.close() : this.open();
+    }
+
+    open() {
+        // Close other open dropdowns first
+        document.querySelectorAll('.enh-dropdown').forEach(el => {
+            if(el !== this.el) el.classList.remove('open');
+            const menu = el.querySelector('.enh-menu');
+            if(menu && el !== this.el) {
+                menu.classList.add('hidden');
+                menu.classList.remove('drop-up'); // Reset position
+            }
+        });
+
+        this.isOpen = true;
+        this.el.classList.add('open');
+        
+        // --- SMART POSITIONING LOGIC ---
+        // Temporarily remove hidden to calculate actual height
+        this.menu.style.visibility = 'hidden'; 
+        this.menu.classList.remove('hidden');
+        
+        const triggerRect = this.trigger.getBoundingClientRect();
+        const menuHeight = this.menu.offsetHeight;
+        const spaceBelow = window.innerHeight - triggerRect.bottom;
+        const spaceAbove = triggerRect.top;
+
+        // If it doesn't fit below, AND there is more space above, drop it UP.
+        if (spaceBelow < (menuHeight + 20) && spaceAbove > spaceBelow) {
+            this.menu.classList.add('drop-up');
+        } else {
+            this.menu.classList.remove('drop-up');
+        }
+
+        // Restore visibility and animate in
+        this.menu.style.visibility = ''; 
+        
+        this.searchInput.value = '';
+        this.filterOptions();
+        setTimeout(() => this.searchInput.focus(), 50);
+    }
+
+    close() {
+        this.isOpen = false;
+        this.el.classList.remove('open');
+        this.menu.classList.add('hidden');
+    }
+
+    filterOptions() {
+        const query = this.searchInput.value.toLowerCase().trim();
+        let hasExactMatch = false;
+        let visibleCount = 0;
+
+        this.options.forEach(opt => {
+            const label = opt.querySelector('.enh-opt-label').textContent.toLowerCase();
+            const val = opt.dataset.value.toLowerCase();
+            
+            if (label.includes(query) || val.includes(query)) {
+                opt.classList.remove('hidden');
+                visibleCount++;
+                if (label === query || val === query) hasExactMatch = true;
+            } else {
+                opt.classList.add('hidden');
+            }
+        });
+
+        // Handle Group Labels visibility
+        this.el.querySelectorAll('.enh-optgroup-label').forEach(label => {
+            let nextElement = label.nextElementSibling;
+            let hasVisibleSiblings = false;
+            while (nextElement && nextElement.classList.contains('enh-option')) {
+                if (!nextElement.classList.contains('hidden')) { hasVisibleSiblings = true; break; }
+                nextElement = nextElement.nextElementSibling;
+            }
+            label.style.display = hasVisibleSiblings ? 'block' : 'none';
+        });
+
+        // Handle Create Option Logic
+        if (this.config.creatable && this.createOpt) {
+            if (query.length > 0 && !hasExactMatch) {
+                this.createOpt.classList.remove('hidden');
+                this.createText.textContent = this.searchInput.value;
+            } else {
+                this.createOpt.classList.add('hidden');
+            }
+        }
+    }
+
+    handleSelect(value, label) {
+        const existingIdx = this.selectedValues.findIndex(item => item.value === value);
+
+        if (this.config.multiple) {
+            if (existingIdx > -1) {
+                this.selectedValues.splice(existingIdx, 1); // Remove
+            } else {
+                this.selectedValues.push({ value, label }); // Add
+            }
+            // Keep menu open for multiple, just refocus search
+            this.searchInput.focus();
+        } else {
+            this.selectedValues = [{ value, label }];
+            this.close();
+        }
+
+        this.updateDOM();
+    }
+
+    handleCreate() {
+        const newVal = this.searchInput.value.trim();
+        if (!newVal) return;
+
+        // Add to DOM as a new option so it persists
+        const optHtml = `
+            <div class='enh-option' data-value='${newVal}'>
+                ${this.config.multiple ? "<div class='enh-checkbox'><span class='material-symbols-outlined'>check</span></div>" : ""}
+                <span class='enh-opt-label'>${newVal}</span>
+            </div>`;
+        this.optionsContainer.insertAdjacentHTML('beforeend', optHtml);
+        this.options = Array.from(this.el.querySelectorAll('.enh-option')); // Refresh cache
+
+        this.handleSelect(newVal, newVal);
+    }
+
+    removeValue(value) {
+        this.selectedValues = this.selectedValues.filter(item => item.value !== value);
+        this.updateDOM();
+    }
+
+    updateDOM() {
+        // 1. Update Hidden Inputs for Form Submission
+        this.hiddenContainer.innerHTML = '';
+        this.selectedValues.forEach(item => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = this.config.name;
+            inp.value = item.value;
+            this.hiddenContainer.appendChild(inp);
+        });
+
+        // 2. Update Options UI (checkmarks/bolding)
+        this.options.forEach(opt => {
+            const isSelected = this.selectedValues.some(item => item.value === opt.dataset.value);
+            opt.classList.toggle('selected', isSelected);
+        });
+
+        // 3. Update Trigger UI (Chips or Text)
+        this.renderTrigger();
+    }
+
+    renderTrigger() {
+        this.content.innerHTML = '';
+        if (this.selectedValues.length === 0) {
+            this.content.innerHTML = `<span class="enh-placeholder">${this.config.placeholder}</span>`;
+            return;
+        }
+
+        if (this.config.multiple) {
+            this.selectedValues.forEach(item => {
+                const chip = document.createElement('div');
+                chip.className = 'enh-chip';
+                chip.innerHTML = `
+                    ${item.label}
+                    <span class="material-symbols-outlined enh-chip-close" data-val="${item.value}">close</span>
+                `;
+                // Add remove listener to the close button specifically
+                chip.querySelector('.enh-chip-close').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Stop dropdown from opening
+                    this.removeValue(e.target.dataset.val);
+                });
+                this.content.appendChild(chip);
+            });
+        } else {
+            this.content.innerHTML = `<span class="enh-single-val">${this.selectedValues[0].label}</span>`;
+        }
+    }
+}
+
+// Auto-initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.enh-dropdown').forEach(el => new EnhancedDropdown(el));
+});
+
 // ==========================================
 //   FLASH MESSAGE (7s Timer & Close)
 // ==========================================

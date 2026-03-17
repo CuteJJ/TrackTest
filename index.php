@@ -553,8 +553,6 @@ require_once 'configs/header.php';
         return floor($interval / 86400) . 'd ago';
     }
     ?>
-
-    <script src="app.js"></script>
     <script>
         // ── Row Toggle ───────────────────────────────────────
         function toggleRow(rowId, triggerElement) {

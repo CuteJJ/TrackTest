@@ -84,6 +84,108 @@ class Helper {
         }
     }
 
+    /**
+     * Enhanced Dropdown Component
+     * * @param array $config {
+     * @type string $id          Unique DOM ID
+     * @type string $name        Form input name (e.g. 'fw_curr' or 'types[]')
+     * @type string $placeholder Text to show when empty
+     * @type bool   $multiple    Allow multiple selections (Checkboxes & Chips)
+     * @type bool   $creatable   Allow user to type and press Enter to create new option
+     * @type array  $options     Flat ['A', 'B'] or Grouped ['Group1' => ['A'], 'Group2' => ['B']]
+     * @type mixed  $selected    String or Array of currently selected values
+     * }
+     */
+    public static function enhancedDropdown(array $config) {
+        $id = $config['id'] ?? uniqid('dd_');
+        $name = $config['name'] ?? $id;
+        $placeholder = $config['placeholder'] ?? 'Select...';
+        $multiple = $config['multiple'] ?? false;
+        $creatable = $config['creatable'] ?? false;
+        $options = $config['options'] ?? [];
+        $selected = $config['selected'] ?? ($multiple ? [] : '');
+        
+        if (!is_array($selected)) {
+            $selected = strlen((string)$selected) > 0 ? [$selected] : [];
+        }
+
+        // Pass config to JS via data attribute
+        $jsConfig = htmlspecialchars(json_encode([
+            'id' => $id,
+            'name' => $name,
+            'multiple' => $multiple,
+            'creatable' => $creatable,
+            'placeholder' => $placeholder
+        ]), ENT_QUOTES, 'UTF-8');
+
+        $html = "<div class='enh-dropdown' id='{$id}' data-config='{$jsConfig}'>";
+        
+        // Hidden inputs container (JS manages this)
+        $html .= "<div class='enh-hidden-inputs'>";
+        foreach ($selected as $val) {
+            $html .= "<input type='hidden' name='{$name}' value='" . htmlspecialchars($val) . "'>";
+        }
+        $html .= "</div>";
+
+        // Trigger UI
+        $html .= "<div class='enh-trigger' tabindex='0'>";
+        $html .= "<div class='enh-trigger-content'></div>"; // JS fills with text or chips
+        $html .= "<span class='material-symbols-outlined enh-chevron'>expand_more</span>";
+        $html .= "</div>";
+
+        // Popover Menu
+        $html .= "<div class='enh-menu hidden'>";
+        $html .= "<div class='enh-search-wrap'>";
+        $html .= "<span class='material-symbols-outlined'>search</span>";
+        $html .= "<input type='text' class='enh-search' placeholder='Search...'>";
+        $html .= "</div>";
+        
+        $html .= "<div class='enh-options'>";
+        
+        // Render Options
+        foreach ($options as $groupLabel => $groupOptions) {
+            if (is_array($groupOptions)) {
+                // It's a Group
+                $html .= "<div class='enh-optgroup-label'>" . htmlspecialchars($groupLabel) . "</div>";
+                foreach ($groupOptions as $val => $label) {
+                    // Handle sequential arrays
+                    if (is_int($val)) $val = $label; 
+                    $isSelected = in_array((string)$val, $selected) ? 'selected' : '';
+                    $html .= "<div class='enh-option {$isSelected}' data-value='" . htmlspecialchars($val) . "'>";
+                    if ($multiple) {
+                        $html .= "<div class='enh-checkbox'><span class='material-symbols-outlined'>check</span></div>";
+                    }
+                    $html .= "<span class='enh-opt-label'>" . htmlspecialchars($label) . "</span>";
+                    $html .= "</div>";
+                }
+            } else {
+                // It's a Flat Option
+                $val = is_int($groupLabel) ? $groupOptions : $groupLabel;
+                $label = $groupOptions;
+                $isSelected = in_array((string)$val, $selected) ? 'selected' : '';
+                $html .= "<div class='enh-option {$isSelected}' data-value='" . htmlspecialchars($val) . "'>";
+                if ($multiple) {
+                    $html .= "<div class='enh-checkbox'><span class='material-symbols-outlined'>check</span></div>";
+                }
+                $html .= "<span class='enh-opt-label'>" . htmlspecialchars($label) . "</span>";
+                $html .= "</div>";
+            }
+        }
+        
+        // Create Template (Hidden by default)
+        if ($creatable) {
+            $html .= "<div class='enh-create-opt hidden'>";
+            $html .= "<span class='material-symbols-outlined' style='color:var(--primary); font-size:18px;'>add_box</span> ";
+            $html .= "Create \"<span class='enh-create-text'></span>\"";
+            $html .= "<span class='enh-kb'>Enter ↵</span>";
+            $html .= "</div>";
+        }
+        
+        $html .= "</div></div></div>"; // Close options, menu, wrapper
+
+        return $html;
+    }
+
     public static function renderPrinterImage($path, $modelName, $iconSize = 24) {
         if (!empty($path) && (str_contains($path, '/') || str_contains($path, '.'))) {
             $safePath = htmlspecialchars($path);
