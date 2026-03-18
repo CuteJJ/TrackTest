@@ -280,6 +280,8 @@ class EnhancedDropdown {
 
         // 3. Update Trigger UI (Chips or Text)
         this.renderTrigger();
+
+        this.el.dispatchEvent(new CustomEvent('change', { bubbles: true }));
     }
 
     renderTrigger() {

@@ -3,447 +3,538 @@ require_once 'controllers/AssignmentsController.php';
 $TITLE = "Assignments | Track Manager";
 require_once 'configs/header.php';
 ?>
-    <style>
-    </style>
+<style>
+    /* --- Page Header --- */
+    .page-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-main);
+        letter-spacing: -0.5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* --- Unified SaaS Card --- */
+    .unified-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--border-radius);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 30px;
+    }
+
+    /* --- Table Control Bar --- */
+    .table-controls {
+        padding: 8px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        background: var(--bg-surface);
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+
+    .btn-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 38px;
+        padding: 0 14px;
+        background: var(--bg-body);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-main);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-control:hover {
+        background: var(--border);
+        color: var(--text-main);
+    }
+
+    .btn-control.ghost {
+        background: transparent;
+        color: var(--text-muted);
+        border-color: transparent;
+    }
+
+    .btn-control.ghost:hover {
+        background: var(--error-bg);
+        color: var(--error);
+    }
+
+    .btn-control .material-symbols-outlined {
+        font-size: 18px;
+    }
+
+    /* --- Right Filter Drawer UI --- */
+    .drawer-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 9998;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .drawer-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .filter-drawer {
+        position: fixed;
+        top: 0;
+        right: -400px;
+        width: 100%;
+        max-width: 360px;
+        height: 100vh;
+        background: var(--bg-surface);
+        z-index: 9999;
+        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column;
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-left: 1px solid var(--border);
+    }
+
+    .filter-drawer.open {
+        right: 0;
+    }
+
+    .drawer-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .drawer-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .drawer-header h3 .material-symbols-outlined {
+        color: var(--primary);
+    }
+
+    .drawer-body {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 24px;
+    }
+
+    .filter-group label {
+        font-size: 0.68rem;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        letter-spacing: 0.05em;
+    }
+
+    /* Date Inputs inside Drawer */
+    .date-flex {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .date-flex input {
+        flex: 1;
+        height: var(--input-height);
+        padding: 0 12px;
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: var(--border-radius);
+        background: var(--bg-body);
+        color: var(--text-main);
+        font-size: 0.85rem;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .date-flex input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.15);
+    }
+
+    /* Dark Mode Calendar Icon Fix */
+    [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+    [data-theme="midnight"] input[type="date"]::-webkit-calendar-picker-indicator,
+    [data-theme="catppuccin"] input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.8);
+        cursor: pointer;
+    }
+
+    /* --- OVERRIDE: Wrap Chips & Kill Horizontal Scroll in Drawer --- */
+    .drawer-body .enh-trigger {
+        height: auto !important;
+        min-height: var(--input-height) !important;
+        padding: 6px 14px !important;
+    }
+
+    .drawer-body .enh-trigger-content {
+        flex-wrap: wrap !important;
+        overflow-x: visible !important;
+        margin: 4px 0 !important;
+    }
+
+    .drawer-body .enh-chip {
+        white-space: normal !important;
+        height: auto;
+        line-height: 1.3;
+    }
+
+    /* --- Table Scroll Section --- */
+    .table-section {
+        overflow-x: auto;
+        width: 100%;
+        border-radius: 0 0 calc(var(--border-radius) - 1px) calc(var(--border-radius) - 1px);
+    }
+
+    .table-section::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .table-section::-webkit-scrollbar-track {
+        background: var(--bg-body);
+    }
+
+    .table-section::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+    }
+
+    .table-section::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+
+    .d-table {
+        width: 100%;
+        min-width: 1050px;
+        border-collapse: collapse;
+    }
+
+    .d-table th,
+    .d-table td {
+        white-space: nowrap !important;
+    }
+
+    /* Reduce the height of dropdown so the filter header dont block it */
+    .enh-menu {
+        max-height: 250px;
+    }
+
+    .modal-filter-reset-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-left: auto;
+        margin-right: 4px;
+    }
+
+    .modal-filter-reset-btn:hover {
+        color: var(--primary);
+    }
+
+    .modal-filter-reset-btn .material-symbols-outlined {
+        font-size: 20px;
+    }
+</style>
 <?php require_once 'configs/nav.php'; ?>
 
-    <div class="page-content-scroll">
-        <div class="dash-wrapper">
-            <div class="d-card">
-                <div class="d-card-header">
-                    <div class="d-card-title">
-                        <span class="material-symbols-outlined">task_alt</span>
-                        <?= $_SESSION['role'] === 'lead' ? 'Active Testing Tasks' : 'My Assignments' ?>
+<div class="page-content-scroll">
+    <div class="dash-wrapper" style="padding-top: 20px;">
+
+        <div class="page-title-row">
+            <h1 class="page-title">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: var(--primary);">assignment</span>
+                My Assignments
+            </h1>
+        </div>
+
+        <div class="unified-card">
+
+            <div class="table-controls">
+                <button type="button" class="btn-control ghost" onclick="confirmReset()">
+                    <span class="material-symbols-outlined">restart_alt</span> Reset
+                </button>
+                <button type="button" class="btn-control" onclick="toggleFilterDrawer()">
+                    <span class="material-symbols-outlined">tune</span> Filters
+                </button>
+            </div>
+
+            <div id="tasks-container">
+                <?php if (empty($my_tasks)): ?>
+                    <div class="empty-state" style="border:none; border-radius:0;">
+                        <span class="material-symbols-outlined">inbox_customize</span>
+                        <p>No assignments found matching your criteria.</p>
                     </div>
-                    <?php if ($_SESSION['role'] === 'lead'): ?>
-                        <a href="create_task.php" class="btn-mini">
-                            <span class="material-symbols-outlined">add</span> Create Task
-                        </a>
-                    <?php endif; ?>
-                </div>
-
-                <div class="d-card-body">
-                    <form method="get" class="filter-bar no-loader" id="ajax-filter-form">
-                        <div class="filter-group">
-                            <label for="start_date">From</label>
-                            <input type="date" id="start_date" name="start_date" value="<?= htmlspecialchars($_GET['start_date'] ?? date('Y-m-d')) ?>">
-                        </div>
-                        <div class="filter-group">
-                            <label for="end_date">To</label>
-                            <input type="date" id="end_date" name="end_date" value="<?= htmlspecialchars($_GET['end_date'] ?? '') ?>">
-                        </div>
-                        <div class="filter-group">
-                            <label for="type">Type</label>
-                            <select id="type" name="type">
-                                <option value="" <?= empty($_GET['type']) ? 'selected' : '' ?>>All</option>
-                                <option value="Smoke" <?= ($_GET['type'] ?? '') == 'Smoke' ? 'selected' : '' ?>>Smoke</option>
-                                <option value="Regression" <?= ($_GET['type'] ?? '') == 'Regression' ? 'selected' : '' ?>>Regression</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-mini" style="width: auto;">Apply Filters</button>
-                        <button type="button" id="reset-filter" class="btn-mini ghost" style="width: auto;">Reset</button>
-                    </form>
-
-                    <div id="tasks-container">
-                        <?php if ($_SESSION['role'] === 'lead'): ?>
-                            <?php if (empty($lead_tasks)): ?>
-                                <div class="empty-state">
-                                    <span class="material-symbols-outlined">inbox</span>
-                                    <p>No active tasks found matching criteria.</p>
-                                </div>
-                            <?php else: ?>
-                                <div class="table-responsive">
-                                    <table class="d-table">
-                                        <colgroup>
-                                            <col style="width:12%">
-                                            <col style="width:12%">
-                                            <col style="width:26%">
-                                            <col style="width:26%">
-                                            <col style="width:18%">
-                                            <col style="width:6%">
-                                        </colgroup>
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Type</th>
-                                                <th>Printer</th>
-                                                <th>Progress</th>
-                                                <th>Status</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($lead_tasks as $task): ?>
-                                                <?php
-                                                $is_complete = ($task['completed_cases'] >= $task['total_cases']) && ($task['total_cases'] > 0);
-                                                $percent = $task['total_cases'] > 0 ? round(($task['completed_cases'] / $task['total_cases']) * 100) : 0;
-                                                $rowId = "task_" . $task['task_id'] . "_" . $task['printer_id'];
-                                                $printerName = htmlspecialchars($task['model_name']);
-                                                ?>
-
-                                                <tr class="expand-trigger main-row" onclick="toggleRow('<?= $rowId ?>', this)">
-                                                    <td>
-                                                        <span class="mono" style="font-size:0.8rem; color:var(--text-muted);">
-                                                            <?= date('M d', strtotime($task['task_date'])) ?>
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge <?= $task['testing_type'] == 'Smoke' ? 'badge-smoke' : 'badge-reg' ?>">
-                                                            <?= htmlspecialchars($task['testing_type']) ?>
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <div style="display: flex; align-items: center; gap: 10px;">
-                                                            <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
-                                                                <?= Helper::renderPrinterImage($task['printer_path'] ?? null, $printerName, 16) ?>
-                                                            </div>
-                                                            <strong style="font-size:0.88rem;" title="<?= $printerName ?>"><?= $printerName ?></strong>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div class="prog-wrap">
-                                                            <div class="prog-meta">
-                                                                <span><?= $task['completed_cases'] ?>/<?= $task['total_cases'] ?></span>
-                                                                <span><?= $percent ?>%</span>
-                                                            </div>
-                                                            <div class="prog-track">
-                                                                <div class="prog-fill <?= $is_complete ? 'complete' : '' ?>" style="width:<?= $percent ?>%;"></div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <?php if ($task['overall_status'] == 'Pass'): ?>
-                                                            <span class="badge badge-pass">
-                                                                <span class="material-symbols-outlined">check_circle</span> PASSED
-                                                            </span>
-                                                        <?php elseif ($task['overall_status'] == 'Fail'): ?>
-                                                            <span class="badge badge-fail">
-                                                                <span class="material-symbols-outlined">cancel</span> FAILED
-                                                            </span>
-                                                        <?php elseif ($task['overall_status'] == 'Blocked'): ?>
-                                                            <span class="badge" style="background: var(--blocked-bg); color: var(--blocked); border: 1px solid var(--blocked);">
-                                                                <span class="material-symbols-outlined">block</span> BLOCKED
-                                                            </span>
-                                                        <?php elseif ($task['overall_status'] == 'N/A'): ?>
-                                                            <span class="badge" style="background: var(--na-bg); color: var(--na); border: 1px solid var(--na);">
-                                                                <span class="material-symbols-outlined">do_not_disturb_on</span> N/A
-                                                            </span>
-                                                        <?php else: ?>
-                                                            <span class="badge badge-pending">
-                                                                <span class="material-symbols-outlined">schedule</span> Pending
-                                                            </span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                    <td style="text-align:center;">
-                                                        <span class="material-symbols-outlined chevron-icon" id="chev-<?= $rowId ?>">expand_more</span>
-                                                    </td>
-                                                </tr>
-
-                                                <tr class="expanded-row">
-                                                    <td colspan="6">
-                                                        <div class="accordion-wrapper" id="<?= $rowId ?>">
-                                                            <div class="expanded-content">
-                                                                <div class="expand-detail">
-                                                                    <span class="expand-detail-label">Due Date</span>
-                                                                    <span class="expand-detail-value" style="font-family:var(--font-body);"><?= date('M d, Y', strtotime($task['due_date'])) ?></span>
-                                                                </div>
-                                                                <div class="expand-detail">
-                                                                    <span class="expand-detail-label">Target FW</span>
-                                                                    <span class="expand-detail-value" style="color:var(--primary);"><?= htmlspecialchars($task['fw_version_current']) ?></span>
-                                                                </div>
-                                                                <div class="expand-detail">
-                                                                    <span class="expand-detail-label">Branch</span>
-                                                                    <span class="expand-detail-value"><?= htmlspecialchars($task['fw_type']) ?></span>
-                                                                </div>
-                                                                <div class="expand-detail">
-                                                                    <span class="expand-detail-label">Prev / Rec FW</span>
-                                                                    <span class="expand-detail-value">
-                                                                        <span style="color:var(--text-muted); opacity:0.8;"><?= htmlspecialchars($task['fw_version_prev']) ?></span>
-                                                                        <span style="color:var(--border); margin:0 4px;">/</span>
-                                                                        <span style="color:var(--error);"><?= htmlspecialchars($task['fw_version_rec']) ?></span>
-                                                                    </span>
-                                                                </div>
-                                                                
-                                                                <div class="expand-actions">
-                                                                    <?php if ($task['testing_type'] == 'Smoke'): ?>
-                                                                        <?php if ($is_complete): ?>
-                                                                            <a href="report.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini ghost">
-                                                                                <span class="material-symbols-outlined">description</span> Report
-                                                                            </a>
-                                                                        <?php else: ?>
-                                                                            <span class="btn-mini disabled">
-                                                                                <span class="material-symbols-outlined">hourglass_top</span> In Progress
-                                                                            </span>
-                                                                        <?php endif; ?>
-                                                                    <?php endif; ?>
-                                                                    <span class="divider-line"></span>
-
-                                                                    <?php if ($task['testing_type'] == 'Regression'): ?>
-                                                                        <a href="<?= htmlspecialchars($task['regression_url'] ?? '#') ?>" target="_blank" class="icon-btn tooltip-trigger" data-tip="Open TestRail">
-                                                                            <span class="material-symbols-outlined">open_in_new</span>
-                                                                        </a>
-                                                                    <?php else: ?>
-                                                                        <a href="execute_task.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="icon-btn tooltip-trigger" data-tip="Update Results">
-                                                                            <span class="material-symbols-outlined">fact_check</span>
-                                                                        </a>
-                                                                    <?php endif; ?>
-
-                                                                    <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn tooltip-trigger" data-tip="Edit Task">
-                                                                        <span class="material-symbols-outlined">edit</span>
-                                                                    </a>
-
-                                                                    <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete tooltip-trigger" data-tip="Delete Task" onclick="return confirm('Delete this task?');">
-                                                                        <span class="material-symbols-outlined">delete</span>
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <?php endif; ?>
-
-                        <?php else: ?>
-                            <?php if (empty($my_tasks)): ?>
-                                <div class="empty-state">
-                                    <span class="material-symbols-outlined">assignment</span>
-                                    <p>No tasks found matching criteria.</p>
-                                </div>
-                            <?php else: ?>
-                                <div class="table-responsive">
-                                    <table class="d-table">
-                                        <colgroup>
-                                            <col style="width:10%">
-                                            <col style="width:12%">
-                                            <col style="width:17%">
-                                            <col style="width:13%">
-                                            <col style="width:11%">
-                                            <col style="width:10%">
-                                            <col style="width:13%">
-                                            <col style="width:14%">
-                                        </colgroup>
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Type</th>
-                                                <th>Printer</th>
-                                                <th>Target FW</th>
-                                                <th>Branch</th>
-                                                <th>My Role</th>
-                                                <th>Status</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($my_tasks as $task): ?>
-                                                <?php $printerName = htmlspecialchars($task['model_name']); ?>
-                                                <tr class="main-row">
-                                                    <td>
-                                                        <span class="mono" style="font-size:0.8rem; color:var(--text-muted);">
-                                                            <?= date('M d', strtotime($task['task_date'])) ?>
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge <?= $task['testing_type'] == 'Smoke' ? 'badge-smoke' : 'badge-reg' ?>">
-                                                            <?= htmlspecialchars($task['testing_type']) ?>
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <div style="display: flex; align-items: center; gap: 10px;">
-                                                            <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
-                                                                <?= Helper::renderPrinterImage($task['printer_path'] ?? null, $printerName, 16) ?>
-                                                            </div>
-                                                            <strong style="font-size:0.88rem;" title="<?= $printerName ?>"><?= $printerName ?></strong>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span class="mono" style="font-size:0.82rem; color:var(--primary); font-weight:600;">
-                                                            <?= htmlspecialchars($task['fw_version_current']) ?>
-                                                        </span>
-                                                    </td>
-                                                    <td style="font-size:0.8rem; color:var(--text-muted);">
-                                                        <?= htmlspecialchars($task['fw_type']) ?>
-                                                    </td>
-                                                    <td>
-                                                        <?php if ($task['testing_type'] == 'Regression'): ?>
-                                                            <span class="badge badge-reg">ALL</span>
-                                                        <?php else: ?>
-                                                            <span class="badge <?= $task['designation'] == 'Main' ? 'badge-main' : 'badge-support' ?>">
-                                                                <?= htmlspecialchars($task['designation']) ?>
-                                                            </span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                    <td>
-                                                        <?php if ($task['overall_status'] == 'Pass'): ?>
-                                                            <span class="badge badge-pass"><span class="material-symbols-outlined">check_circle</span> PASSED</span>
-                                                        <?php elseif ($task['overall_status'] == 'Fail'): ?>
-                                                            <span class="badge badge-fail"><span class="material-symbols-outlined">cancel</span> FAILED</span>
-                                                        <?php elseif ($task['overall_status'] == 'Blocked'): ?>
-                                                            <span class="badge" style="background: var(--blocked-bg); color: var(--blocked); border: 1px solid var(--blocked);">
-                                                                <span class="material-symbols-outlined">block</span> BLOCKED
-                                                            </span>
-                                                        <?php elseif ($task['overall_status'] == 'N/A'): ?>
-                                                            <span class="badge" style="background: var(--na-bg); color: var(--na); border: 1px solid var(--na);">
-                                                                <span class="material-symbols-outlined">do_not_disturb_on</span> N/A
-                                                            </span>
-                                                        <?php else: ?>
-                                                            <span class="badge badge-pending"><span class="material-symbols-outlined">schedule</span> Pending</span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                    <td>
-                                                        <?php if ($task['testing_type'] == 'Regression'): ?>
-                                                            <a href="<?= htmlspecialchars($task['regression_url']) ?>" target="_blank" class="btn-mini ghost">
-                                                                <span class="material-symbols-outlined">open_in_new</span> Open TestRail
-                                                            </a>
-                                                        <?php else: ?>
-                                                            <a href="execute_task.php?task_id=<?= $task['id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini">
-                                                                <span class="material-symbols-outlined">play_arrow</span> Execute
-                                                            </a>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <?php endif; ?>
-                        <?php endif; ?>
-
-                        <?php
-                        $totalRows = ($_SESSION['role'] === 'lead') ? $pagination['leadRows'] : $pagination['myRows'];
-                        $totalPages = ($_SESSION['role'] === 'lead') ? $pagination['leadPages'] : $pagination['myPages'];
-                        $currentPage = $pagination['currentPage'];
-
-                        if ($totalPages > 1):
-                        ?>
-                            <div class="pagination">
-                                <?php if ($currentPage > 1): ?>
-                                    <a href="?<?= http_build_query(array_merge($_GET, ['page' => $currentPage - 1])) ?>" class="page-link prev">← Prev</a>
-                                <?php endif; ?>
-
-                                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                    <?php if ($i == $currentPage): ?>
-                                        <span class="page-link active"><?= $i ?></span>
-                                    <?php else: ?>
-                                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>" class="page-link"><?= $i ?></a>
-                                    <?php endif; ?>
-                                <?php endfor; ?>
-
-                                <?php if ($currentPage < $totalPages): ?>
-                                    <a href="?<?= http_build_query(array_merge($_GET, ['page' => $currentPage + 1])) ?>" class="page-link next">Next →</a>
-                                <?php endif; ?>
-                            </div>
-                            <p class="pagination-info">Showing <?= min(($currentPage - 1) * $perPage + 1, $totalRows) ?> – <?= min($currentPage * $perPage, $totalRows) ?> of <?= $totalRows ?> tasks</p>
-                        <?php endif; ?>
+                <?php else: ?>
+                    <div class="table-section">
+                        <table class="d-table">
+                            <thead>
+                                <tr>
+                                    <?= Helper::renderSortHeader('task_date', 'Date', $sort, $order) ?>
+                                    <?= Helper::renderSortHeader('testing_type', 'Type', $sort, $order) ?>
+                                    <?= Helper::renderSortHeader('model_name', 'Printer', $sort, $order) ?>
+                                    <?= Helper::renderSortHeader('fw_version_current', 'Target FW', $sort, $order) ?>
+                                    <?= Helper::renderSortHeader('fw_type', 'Branch', $sort, $order) ?>
+                                    <th>My Role</th>
+                                    <?= Helper::renderSortHeader('overall_status', 'Status', $sort, $order) ?>
+                                    <th style="text-align: right; padding-right: 24px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($my_tasks as $task): ?>
+                                    <tr class="main-row">
+                                        <td>
+                                            <span class="mono" style="font-size:0.8rem; color:var(--text-muted);">
+                                                <?= date('M d, Y', strtotime($task['task_date'])) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge <?= $task['testing_type'] == 'Smoke' ? 'badge-smoke' : 'badge-reg' ?>">
+                                                <?= htmlspecialchars($task['testing_type']) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
+                                                    <?= Helper::renderPrinterImage($task['printer_path'] ?? null, htmlspecialchars($task['model_name']), 16) ?>
+                                                </div>
+                                                <strong style="font-size:0.88rem;"><?= htmlspecialchars($task['model_name']) ?></strong>
+                                            </div>
+                                        </td>
+                                        <td><span class="mono" style="font-size:0.85rem; color:var(--primary); font-weight:600;"><?= htmlspecialchars($task['fw_version_current']) ?></span></td>
+                                        <td style="font-size:0.85rem; color:var(--text-muted);"><?= htmlspecialchars($task['fw_type']) ?></td>
+                                        <td>
+                                            <?php if ($task['testing_type'] == 'Regression'): ?>
+                                                <span class="badge badge-reg">ALL</span>
+                                            <?php else: ?>
+                                                <span class="badge <?= $task['designation'] == 'Main' ? 'badge-main' : 'badge-support' ?>"><?= htmlspecialchars($task['designation']) ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($task['overall_status'] == 'Pass'): ?>
+                                                <span class="badge badge-pass"><span class="material-symbols-outlined">check_circle</span> PASSED</span>
+                                            <?php elseif ($task['overall_status'] == 'Fail'): ?>
+                                                <span class="badge badge-fail"><span class="material-symbols-outlined">cancel</span> FAILED</span>
+                                            <?php elseif ($task['overall_status'] == 'Blocked'): ?>
+                                                <span class="badge" style="background: var(--blocked-bg); color: var(--blocked); border: 1px solid var(--blocked);"><span class="material-symbols-outlined">block</span> BLOCKED</span>
+                                            <?php elseif ($task['overall_status'] == 'N/A'): ?>
+                                                <span class="badge" style="background: var(--na-bg); color: var(--na); border: 1px solid var(--na);"><span class="material-symbols-outlined">do_not_disturb_on</span> N/A</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-pending"><span class="material-symbols-outlined">schedule</span> Pending</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="text-align: right; padding-right: 24px;">
+                                            <?php if ($task['testing_type'] == 'Regression'): ?>
+                                                <a href="<?= htmlspecialchars($task['regression_url']) ?>" target="_blank" class="btn-mini ghost"><span class="material-symbols-outlined">open_in_new</span> TestRail</a>
+                                            <?php else: ?>
+                                                <a href="execute_task.php?task_id=<?= $task['id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini"><span class="material-symbols-outlined">play_arrow</span> Execute</a>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
+                    <?= Helper::renderPagination($my_totalRows, $perPage, $page, [25, 50, 75, 100]) ?>
+                <?php endif; ?>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<div class="drawer-overlay" id="filterOverlay" onclick="toggleFilterDrawer()"></div>
+<div class="filter-drawer" id="filterDrawer">
+    <div class="drawer-header">
+        <h3><span class="material-symbols-outlined">tune</span> Filters</h3>
+        <button type="button" class="modal-filter-reset-btn" onclick="confirmReset()">
+            <span class="material-symbols-outlined"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M2.39 1.73L1.11 3l8.39 8.37l.47.63H10v5.87c-.04.29.06.6.29.83l2.01 2.01c.39.39 1.02.39 1.41 0c.23-.21.33-.53.29-.83v-3.99l6.84 6.84l1.27-1.27L14 13.35L9.41 8.76L4.15 3.5zM6.21 3l8.33 8.34l5.25-6.72a1 1 0 0 0-.17-1.4c-.19-.14-.4-.22-.62-.22z" />
+                </svg></span>
+        </button>
+        <button type="button" class="modal-close-btn" onclick="toggleFilterDrawer()" title="Close">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+    <div class="drawer-body">
+        <form method="get" class="no-loader" id="ajax-filter-form">
+            <input type="hidden" name="sort" id="sort_input" value="<?= htmlspecialchars($sort) ?>">
+            <input type="hidden" name="order" id="order_input" value="<?= htmlspecialchars($order) ?>">
+            <input type="hidden" name="page" id="page_input" value="<?= htmlspecialchars($page) ?>">
+            <input type="hidden" name="per_page" id="per_page_input" value="<?= htmlspecialchars($perPage) ?>">
+
+            <div class="filter-group">
+                <label>Date Range</label>
+                <div class="date-flex">
+                    <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" title="Start Date">
+                    <input type="date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" title="End Date">
                 </div>
             </div>
-        </div>
+
+            <div class="filter-group">
+                <label>Workflow Type</label>
+                <?= Helper::enhancedDropdown([
+                    'name' => 'type',
+                    'placeholder' => 'All Types',
+                    'multiple' => false,
+                    'options' => ['Smoke' => 'Smoke', 'Regression' => 'Regression'],
+                    'selected' => $type
+                ]) ?>
+            </div>
+
+            <div class="filter-group">
+                <label>Printers</label>
+                <?= Helper::enhancedDropdown([
+                    'name' => 'printers[]',
+                    'placeholder' => 'Any Printer...',
+                    'multiple' => true,
+                    'options' => $printerOpts,
+                    'selected' => $printers
+                ]) ?>
+            </div>
+
+            <div class="filter-group">
+                <label>Status</label>
+                <?= Helper::enhancedDropdown([
+                    'name' => 'statuses[]',
+                    'placeholder' => 'Any Status...',
+                    'multiple' => true,
+                    'options' => $statusOpts,
+                    'selected' => $statuses
+                ]) ?>
+            </div>
+        </form>
     </div>
+</div>
+
 <script>
-        // ── Row Toggle ───────────────────────────────────────
-        function toggleRow(rowId, triggerElement) {
-            const wrapper = document.getElementById(rowId);
-            const chevron = document.getElementById('chev-' + rowId);
-            const isOpen = wrapper.classList.contains('open');
+    // --- Drawer Logic ---
+    function toggleFilterDrawer() {
+        document.getElementById('filterDrawer').classList.toggle('open');
+        const overlay = document.getElementById('filterOverlay');
+        overlay.classList.toggle('show');
+        if (overlay.classList.contains('show')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
 
-            // Close all
-            document.querySelectorAll('.accordion-wrapper.open').forEach(el => el.classList.remove('open'));
-            document.querySelectorAll('.chevron-icon.open').forEach(el => el.classList.remove('open'));
-            document.querySelectorAll('.main-row.is-open').forEach(el => el.classList.remove('is-open'));
+    function confirmReset() {
+        if (confirm("Are you sure you want to clear all filters?")) {
+            window.location.href = window.location.pathname;
+        }
+    }
 
-            // Open target if it wasn't already open
-            if (!isOpen) {
-                wrapper.classList.add('open');
-                if (chevron) chevron.classList.add('open');
-                if (triggerElement) triggerElement.classList.add('is-open');
-            }
+    // --- Auto AJAX Form Handler ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('ajax-filter-form');
+        const container = document.getElementById('tasks-container');
+
+        function loadData(url) {
+            window.showLoader();
+            fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.text())
+                .then(html => {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const newContent = doc.getElementById('tasks-container');
+                    if (newContent) container.innerHTML = newContent.innerHTML;
+                    window.history.pushState({}, '', url);
+                    window.hideLoader();
+                })
+                .catch(() => window.hideLoader());
         }
 
-        // ── Tooltip ──────────────────────────────────────────
-        const tooltip = document.getElementById('custom-tooltip');
-
-        function attachTooltips() {
-            document.querySelectorAll('[data-tip]').forEach(el => {
-                el.addEventListener('mouseenter', (e) => {
-                    tooltip.textContent = el.dataset.tip;
-                    tooltip.classList.add('visible');
-                });
-                el.addEventListener('mousemove', (e) => {
-                    tooltip.style.left = (e.clientX + 14) + 'px';
-                    tooltip.style.top = (e.clientY - 32) + 'px';
-                });
-                el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
-            });
-        }
-        attachTooltips();
-
-        // ── AJAX Filter & Pagination ─────────────────────────
-        document.addEventListener('DOMContentLoaded', () => {
-            const filterForm = document.getElementById('ajax-filter-form');
-            const tasksContainer = document.getElementById('tasks-container');
-
-            if (!filterForm || !tasksContainer) return;
-
-            function loadData(url) {
-                window.showLoader();
-                fetch(url, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(res => res.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        const newContainer = doc.getElementById('tasks-container');
-                        if (newContainer) {
-                            tasksContainer.innerHTML = newContainer.innerHTML;
-                        }
-
-                        window.history.pushState({}, '', url);
-                        attachTooltips(); // Reattach tooltips to new DOM elements
-                        window.hideLoader();
-                    })
-                    .catch(err => {
-                        console.error('AJAX Error:', err);
-                        window.hideLoader();
-                    });
+        form.addEventListener('change', (e) => {
+            if (!e.target.classList.contains('per-page-select')) {
+                document.getElementById('page_input').value = '1';
             }
-
-            filterForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const url = new URL(window.location.href);
-                const formData = new FormData(this);
-                url.searchParams.set('start_date', formData.get('start_date'));
-                url.searchParams.set('end_date', formData.get('end_date'));
-                url.searchParams.set('type', formData.get('type'));
-                url.searchParams.set('page', '1'); // Reset to page 1 on filter
-                loadData(url);
-            });
-
-            document.getElementById('reset-filter').addEventListener('click', function(e) {
-                e.preventDefault();
-                document.getElementById('start_date').value = '<?= date('Y-m-d') ?>';
-                document.getElementById('end_date').value = '';
-                document.getElementById('type').value = '';
-                filterForm.dispatchEvent(new Event('submit'));
-            });
-
-            // Delegate pagination clicks inside container
-            document.addEventListener('click', function(e) {
-                const link = e.target.closest('.page-link');
-                if (link && link.tagName === 'A') {
-                    e.preventDefault();
-                    loadData(link.href);
-                }
-            });
+            const url = new URL(window.location.pathname, window.location.origin);
+            const formData = new FormData(form);
+            for (let [key, value] of formData.entries()) {
+                if (value) url.searchParams.append(key, value);
+            }
+            loadData(url);
         });
+
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('.page-link');
+            if (link && link.tagName === 'A') {
+                e.preventDefault();
+                loadData(link.href);
+            }
+        });
+
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('per-page-select')) {
+                document.getElementById('per_page_input').value = e.target.value;
+                document.getElementById('page_input').value = '1';
+                form.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
+    window.updateSort = function(column, order) {
+        document.getElementById('sort_input').value = column;
+        document.getElementById('order_input').value = order;
+        document.getElementById('page_input').value = '1';
+        document.getElementById('ajax-filter-form').dispatchEvent(new Event('change'));
+    };
 </script>
-<script src="app.js"></script>
 </body>
+
 </html>

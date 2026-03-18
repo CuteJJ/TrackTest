@@ -1,5 +1,5 @@
 <?php
-// controllers/DashboardController.php
+// controllers/AssignmentsController.php
 require_once __DIR__ . '/../configs/db.php';
 require_once __DIR__ . '/../configs/helper.php';
 
@@ -8,147 +8,139 @@ Helper::requireLogin();
 $user_id = $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
 
-// ----- Filters & Pagination -----
-$start_date = $_GET['start_date'] ?? date('Y-m-d');          // default today
-$end_date   = $_GET['end_date']   ?? '';
-$type       = $_GET['type']       ?? '';                     // '' = all, 'Smoke', 'Regression'
+// ----- 1. Sorting & Pagination Inputs -----
+$sort       = $_GET['sort'] ?? 'task_date';
+$order      = strtolower($_GET['order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 $page       = max(1, (int)($_GET['page'] ?? 1));
-$perPage    = 5;
+$reqPerPage = (int)($_GET['per_page'] ?? 25);
+$perPage    = in_array($reqPerPage, [25, 50, 75, 100]) ? $reqPerPage : 25;
 $offset     = ($page - 1) * $perPage;
 
-// Helper to build date+type conditions (used in both main and count queries)
-function buildTaskFilters($start_date, $end_date, $type) {
-    $conditions = [];
-    $params = [];
+// Whitelist sorting columns to prevent SQL injection
+$validSorts = [
+    'task_date' => 't.task_date',
+    'testing_type' => 't.testing_type',
+    'model_name' => 'p.model_name',
+    'fw_version_current' => 't.fw_version_current',
+    'fw_type' => 't.fw_type',
+    'overall_status' => 'overall_status'
+];
+$orderBySql = $validSorts[$sort] ?? 't.task_date';
 
-    if (!empty($start_date)) {
-        $conditions[] = "t.task_date >= :start_date";
-        $params['start_date'] = $start_date;
-    }
-    if (!empty($end_date)) {
-        $conditions[] = "t.task_date <= :end_date";
-        $params['end_date'] = $end_date;
-    }
-    if (!empty($type) && in_array($type, ['Smoke', 'Regression'])) {
-        $conditions[] = "t.testing_type = :type";
-        $params['type'] = $type;
-    }
+// ----- 2. Filter Inputs -----
+$start_date = $_GET['start_date'] ?? '';
+$end_date   = $_GET['end_date']   ?? '';
+$type       = $_GET['type']       ?? '';
+$printers   = $_GET['printers']   ?? [];
+$statuses   = $_GET['statuses']   ?? [];
+$assignees  = $_GET['assignees']  ?? []; // Lead Only
 
-    return [$conditions, $params];
+// Build dynamic WHERE clause
+$conditions = [];
+$params = [];
+
+if (!empty($start_date)) {
+    $conditions[] = "t.task_date >= :start_date";
+    $params['start_date'] = $start_date;
+}
+if (!empty($end_date)) {
+    $conditions[] = "t.task_date <= :end_date";
+    $params['end_date'] = $end_date;
+}
+if (!empty($type)) {
+    $conditions[] = "t.testing_type = :type";
+    $params['type'] = $type;
 }
 
-// 4. LEAD VIEW: Active Tasks (with filters & pagination)
+if (!empty($printers) && is_array($printers)) {
+    $in = implode(',', array_map('intval', $printers));
+    if ($in) $conditions[] = "p.id IN ($in)";
+}
+if (!empty($statuses) && is_array($statuses)) {
+    $inQuery = implode(',', array_map(function ($s) use ($pdo) {
+        return $pdo->quote($s);
+    }, $statuses));
+    if ($inQuery) $conditions[] = "ta.overall_status IN ($inQuery)";
+}
+if ($user_role === 'lead' && !empty($assignees) && is_array($assignees)) {
+    $in = implode(',', array_map('intval', $assignees));
+    if ($in) $conditions[] = "ta.user_id IN ($in)";
+}
+
+// ----- 3. Fetch Dropdown Options -----
+$printerOpts = $pdo->query("SELECT id, model_name FROM printers ORDER BY model_name")->fetchAll(PDO::FETCH_KEY_PAIR);
+$userOpts = $pdo->query("SELECT id, full_name FROM users WHERE role = 'tester' ORDER BY full_name")->fetchAll(PDO::FETCH_KEY_PAIR);
+$statusOpts = ['Pass' => 'Passed', 'Fail' => 'Failed', 'Blocked' => 'Blocked', 'N/A' => 'N/A', 'Pending' => 'Pending'];
+
+
+// ----- 4. LEAD VIEW: "tasks.php" Data -----
 $lead_tasks = [];
 $lead_totalRows = 0;
 $lead_totalPages = 1;
 
 if ($user_role === 'lead') {
-    // Build filter conditions for tasks
-    [$filterConditions, $filterParams] = buildTaskFilters($start_date, $end_date, $type);
-    $whereClause = empty($filterConditions) ? '' : 'WHERE ' . implode(' AND ', $filterConditions);
+    $whereClause = empty($conditions) ? '' : 'WHERE ' . implode(' AND ', $conditions);
 
-    // Count query (distinct task+printer combinations)
-    $countSql = "
-        SELECT COUNT(DISTINCT CONCAT(t.id, '-', p.id))
-        FROM task_assignments ta
-        JOIN tasks t ON ta.task_id = t.id
-        JOIN printers p ON ta.printer_id = p.id
-        $whereClause
-    ";
+    // Count
+    $countSql = "SELECT COUNT(DISTINCT CONCAT(t.id, '-', p.id)) FROM task_assignments ta JOIN tasks t ON ta.task_id = t.id JOIN printers p ON ta.printer_id = p.id $whereClause";
     $countStmt = $pdo->prepare($countSql);
-    $countStmt->execute($filterParams);
+    $countStmt->execute($params);
     $lead_totalRows = $countStmt->fetchColumn();
-    $lead_totalPages = ceil($lead_totalRows / $perPage);
 
-    // Main query with LIMIT
+    // Query (FIXED: Changed t.regression_url to MAX(ta.regression_url))
     $lead_sql = "
         SELECT 
-            t.id as task_id,
-            t.task_date,
-            t.due_date,
-            t.testing_type,
-            t.fw_version_prev,
-            t.fw_version_current,
-            t.fw_version_rec,
-            t.fw_type,
-            p.id as printer_id,
-            p.model_name,
-            p.printer_path,
+            t.id as task_id, t.task_date, t.testing_type, t.fw_version_current, t.fw_type,
+            p.id as printer_id, p.model_name, p.printer_path,
             MAX(ta.overall_status) as overall_status,
-            (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = p.model_name) as total_cases,
-            (SELECT COUNT(*) FROM test_results tr WHERE tr.task_id = t.id AND tr.printer_id = p.id AND tr.status IN ('Pass', 'Fail', 'Blocked', 'N/A')) as completed_cases
+            GROUP_CONCAT(DISTINCT u.full_name SEPARATOR ', ') as assigned_to_names,
+            MAX(ta.regression_url) as regression_url
         FROM task_assignments ta
         JOIN tasks t ON ta.task_id = t.id
         JOIN printers p ON ta.printer_id = p.id
+        LEFT JOIN users u ON ta.user_id = u.id
         $whereClause
         GROUP BY t.id, p.id
-        ORDER BY t.task_date ASC
+        ORDER BY $orderBySql $order
         LIMIT $perPage OFFSET $offset
     ";
     $stmt = $pdo->prepare($lead_sql);
-    $stmt->execute($filterParams);
+    $stmt->execute($params);
     $lead_tasks = $stmt->fetchAll();
 }
 
-// 5. TESTER VIEW: My Assignments (with filters & pagination)
+// ----- 5. TESTER VIEW: "assignments.php" Data -----
 $my_tasks = [];
 $my_totalRows = 0;
 $my_totalPages = 1;
 
 if ($user_role !== 'lead') {
-    [$filterConditions, $filterParams] = buildTaskFilters($start_date, $end_date, $type);
-    
-    // Add user condition OR Regression tasks (so regression is global to testers)
-    $filterConditions[] = "(ta.user_id = :user_id OR t.testing_type = 'Regression')";
-    $filterParams['user_id'] = $user_id;
-    $whereClause = 'WHERE ' . implode(' AND ', $filterConditions);
+    // Inject Tester specific security filter
+    $conditions[] = "(ta.user_id = :user_id OR t.testing_type = 'Regression')";
+    $params['user_id'] = $user_id;
 
-    // Count query
-    $countSql = "
-        SELECT COUNT(*)
-        FROM task_assignments ta
-        JOIN tasks t ON ta.task_id = t.id
-        JOIN printers p ON ta.printer_id = p.id
-        $whereClause
-    ";
+    $whereClause = 'WHERE ' . implode(' AND ', $conditions);
+
+    // Count
+    $countSql = "SELECT COUNT(*) FROM task_assignments ta JOIN tasks t ON ta.task_id = t.id JOIN printers p ON ta.printer_id = p.id $whereClause";
     $countStmt = $pdo->prepare($countSql);
-    $countStmt->execute($filterParams);
+    $countStmt->execute($params);
     $my_totalRows = $countStmt->fetchColumn();
-    $my_totalPages = ceil($my_totalRows / $perPage);
 
-    // Main query with LIMIT
+    // Query
     $my_sql = "
         SELECT 
-            t.id,
-            t.task_date, 
-            t.testing_type,
-            t.fw_version_current,
-            t.fw_type,
-            p.model_name, 
-            p.printer_path,
-            ta.printer_id, 
-            ta.designation,
-            ta.overall_status,
-            ta.regression_url
+            t.id, t.task_date, t.testing_type, t.fw_version_current, t.fw_type,
+            p.model_name, p.printer_path, ta.printer_id, ta.designation,
+            ta.overall_status, ta.regression_url
         FROM task_assignments ta
         JOIN tasks t ON ta.task_id = t.id
         JOIN printers p ON ta.printer_id = p.id
         $whereClause
-        ORDER BY t.task_date ASC
+        ORDER BY $orderBySql $order
         LIMIT $perPage OFFSET $offset
     ";
     $stmt = $pdo->prepare($my_sql);
-    $stmt->execute($filterParams);
+    $stmt->execute($params);
     $my_tasks = $stmt->fetchAll();
 }
-
-// Pagination data for view
-$pagination = [
-    'currentPage' => $page,
-    'perPage'     => $perPage,
-    'leadRows'    => $lead_totalRows,
-    'leadPages'   => $lead_totalPages,
-    'myRows'      => $my_totalRows,
-    'myPages'     => $my_totalPages,
-];
-?>
