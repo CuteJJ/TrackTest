@@ -172,7 +172,7 @@ require_once 'configs/header.php';
                                                                 <div class="expand-actions">
                                                                     <?php if ($task['testing_type'] == 'Smoke'): ?>
                                                                         <?php if ($is_complete): ?>
-                                                                            <a href="report.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini ghost">
+                                                                            <a href="generate_report.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini ghost">
                                                                                 <span class="material-symbols-outlined">description</span> Report
                                                                             </a>
                                                                         <?php else: ?>

@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['overall_status'])) {
     $stmt->execute([$overall_status, $task_id, $printer_id]);
 
     Helper::setFlash("Report status updated to: " . $overall_status, "success");
-    header("Location: report.php?task_id=$task_id&printer_id=$printer_id");
+    header("Location: generate_report.php?task_id=$task_id&printer_id=$printer_id");
     exit();
 }
 
