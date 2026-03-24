@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $model_name = trim($_POST['model_name']);
             
-            // --- NEW: DUPLICATE CHECK ---
+            // Duplicate Printer Check
             $chk = $pdo->prepare("SELECT id FROM printers WHERE model_name = ?");
             $chk->execute([$model_name]);
             if ($chk->fetch()) {
@@ -21,13 +21,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->prepare("INSERT INTO printers (model_name) VALUES (?)")->execute([$model_name]);
             
+            // Insert Test Cases (With strict duplicate prevention)
             $codes = $_POST['case_code'] ?? [];
             $titles = $_POST['case_title'] ?? [];
+            $processed_codes = [];
             
             $stmt_tc = $pdo->prepare("INSERT INTO test_cases (printer_model, case_code, title) VALUES (?, ?, ?)");
             for($i=0; $i<count($codes); $i++) {
-                if(!empty(trim($codes[$i]))) {
-                    $stmt_tc->execute([$model_name, trim($codes[$i]), trim($titles[$i])]);
+                $code = trim($codes[$i]);
+                if(!empty($code) && !in_array($code, $processed_codes)) {
+                    $stmt_tc->execute([$model_name, $code, trim($titles[$i])]);
+                    $processed_codes[] = $code;
                 }
             }
             $pdo->commit();
@@ -55,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: admin_printers.php"); exit();
     }
 
-    // 3. EDIT TEST CASE (Triggered by clicking a chip)
+    // 3. EDIT TEST CASE
     elseif (isset($_POST['edit_testcase'])) {
         try {
             $stmt = $pdo->prepare("UPDATE test_cases SET case_code = ?, title = ? WHERE id = ?");
@@ -74,11 +78,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $codes = $_POST['new_case_code'] ?? [];
             $titles = $_POST['new_case_title'] ?? [];
             
+            // Prevent duplicates against existing cases
+            $ex_stmt = $pdo->prepare("SELECT case_code FROM test_cases WHERE printer_model = ?");
+            $ex_stmt->execute([$model_name]);
+            $processed_codes = $ex_stmt->fetchAll(PDO::FETCH_COLUMN);
+            
             $stmt_tc = $pdo->prepare("INSERT INTO test_cases (printer_model, case_code, title) VALUES (?, ?, ?)");
             $added = 0;
             for($i=0; $i<count($codes); $i++) {
-                if(!empty(trim($codes[$i]))) {
-                    $stmt_tc->execute([$model_name, trim($codes[$i]), trim($titles[$i])]);
+                $code = trim($codes[$i]);
+                if(!empty($code) && !in_array($code, $processed_codes)) {
+                    $stmt_tc->execute([$model_name, $code, trim($titles[$i])]);
+                    $processed_codes[] = $code;
                     $added++;
                 }
             }
@@ -106,12 +117,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $dir = '../imgs/printers/';
                     if (!is_dir($dir)) mkdir($dir, 0777, true);
                     
-                    // Format: "pixiu_mfp.png"
                     $safe_name = strtolower(str_replace([' ', '/', '\\'], '_', trim($model_name)));
                     $filename = $dir . $safe_name . '.png';
                     
                     file_put_contents($filename, $data);
-                    $printer_path = 'imgs/printers/' . $safe_name . '.png'; // DB stores relative path
+                    $printer_path = 'imgs/printers/' . $safe_name . '.png';
                 }
             } elseif ($image_type === 'icon' && !empty(trim($_POST['icon_url']))) {
                 $printer_path = trim($_POST['icon_url']);
@@ -120,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($printer_path !== null) {
                 $stmt = $pdo->prepare("UPDATE printers SET printer_path = ? WHERE id = ?");
                 $stmt->execute([$printer_path, $printer_id]);
-                Helper::setFlash("Printer updated successfully!", "success");
+                Helper::setFlash("Printer profile updated successfully!", "success");
             }
             
         } catch (Exception $e) {
@@ -133,15 +143,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch printers
 $printers = $pdo->query("SELECT p.*, (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = p.model_name) as case_count FROM printers p ORDER BY p.model_name")->fetchAll();
 
-// Fetch all test cases and group them manually to prevent fetch format bugs
+// Fetch ALL test cases for the dropdown pool
 $tc_stmt = $pdo->query("SELECT * FROM test_cases ORDER BY case_code ASC");
-$all_testcases = $tc_stmt->fetchAll();
+$all_testcases = $tc_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Build map for existing printer groups
 $tc_map = [];
+// Build unique arrays for the EnhancedDropdown
+$unique_codes = [];
+$unique_titles = [];
+$codeToTitleMap = [];
+$titleToCodeMap = []; // NEW: Reverse Map for Two-Way Sync
+
 foreach ($all_testcases as $tc) {
     $tc_map[$tc['printer_model']][] = $tc;
+    
+    $code = trim($tc['case_code']);
+    $title = trim($tc['title']);
+    
+    if ($code !== '') $unique_codes[$code] = $code;
+    if ($title !== '') $unique_titles[$title] = $title;
+    
+    // Populate both maps if both exist
+    if ($code !== '' && $title !== '') {
+        $codeToTitleMap[$code] = $title;
+        $titleToCodeMap[$title] = $code;
+    }
 }
 
-// Icon Helper -- Fallback icons based on printer name keywords if no image/icon is set
+// Sort the dropdown options nicely
+ksort($unique_codes);
+asort($unique_titles);
+
+// Icon Helper
 function getPrinterIcon(string $name): string {
     $n = strtolower($name);
     if (str_contains($n, 'flare')) return 'local_fire_department';
@@ -153,14 +187,10 @@ function getPrinterIcon(string $name): string {
 
 function renderPrinterImage($p) {
     $path = $p['printer_path'] ?? '';
-    // If it looks like a path or a URL
     if (str_contains($path, '/') || str_contains($path, '.')) {
-        // Adjust path since we are inside /admin/
         $displayPath = str_starts_with($path, 'http') ? $path : '../' . $path;
         return "<img src='".htmlspecialchars($displayPath)."?v=".time()."' style='width:100%; height:100%; object-fit:cover; border-radius:50%;'>";
     }
-    
-    // Otherwise it's a material icon (or fallback)
     $iconText = $path ?: getPrinterIcon($p['model_name']);
     return "<span class='material-symbols-outlined' style='font-size: 18px; color: var(--primary);'>".htmlspecialchars($iconText)."</span>";
 }
@@ -173,9 +203,6 @@ require_once '../configs/header.php';
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <style>
-    .page-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .page-title { margin:0; font-size: 1.6rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
-    
     /* Accordion Grid Layout */
     .printer-detail-grid {
         display: flex;          
@@ -230,7 +257,6 @@ require_once '../configs/header.php';
         justify-content: space-between;  
     }
 
-    /* Override global expanded-content flex for this page only */
     #adminPrintersPage .expanded-content,
     .printer-expanded-content {
         display: block !important;
@@ -243,14 +269,14 @@ require_once '../configs/header.php';
         padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
         background: var(--bg-body); font-size: 0.8rem; font-weight: 600;
         color: var(--text-main); cursor: pointer; transition: all 0.15s;
-        display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-body);
+        display: inline-flex; align-items: center; gap: 6px; font-family: 'Inter', sans-serif;
     }
     .tc-edit-chip:hover {
         border-color: var(--primary); background: var(--bg-surface);
         color: var(--primary); transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     }
-    .tc-edit-chip .code { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.75rem; }
+    .tc-edit-chip .code { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
     .tc-edit-chip:hover .code { color: var(--primary); opacity: 0.8; }
 
     .printer-actions {
@@ -258,50 +284,36 @@ require_once '../configs/header.php';
         border-top: 1px solid var(--border); padding-top: 16px; flex-wrap: wrap;
     }
 
-    /* Dynamic Form Row - Explicitly styled to fix UI issues */
+    /* Dynamic Form Row */
     .dynamic-tc-row {
         display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
         padding: 8px; background: var(--bg-body); border-radius: 8px; border: 1px dashed var(--border);
     }
-    .dynamic-tc-row input { 
-        flex: 1; margin: 0 !important; 
-        border: 1px solid var(--border); 
-        padding: 10px 14px !important; 
-        border-radius: 6px; 
-        background: var(--bg-body); 
-        color: var(--text-main); 
-        font-size: 0.85rem; 
-        outline: none; 
-        transition: border-color 0.15s;
-    }
-    .dynamic-tc-row input:focus { 
-        border-color: var(--primary); 
-        box-shadow: 0 0 0 3px rgba(2,136,209,0.1); 
-    }
+    .dynamic-tc-row input { flex: 1; margin: 0 !important; }
     .dynamic-tc-row .btn-remove {
         background: var(--error-bg); color: var(--error); border: none;
         width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
         display: flex; align-items: center; justify-content: center;
-        transition: background 0.15s;
     }
     .dynamic-tc-row .btn-remove:hover { background: var(--error); color: white; }
 
-    .d-table { width: 100%; min-width: 800px; border-collapse: collapse; }
-    .d-table th, .d-table td { white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important; }
+    /* Dropdown UI tweaks to fit seamlessly inside dynamic rows */
+    .tc-code-wrapper .enh-trigger, .tc-title-wrapper .enh-trigger { height: 42px !important; min-height: 42px !important; border-radius: 6px !important; }
 </style>
 
 <?php require_once 'admin_nav.php'; ?>
 
 <div class="page-content-scroll">
-    <div class="dash-wrapper" style="padding-top: 20px;">
-        <div class="page-title-row">
-            <h1 class="page-title">
+    <main class="admin-content" style="padding: 20px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h1 style="margin:0; font-size: 1.6rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
                 <span class="material-symbols-outlined" style="font-size: 28px; color: var(--primary);">print</span>
                 Printers
             </h1>
             <button class="btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto; height: 42px; border-radius: 8px;" onclick="openModal('addPrinterModal')">
-    <span class="material-symbols-outlined" style="font-size: 20px;">add</span> Add Printer
-</button>
+                <span class="material-symbols-outlined" style="font-size: 20px;">add</span> Add Printer
+            </button>
         </div>
         
         <div class="d-card span-full" id="adminPrintersPage">
@@ -393,17 +405,17 @@ require_once '../configs/header.php';
                 </table>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <div class="modal-overlay" id="addPrinterModal">
-    <div class="modal-box" style="max-width: 550px;">
+    <div class="modal-box" style="max-width: 600px;">
         <div class="modal-header">
             <h3>Add New Printer</h3>
             <button type="button" class="modal-close-btn" onclick="closeModal('addPrinterModal')"><span class="material-symbols-outlined">close</span></button>
         </div>
         
-        <form method="POST" class="modal-body">
+        <form method="POST" class="modal-body" style="overflow: visible !important;">
             <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 20px;">Define the printer model. Test cases defined here are applied to <strong>Smoke Tests</strong> only.</p>
             <input type="hidden" name="add_printer" value="1">
             <div class="form-group">
@@ -414,10 +426,35 @@ require_once '../configs/header.php';
             <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
                 <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px; display:block;">Test Cases</span>
                 
-                <div id="dynamicTcList" style="max-height: 250px; overflow-y: auto; padding-right: 4px; margin-bottom: 12px;">
+                <div id="dynamicTcList" style="padding-right: 4px; margin-bottom: 12px; overflow: visible;">
+                    <?php for ($i = 0; $i < 30; $i++): ?>
+                        <div class="dynamic-tc-row" id="tc_row_<?= $i ?>" style="<?= $i === 0 ? '' : 'display:none;' ?>">
+                            <div class="tc-code-wrapper" style="width: 140px;">
+                                <?= Helper::enhancedDropdown([
+                                    'name' => 'case_code[]',
+                                    'placeholder' => 'Case ID',
+                                    'creatable' => true,
+                                    'options' => $unique_codes,
+                                    'selected' => ''
+                                ]) ?>
+                            </div>
+                            <div class="tc-title-wrapper" style="flex: 1;">
+                                <?= Helper::enhancedDropdown([
+                                    'name' => 'case_title[]',
+                                    'placeholder' => 'Case Name',
+                                    'creatable' => true,
+                                    'options' => $unique_titles,
+                                    'selected' => ''
+                                ]) ?>
+                            </div>
+                            <button type="button" class="btn-remove" onclick="hideTcRow(<?= $i ?>)">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                            </button>
+                        </div>
+                    <?php endfor; ?>
                 </div>
 
-                <button type="button" class="btn ghost" onclick="addTcRow('dynamicTcList', 'case_code[]', 'case_title[]')" style="border: 1px dashed var(--border); color: var(--text-main); background-color: var(--bg-body);">
+                <button type="button" class="btn ghost" onclick="addTcRowDynamic()" style="border: 1px dashed var(--border); color: var(--text-main); background-color: var(--bg-body);">
                     <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle;">add</span> Add Test Case
                 </button>
             </div>
@@ -439,12 +476,12 @@ require_once '../configs/header.php';
         <form method="POST" class="modal-body">
             <input type="hidden" name="tc_id" id="edit_tc_id">
             <div class="form-group">
-                <input type="text" name="case_code" id="edit_tc_code" class="form-control" style="font-family: var(--font-mono);" required placeholder=" ">
+                <input type="text" name="case_code" id="edit_tc_code" class="form-control" style="font-family: 'JetBrains Mono', monospace;" required placeholder=" ">
                 <label class="form-label">Case Code</label>
             </div>
             <div class="form-group" style="margin-top: 16px;">
                 <input type="text" name="title" id="edit_tc_title" class="form-control" required placeholder=" ">
-                <label class="form-label">Case Title</label>
+                <label class="form-label">Case Name</label>
             </div>
             <div style="display:flex; gap:10px; margin-top:24px;">
                 <button type="submit" name="edit_testcase" class="btn">Update Case</button>
@@ -455,20 +492,45 @@ require_once '../configs/header.php';
 </div>
 
 <div class="modal-overlay" id="addCasesExistingModal">
-    <div class="modal-box" style="max-width: 550px;">
+    <div class="modal-box" style="max-width: 600px;">
         <div class="modal-header">
             <h3>Add Cases to <span id="addExistingTargetName" style="color:var(--primary);"></span></h3>
             <button type="button" class="modal-close-btn" onclick="closeModal('addCasesExistingModal')"><span class="material-symbols-outlined">close</span></button>
         </div>
         
-        <form method="POST" class="modal-body">
+        <form method="POST" class="modal-body" style="overflow: visible !important;">
             <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 20px;">These cases will be added to the existing Smoke Test profile.</p>
             <input type="hidden" name="target_model" id="addExistingTargetInput">
             
-            <div id="dynamicExistingTcList" style="max-height: 300px; overflow-y: auto; padding-right: 4px; margin-bottom: 12px;">
+            <div id="dynamicExistingTcList" style="padding-right: 4px; margin-bottom: 12px; overflow: visible;">
+                <?php for ($i = 0; $i < 30; $i++): ?>
+                    <div class="dynamic-tc-row" id="extc_row_<?= $i ?>" style="<?= $i === 0 ? '' : 'display:none;' ?>">
+                        <div class="tc-code-wrapper" style="width: 140px;">
+                            <?= Helper::enhancedDropdown([
+                                'name' => 'new_case_code[]',
+                                'placeholder' => 'Case ID',
+                                'creatable' => true,
+                                'options' => $unique_codes,
+                                'selected' => ''
+                            ]) ?>
+                        </div>
+                        <div class="tc-title-wrapper" style="flex: 1;">
+                            <?= Helper::enhancedDropdown([
+                                'name' => 'new_case_title[]',
+                                'placeholder' => 'Case Name',
+                                'creatable' => true,
+                                'options' => $unique_titles,
+                                'selected' => ''
+                            ]) ?>
+                        </div>
+                        <button type="button" class="btn-remove" onclick="hideExTcRow(<?= $i ?>)">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                        </button>
+                    </div>
+                <?php endfor; ?>
             </div>
 
-            <button type="button" class="btn ghost" onclick="addTcRow('dynamicExistingTcList', 'new_case_code[]', 'new_case_title[]')" style="border: 1px dashed var(--border); color: var(--text-main); background-color: var(--bg-body);">
+            <button type="button" class="btn ghost" onclick="addExTcRowDynamic()" style="border: 1px dashed var(--border); color: var(--text-main); background-color: var(--bg-body);">
                 <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle;">add</span> Add Test Case
             </button>
 
@@ -550,6 +612,122 @@ require_once '../configs/header.php';
 </div>
 
 <script>
+    // --- Pre-rendered Row Control Logic ---
+    let currentTcRow = 1;
+    let currentExTcRow = 1;
+
+    function addTcRowDynamic() {
+        if (currentTcRow < 30) {
+            document.getElementById('tc_row_' + currentTcRow).style.display = 'flex';
+            currentTcRow++;
+        } else {
+            alert('Maximum cases reached for this session.');
+        }
+    }
+
+    function hideTcRow(index) {
+        const row = document.getElementById('tc_row_' + index);
+        row.style.display = 'none';
+        
+        row.querySelectorAll('input[type="hidden"]').forEach(inp => inp.value = '');
+        row.querySelectorAll('.enh-single-val, .enh-placeholder').forEach(txt => {
+            txt.textContent = txt.closest('.tc-code-wrapper') ? 'Case ID' : 'Case Name';
+            txt.classList.add('enh-placeholder');
+            txt.classList.remove('enh-single-val');
+        });
+    }
+
+    function addExTcRowDynamic() {
+        if (currentExTcRow < 30) {
+            document.getElementById('extc_row_' + currentExTcRow).style.display = 'flex';
+            currentExTcRow++;
+        } else {
+            alert('Maximum cases reached for this session.');
+        }
+    }
+
+    function hideExTcRow(index) {
+        const row = document.getElementById('extc_row_' + index);
+        row.style.display = 'none';
+        
+        row.querySelectorAll('input[type="hidden"]').forEach(inp => inp.value = '');
+        row.querySelectorAll('.enh-single-val, .enh-placeholder').forEach(txt => {
+            txt.textContent = txt.closest('.tc-code-wrapper') ? 'Case ID' : 'Case Name';
+            txt.classList.add('enh-placeholder');
+            txt.classList.remove('enh-single-val');
+        });
+    }
+
+    // Modal Reset Listeners
+    document.getElementById('addPrinterModal').addEventListener('show', function() {
+        for (let i = 1; i < 30; i++) hideTcRow(i);
+        hideTcRow(0); document.getElementById('tc_row_0').style.display = 'flex'; 
+        currentTcRow = 1;
+    });
+
+    document.getElementById('addCasesExistingModal').addEventListener('show', function() {
+        for (let i = 1; i < 30; i++) hideExTcRow(i);
+        hideExTcRow(0); document.getElementById('extc_row_0').style.display = 'flex'; 
+        currentExTcRow = 1;
+    });
+
+    // --- Dynamic TWO-WAY Auto-Fill Logic ---
+    const caseMap = <?= json_encode($codeToTitleMap) ?>;
+    const titleMap = <?= json_encode($titleToCodeMap) ?>;
+
+    document.addEventListener('change', e => {
+        const codeWrapper = e.target.closest('.tc-code-wrapper');
+        const titleWrapper = e.target.closest('.tc-title-wrapper');
+
+        // 1. If user changes the Case Code
+        if (codeWrapper) {
+            const hiddenInput = codeWrapper.querySelector('input[type="hidden"]');
+            if (hiddenInput) {
+                const code = hiddenInput.value.trim();
+                if (caseMap[code]) {
+                    const row = codeWrapper.closest('.dynamic-tc-row');
+                    const tWrap = row.querySelector('.tc-title-wrapper');
+                    
+                    if (tWrap) {
+                        const tInput = tWrap.querySelector('input[type="hidden"]');
+                        if (tInput) tInput.value = caseMap[code];
+                        
+                        const tText = tWrap.querySelector('.enh-single-val') || tWrap.querySelector('.enh-placeholder');
+                        if (tText) {
+                            tText.textContent = caseMap[code];
+                            tText.classList.remove('enh-placeholder');
+                            tText.classList.add('enh-single-val');
+                        }
+                    }
+                }
+            }
+        } 
+        // 2. If user changes the Case Title
+        else if (titleWrapper) {
+            const hiddenInput = titleWrapper.querySelector('input[type="hidden"]');
+            if (hiddenInput) {
+                const title = hiddenInput.value.trim();
+                if (titleMap[title]) {
+                    const row = titleWrapper.closest('.dynamic-tc-row');
+                    const cWrap = row.querySelector('.tc-code-wrapper');
+                    
+                    if (cWrap) {
+                        const cInput = cWrap.querySelector('input[type="hidden"]');
+                        if (cInput) cInput.value = titleMap[title];
+                        
+                        const cText = cWrap.querySelector('.enh-single-val') || cWrap.querySelector('.enh-placeholder');
+                        if (cText) {
+                            cText.textContent = titleMap[title];
+                            cText.classList.remove('enh-placeholder');
+                            cText.classList.add('enh-single-val');
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // --- Standard UI Logic ---
     function toggleRow(rowId, triggerElement) {
         const wrapper = document.getElementById(rowId);
         const chevron = document.getElementById('chev-' + rowId);
@@ -581,34 +759,11 @@ require_once '../configs/header.php';
         event.stopPropagation();
         document.getElementById('addExistingTargetName').textContent = modelName;
         document.getElementById('addExistingTargetInput').value = modelName;
-        const list = document.getElementById('dynamicExistingTcList');
-        list.innerHTML = '';
-        addTcRow('dynamicExistingTcList', 'new_case_code[]', 'new_case_title[]');
         openModal('addCasesExistingModal');
     }
 
-    function addTcRow(containerId, codeName, titleName) {
-        const container = document.getElementById(containerId);
-        const row = document.createElement('div');
-        row.className = 'dynamic-tc-row';
-        row.innerHTML = `
-            <input type="text" name="${codeName}" placeholder="Case ID (e.g. 1001)" style="max-width: 140px; font-family: var(--font-mono);" required>
-            <input type="text" name="${titleName}" placeholder="Test Title" required>
-            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">
-                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
-            </button>
-        `;
-        container.appendChild(row);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    document.getElementById('addPrinterModal').addEventListener('show', function() {
-        document.getElementById('dynamicTcList').innerHTML = '';
-    });
-
     function openEditPrinterImageModal(id, modelName) {
         event.stopPropagation(); 
-        
         document.getElementById('editProfileId').value = id;
         document.getElementById('editProfileModel').value = modelName;
         document.getElementById('editProfileModelDisplay').textContent = modelName;
