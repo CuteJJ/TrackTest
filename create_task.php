@@ -84,29 +84,38 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 .lp-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text-main); line-height: 1.2; }
 .lp-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 5px; }
 
-.s-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; flex-shrink: 0; }
-.s-card-head { padding: 13px 20px; border-bottom: 1px solid var(--border); background: var(--bg-body); display: flex; align-items: center; gap: 10px; }
+.s-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; overflow: visible; margin-bottom: 24px; flex-shrink: 0; }
+.s-card-head { padding: 13px 20px; border-bottom: 1px solid var(--border); background: var(--bg-body); display: flex; align-items: center; gap: 10px; border-radius: 12px 12px 0 0; }
 .s-num { width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 0.67rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 .s-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-main); }
-.s-card-body { padding: 22px 20px; }
+.s-card-body { padding: 22px 20px; overflow: visible; }
 
 .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .f-grid .f-full { grid-column: span 2; }
 @media (max-width: 900px) { .f-grid { grid-template-columns: 1fr; } .f-grid .f-full { grid-column: span 1; } }
 
+/* Normal Inputs */
 .f-field { position: relative; }
 .f-input { display: block; width: 100%; padding: 20px 14px 7px; background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: var(--font-body); color: var(--text-main); outline: none; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; line-height: 1.35; height: 52px; }
 .f-input:focus { border-color: var(--primary); background: var(--bg-surface); box-shadow: 0 0 0 3px rgba(2,136,209,0.1); }
-.f-input.f-mono { font-family: var(--font-mono); font-size: 0.83rem; }
 .f-label { position: absolute; left: 14px; top: 8px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); pointer-events: none; transition: color 0.14s; }
 .f-input:focus ~ .f-label { color: var(--primary); }
 input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: pointer; color: var(--text-main); }
 
+/* Enhanced Dropdown Inputs */
+.f-field-dd { display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
+.f-label-static { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.f-field-dd .enh-trigger { height: 52px !important; border-width: 1.5px !important; }
+.f-field-dd .enh-single-val { font-family: var(--font-mono); font-weight: 700; color: var(--primary); font-size: 0.9rem; }
+
+/* JS Filter Class */
+.type-hidden { display: none !important; }
+
 .f-pill-wrap { display: flex; flex-direction: column; gap: 7px; height: 100%; justify-content: flex-end; }
 .f-pill-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
-.f-pill { display: flex; background: var(--bg-body); border-radius: 8px; padding: 3px; gap: 2px; height: 38px;}
+.f-pill { display: flex; background: var(--bg-body); border-radius: 8px; padding: 3px; gap: 2px; height: 42px;}
 .f-pill input[type="radio"] { display: none; }
-.f-pill label { flex: 1; text-align: center; padding: 7px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.16s; user-select: none; white-space: nowrap; }
+.f-pill label { flex: 1; text-align: center; padding: 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.16s; user-select: none; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 6px;}
 .f-pill input[type="radio"]:checked + label { background: var(--bg-surface); color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
 
 .action-row { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
@@ -171,6 +180,11 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
 
 .rp-foot { flex-shrink: 0; border-top: 1px solid var(--border); padding: 10px 16px; background: var(--bg-body); font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
 .rp-foot-count { font-weight: 800; color: var(--primary); min-width: 14px; display: inline-block; text-align: center; }
+
+/* Dark Mode Calendar Fix */
+[data-theme="dark"] input[type="date"].f-input::-webkit-calendar-picker-indicator,
+[data-theme="midnight"] input[type="date"].f-input::-webkit-calendar-picker-indicator,
+[data-theme="catppuccin"] input[type="date"].f-input::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
 </style>
 </head>
 <body>
@@ -222,13 +236,13 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
                             <div class="f-pill">
                                 <input type="radio" name="testing_type" id="wf_smoke" value="Smoke" 
                                     <?= ($form_data['testing_type'] ?? 'Smoke') == 'Smoke' ? 'checked' : '' ?>>
-                                <label for="wf_smoke" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                <label for="wf_smoke">
                                     <span class="material-symbols-outlined" style="font-size: 18px;">local_fire_department</span> Smoke Test
                                 </label>
 
                                 <input type="radio" name="testing_type" id="wf_reg" value="Regression"
                                     <?= ($form_data['testing_type'] ?? '') == 'Regression' ? 'checked' : '' ?>>
-                                <label for="wf_reg" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                <label for="wf_reg">
                                     <span class="material-symbols-outlined" style="font-size: 18px;">checklist</span> Regression Test
                                 </label>
                             </div>
@@ -245,21 +259,7 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
             </div>
             <div class="s-card-body">
                 <div class="f-grid">
-                    <div class="f-field">
-                        <input type="text" name="fw_prev" class="f-input f-mono" 
-                               value="<?= htmlspecialchars($form_data['fw_prev'] ?? '') ?>" placeholder="e.g. 24.1.0" required>
-                        <label class="f-label">Previous Firmware</label>
-                    </div>
-                    <div class="f-field">
-                        <input type="text" name="fw_curr" class="f-input f-mono" 
-                               value="<?= htmlspecialchars($form_data['fw_curr'] ?? '') ?>" placeholder="e.g. 24.2.0" required>
-                        <label class="f-label">Current Firmware</label>
-                    </div>
-                    <div class="f-field">
-                        <input type="text" name="fw_rec" class="f-input f-mono" 
-                               value="<?= htmlspecialchars($form_data['fw_rec'] ?? '') ?>" placeholder="e.g. 24.0.5" required>
-                        <label class="f-label">Recovery Firmware</label>
-                    </div>
+                    
                     <div>
                         <div class="f-pill-wrap">
                             <span class="f-pill-label">Firmware Type</span>
@@ -273,6 +273,45 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
                             </div>
                         </div>
                     </div>
+                    
+                    <div></div>
+
+                    <div class="f-field-dd">
+                        <span class="f-label-static">Previous Firmware</span>
+                        <?= Helper::enhancedDropdown([
+                            'name' => 'fw_prev',
+                            'id' => 'fw_prev_dd',
+                            'placeholder' => 'e.g. 24.1.0',
+                            'creatable' => true,
+                            'options' => $data['firmwares'],
+                            'selected' => $form_data['fw_prev'] ?? ''
+                        ]) ?>
+                    </div>
+                    
+                    <div class="f-field-dd">
+                        <span class="f-label-static">Current Firmware</span>
+                        <?= Helper::enhancedDropdown([
+                            'name' => 'fw_curr',
+                            'id' => 'fw_curr_dd',
+                            'placeholder' => 'e.g. 24.2.0',
+                            'creatable' => true,
+                            'options' => $data['firmwares'],
+                            'selected' => $form_data['fw_curr'] ?? ''
+                        ]) ?>
+                    </div>
+                    
+                    <div class="f-field-dd">
+                        <span class="f-label-static">Recovery Firmware</span>
+                        <?= Helper::enhancedDropdown([
+                            'name' => 'fw_rec',
+                            'id' => 'fw_rec_dd',
+                            'placeholder' => 'e.g. 24.0.5',
+                            'creatable' => true,
+                            'options' => $data['firmwares'],
+                            'selected' => $form_data['fw_rec'] ?? ''
+                        ]) ?>
+                    </div>
+                    
                 </div>
             </div>
         </div>
@@ -372,6 +411,43 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
 (function() {
     'use strict';
 
+    // --- Firmware Type Smart Filter ---
+    function updateFwDropdowns(type) {
+        // Targets the three specific dropdown containers
+        ['fw_prev_dd', 'fw_curr_dd', 'fw_rec_dd'].forEach(id => {
+            const container = document.getElementById(id);
+            if (!container) return;
+            
+            const labels = container.querySelectorAll('.enh-optgroup-label');
+            labels.forEach(label => {
+                const isMatch = label.textContent.trim() === type;
+                label.style.display = isMatch ? 'block' : 'none';
+                
+                // Hide or show the options under this specific label
+                let next = label.nextElementSibling;
+                while (next && (next.classList.contains('enh-option') || next.classList.contains('type-hidden'))) {
+                    if (isMatch) {
+                        next.classList.remove('type-hidden');
+                    } else {
+                        next.classList.add('type-hidden');
+                    }
+                    next = next.nextElementSibling;
+                }
+            });
+        });
+    }
+
+    // Bind Radio Listeners
+    document.querySelectorAll('input[name="fw_type"]').forEach(r => {
+        r.addEventListener('change', (e) => updateFwDropdowns(e.target.value));
+    });
+
+    // Run immediately on page load to set initial state
+    const initialFwType = document.querySelector('input[name="fw_type"]:checked');
+    if (initialFwType) updateFwDropdowns(initialFwType.value);
+
+
+    // --- Existing Form Logic ---
     const assignments = <?= $saved_assignments_json ?>;
     const regressionUrls = <?= $saved_reg_urls_json ?>;
     let activePrinter = null;
@@ -563,7 +639,7 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
         if (!poolChip) return;
         if (poolChip.classList.contains('t-used')) return;
         if (!activePrinter) {
-            alert('Please select a printer first.');
+            if(typeof showDynamicToast === 'function') showDynamicToast('Please select a printer first.', 'error');
             return;
         }
         const uid = poolChip.dataset.uid;

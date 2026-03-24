@@ -9,7 +9,48 @@ Helper::requireLogin();
 function getData($pdo) {
     $printers = $pdo->query("SELECT * FROM printers ORDER BY model_name")->fetchAll();
     $users = $pdo->query("SELECT * FROM users ORDER BY full_name")->fetchAll();
-    return ['printers' => $printers, 'users' => $users];
+    
+    // 1. Combined Query: Fetch ALL distinct firmwares across all 3 columns
+    $sql = "
+        SELECT DISTINCT fw, fw_type FROM (
+            SELECT fw_version_current AS fw, fw_type FROM tasks WHERE fw_version_current != '' AND fw_type IS NOT NULL
+            UNION
+            SELECT fw_version_prev AS fw, fw_type FROM tasks WHERE fw_version_prev != '' AND fw_type IS NOT NULL
+            UNION
+            SELECT fw_version_rec AS fw, fw_type FROM tasks WHERE fw_version_rec != '' AND fw_type IS NOT NULL
+        ) as combined
+        WHERE fw IS NOT NULL AND fw != ''
+    ";
+    
+    $fw_data = $pdo->query($sql)->fetchAll();
+    
+    // 2. Group by Type
+    $trunk_fws = [];
+    $branch_fws = [];
+    
+    foreach ($fw_data as $row) {
+        if ($row['fw_type'] === 'Trunk') {
+            $trunk_fws[] = $row['fw'];
+        } elseif ($row['fw_type'] === 'Branch') {
+            $branch_fws[] = $row['fw'];
+        }
+    }
+    
+    // 3. Sort Descending (Using native version_compare to handle strings like '25.1.0' correctly)
+    usort($trunk_fws, 'version_compare');
+    $trunk_fws = array_reverse($trunk_fws);
+    
+    usort($branch_fws, 'version_compare');
+    $branch_fws = array_reverse($branch_fws);
+
+    return [
+        'printers' => $printers, 
+        'users' => $users,
+        'firmwares' => [
+            'Trunk' => $trunk_fws,
+            'Branch' => $branch_fws
+        ]
+    ];
 }
 
 // ============================================
