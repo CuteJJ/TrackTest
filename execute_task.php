@@ -6,540 +6,119 @@ require_once 'configs/header.php';
 <style>
     /* --- Page Specific Layout (No Global Nav) --- */
     .topbar {
-        flex-shrink: 0;
-        height: var(--nav-height);
-        background: var(--bg-surface);
-        border-bottom: 1px solid var(--border);
-        padding: 0 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-        z-index: 100;
+        flex-shrink: 0; height: var(--nav-height); background: var(--bg-surface);
+        border-bottom: 1px solid var(--border); padding: 0 24px; display: flex;
+        align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); z-index: 100;
     }
+    .tb-brand { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 700; color: var(--text-main); text-decoration: none; }
+    .tb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+    .tb-crumb { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-muted); }
+    .tb-crumb a { color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .tb-crumb a:hover { color: var(--primary); }
+    .tb-crumb-sep { color: var(--border); }
+    .tb-crumb-cur { color: var(--text-main); font-weight: 600; }
 
-    .tb-brand {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--text-main);
-        text-decoration: none;
-    }
-
-    .tb-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--primary);
-        flex-shrink: 0;
-    }
-
-    .tb-crumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.78rem;
-        color: var(--text-muted);
-    }
-
-    .tb-crumb a {
-        color: var(--text-muted);
-        text-decoration: none;
-        transition: color 0.15s;
-    }
-
-    .tb-crumb a:hover {
-        color: var(--primary);
-    }
-
-    .tb-crumb-sep {
-        color: var(--border);
-    }
-
-    .tb-crumb-cur {
-        color: var(--text-main);
-        font-weight: 600;
-    }
-
-    .page-shell {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 1fr 380px;
-        overflow: hidden;
-        min-height: 0;
-    }
-
-    .left-panel {
-        overflow-y: auto;
-        padding: 32px 36px 64px;
-        display: block;
-    }
-
-    .lp-heading {
-        margin-bottom: 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-    }
-
-    .lp-title {
-        font-size: 1.4rem;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        color: var(--text-main);
-        line-height: 1.2;
-        margin-bottom: 6px;
-    }
-
-    .lp-sub {
-        font-size: 0.82rem;
-        color: var(--text-muted);
-    }
-
-    .role-badge {
-        font-size: 0.7rem;
-        padding: 4px 10px;
-        border-radius: 6px;
-        text-transform: uppercase;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-    }
-
-    .role-main {
-        background: var(--primary);
-        color: white;
-        border: 1px solid var(--primary);
-    }
-
-    .role-support {
-        background: var(--bg-surface);
-        color: var(--text-muted);
-        border: 1px solid var(--border);
-    }
-
+    .page-shell { flex: 1; display: grid; grid-template-columns: 1fr 380px; overflow: hidden; min-height: 0; }
+    .left-panel { overflow-y: auto; padding: 32px 36px 64px; display: block; }
+    
+    .lp-heading { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .lp-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text-main); line-height: 1.2; margin-bottom: 6px; }
+    .lp-sub { font-size: 0.82rem; color: var(--text-muted); }
+    
+    .role-badge { font-size: 0.7rem; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+    .role-main { background: var(--primary); color: white; border: 1px solid var(--primary); }
+    .role-support { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+    
     /* --- Task Info Cards --- */
-    .task-info-grid {
-        display: grid;
-        grid-template-columns: 1.8fr 1.2fr 1.2fr;
-        gap: 16px;
-        margin-bottom: 30px;
-    }
-
-    .info-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 16px 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-    }
-
-    .info-card.highlight {
-        background: var(--bg-body);
-        border-color: var(--border);
-    }
-
-    .info-label {
-        font-size: 0.65rem;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        font-weight: 800;
-        margin-bottom: 8px;
-        letter-spacing: 0.05em;
-    }
-
-    .fw-transition {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-    }
-
-    .fw-ver {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .fw-ver span {
-        font-size: 0.65rem;
-        color: var(--text-muted);
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-bottom: 2px;
-    }
-
-    .fw-ver strong {
-        font-family: var(--font-mono);
-        font-size: 1.1rem;
-        color: var(--text-main);
-    }
-
-    .fw-ver.new strong {
-        color: var(--primary);
-        font-weight: 700;
-    }
-
-    .fw-ver.old strong {
-        color: var(--text-muted);
-        text-decoration: line-through;
-        opacity: 0.8;
-        font-size: 0.95rem;
-    }
-
-    .mini-row {
-        display: flex;
-        gap: 20px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .mini-row strong {
-        font-size: 1rem;
-        color: var(--text-main);
-        font-weight: 600;
-        font-family: 'Inter', sans-serif;
-    }
+    .task-info-grid { display: grid; grid-template-columns: 1.8fr 1.2fr 1.2fr; gap: 16px; margin-bottom: 30px; }
+    .info-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02); }
+    .info-card.highlight { background: var(--bg-body); border-color: var(--border); }
+    .info-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .fw-transition { display: flex; align-items: center; gap: 16px; }
+    .fw-ver { display: flex; flex-direction: column; }
+    .fw-ver span { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+    .fw-ver strong { font-family: var(--font-mono); font-size: 1.1rem; color: var(--text-main); }
+    .fw-ver.new strong { color: var(--primary); font-weight: 700; }
+    .fw-ver.old strong { color: var(--text-muted); text-decoration: line-through; opacity: 0.8; font-size: 0.95rem; }
+    .mini-row { display: flex; gap: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-row strong { font-size: 1rem; color: var(--text-main); font-weight: 600; font-family: var(--font-body); }
 
     /* --- Step 1: Selection Grid --- */
-    .section-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--text-main);
-        margin: 0 0 12px;
-    }
-
-    .section-sub {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-        margin-bottom: 16px;
-        display: block;
-    }
-
-    .selection-box {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 30px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-    }
-
-    .chip-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .case-chip {
-        padding: 8px 14px;
-        border-radius: 20px;
-        background: var(--bg-body);
-        border: 1px solid var(--border);
-        font-size: 0.8rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        max-width: 100%;
-        color: var(--text-main);
-        font-family: 'Inter', sans-serif;
-    }
-
-    .case-chip:hover {
-        border-color: var(--primary);
-        background: var(--bg-surface);
-        color: var(--primary);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 5px rgba(2, 136, 209, 0.1);
-    }
+    .section-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0 0 12px; }
+    .section-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px; display: block; }
+    .selection-box { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 30px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02); }
+    .chip-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+    .case-chip { padding: 8px 14px; border-radius: 20px; background: var(--bg-body); border: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; color: var(--text-main); font-family: var(--font-body); }
+    .case-chip:hover { border-color: var(--primary); background: var(--bg-surface); color: var(--primary); transform: translateY(-1px); box-shadow: 0 2px 5px rgba(2, 136, 209, 0.1); }
 
     /* --- Step 2: Test Case Cards --- */
-    .case-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        margin-bottom: 12px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        position: relative;
-        transition: all 0.2s ease;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    }
-
-    .case-row {
-        display: flex;
-        align-items: center;
-        padding: 16px 20px;
-        gap: 16px;
-    }
-
-    .status-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .case-info {
-        flex-grow: 1;
-        font-family: 'Inter', sans-serif;
-    }
-
-    .case-title {
-        font-weight: 600;
-        color: var(--text-main);
-        font-size: 0.95rem;
-        line-height: 1.3;
-    }
-
-    .case-code {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: 4px;
-        font-family: var(--font-mono);
-    }
-
-    .status-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .status-btn {
-        padding: 8px 16px;
-        border: 1.5px solid var(--border);
-        background: transparent;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        transition: all 0.15s;
-        font-family: 'DM Sans', sans-serif;
-    }
-
-    .status-btn:hover {
-        background: var(--bg-body);
-        color: var(--text-main);
-    }
-
-    .case-card.status-Pass {
-        border-left: 5px solid var(--success);
-    }
-
-    .case-card.status-Pass .btn-pass {
-        background: var(--success);
-        color: white;
-        border-color: var(--success);
-    }
-
-    .case-card.status-Fail {
-        border-left: 5px solid var(--error);
-    }
-
-    .case-card.status-Fail .btn-fail {
-        background: var(--error);
-        color: white;
-        border-color: var(--error);
-    }
-
-    .case-card.status-Blocked {
-        border-left: 5px solid var(--blocked);
-    }
-
-    .case-card.status-Blocked .btn-blocked {
-        background: var(--blocked);
-        color: white;
-        border-color: var(--blocked);
-    }
-
-    .case-card.status-NA {
-        border-left: 5px solid var(--na);
-    }
-
-    .case-card.status-NA .btn-na {
-        background: var(--na);
-        color: white;
-        border-color: var(--na);
-    }
+    .case-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative; transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03); }
+    .case-row { display: flex; align-items: center; padding: 16px 20px; gap: 16px; }
+    .status-icon { display: flex; align-items: center; justify-content: center; }
+    .case-info { flex-grow: 1; font-family: var(--font-body); }
+    .case-title { font-weight: 600; color: var(--text-main); font-size: 0.95rem; line-height: 1.3; }
+    .case-code { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
+    .status-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .status-btn { padding: 8px 16px; border: 1.5px solid var(--border); background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); transition: all 0.15s; font-family: var(--font-body); }
+    .status-btn:hover { background: var(--bg-body); color: var(--text-main); }
+    
+    .case-card.status-Pass { border-left: 5px solid var(--success); }
+    .case-card.status-Pass .btn-pass { background: var(--success); color: white; border-color: var(--success); }
+    .case-card.status-Fail { border-left: 5px solid var(--error); }
+    .case-card.status-Fail .btn-fail { background: var(--error); color: white; border-color: var(--error); }
+    .case-card.status-Blocked { border-left: 5px solid var(--blocked); }
+    .case-card.status-Blocked .btn-blocked { background: var(--blocked); color: white; border-color: var(--blocked); }
+    .case-card.status-NA { border-left: 5px solid var(--na); }
+    .case-card.status-NA .btn-na { background: var(--na); color: white; border-color: var(--na); }
 
     /* --- CLEAN JIRA UI STATES --- */
-    .jira-box {
-        background: var(--bg-surface);
-        padding: 12px 20px;
-        border-top: 1px dashed var(--border);
-        display: none;
-        border-radius: 0 0 12px 12px;
+    .jira-box { background: var(--bg-surface); padding: 12px 20px; border-top: 1px dashed var(--border); display: none; border-radius: 0 0 12px 12px; }
+    .case-card.status-Fail .jira-box, .case-card.status-Pass .jira-box { display: block; }
+    
+    .jira-input-wrap { position: relative; }
+    .jira-input { 
+        width: 98%; height: 36px; padding: 0 0 0 2%; border: 1px solid var(--border); 
+        border-radius: 6px; font-size: 0.8rem; background: var(--bg-body); color: var(--text-main); 
+        font-family: var(--font-body); outline: none; transition: border-color 0.15s, box-shadow 0.15s; 
+    }
+    .jira-input:focus { border-color: var(--primary); background: var(--bg-surface); box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1); }
+    .jira-enter-hint { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px; pointer-events: none; opacity: 0.8; }
+    
+    /* Input Error State Animation */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-4px); }
+        40%, 80% { transform: translateX(4px); }
+    }
+    .jira-input.input-error {
+        animation: shake 0.4s ease; border-color: var(--error) !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; background: var(--error-bg) !important;
     }
 
-    .case-card.status-Fail .jira-box,
-    .case-card.status-Pass .jira-box {
-        display: block;
+    .jira-locked { 
+        display: flex; align-items: center; justify-content: space-between; 
+        background: var(--bg-body); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; 
     }
-
-    .jira-input-wrap {
-        position: relative;
+    .jira-link-text { 
+        font-size: 0.8rem; color: var(--primary); text-decoration: none; white-space: nowrap; 
+        overflow: hidden; text-overflow: ellipsis; max-width: 90%; font-weight: 600; font-family: var(--font-body); 
     }
+    .jira-link-text:hover { text-decoration: underline; }
 
-    .jira-input {
-        width: 98%;
-        height: 36px;
-        padding: 0 0 0 2%;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        font-size: 0.8rem;
-        background: var(--bg-body);
-        color: var(--text-main);
-        font-family: 'Inter', sans-serif;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-    }
-
-    .jira-input:focus {
-        border-color: var(--primary);
-        background: var(--bg-surface);
-        box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1);
-    }
-
-    .jira-enter-hint {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--text-muted);
-        font-size: 16px;
-        pointer-events: none;
-        opacity: 0.8;
-    }
-
-    .jira-locked {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: var(--bg-body);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 6px 12px;
-    }
-
-    .jira-link-text {
-        font-size: 0.8rem;
-        color: var(--primary);
-        text-decoration: none;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 90%;
-        font-weight: 600;
-        font-family: 'Inter', sans-serif;
-    }
-
-    .jira-link-text:hover {
-        text-decoration: underline;
-    }
-
-    /* --- Delete Panel & Interactions --- */
-    .card-content-wrapper {
-        background: var(--bg-surface);
-        width: 100%;
-        height: 100%;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 2;
-        position: relative;
-    }
-
-    .remove-trigger {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 6px;
-        height: 100%;
-        background-color: transparent;
-        cursor: pointer;
-        transition: all 0.2s;
-        z-index: 10;
-    }
-
-    .remove-trigger:hover {
-        background-color: var(--error-bg);
-        width: 10px;
-    }
-
-    .delete-panel {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: 80px;
-        background-color: var(--error-bg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 1;
-    }
-
-    .delete-btn {
-        color: var(--error);
-        background: var(--bg-surface);
-        border-radius: 50%;
-        padding: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        transition: transform 0.15s;
-    }
-
-    .delete-btn:hover {
-        transform: scale(1.15) rotate(10deg);
-        color: white;
-        background: var(--error);
-    }
-
-    .case-card.delete-mode .card-content-wrapper {
-        transform: translateX(-80px);
-    }
-
+    /* --- Delete Panel --- */
+    .card-content-wrapper { background: var(--bg-surface); width: 100%; height: 100%; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2; position: relative; }
+    .remove-trigger { position: absolute; top: 0; right: 0; width: 6px; height: 100%; background-color: transparent; cursor: pointer; transition: all 0.2s; z-index: 10; }
+    .remove-trigger:hover { background-color: var(--error-bg); width: 10px; }
+    .delete-panel { position: absolute; top: 0; right: 0; bottom: 0; width: 80px; background-color: var(--error-bg); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1; }
+    .delete-btn { color: var(--error); background: var(--bg-surface); border-radius: 50%; padding: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: transform 0.15s; }
+    .delete-btn:hover { transform: scale(1.15) rotate(10deg); color: white; background: var(--error); }
+    .case-card.delete-mode .card-content-wrapper { transform: translateX(-80px); }
+    
     /* --- Right Sidebar Overview --- */
-    .right-panel {
-        background: var(--bg-surface);
-        border-left: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        min-height: 0;
-    }
-
-    .rp-head {
-        flex-shrink: 0;
-        padding: 18px 24px;
-        border-bottom: 1px solid var(--border);
-        background: var(--bg-body);
-    }
-
-    .rp-head-title {
-        font-size: 0.73rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.09em;
-        color: var(--text-main);
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    .rp-body {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 32px;
-    }
+    .right-panel { background: var(--bg-surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+    .rp-head { flex-shrink: 0; padding: 18px 24px; border-bottom: 1px solid var(--border); background: var(--bg-body); }
+    .rp-head-title { font-size: 0.73rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-main); display: block; margin-bottom: 4px; }
+    .rp-body { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 32px; }
 
     <?php
     $colors = ['#0288d1', '#16a34a', '#7c3aed', '#e11d48', '#d97706', '#0d9488'];
@@ -552,95 +131,19 @@ require_once 'configs/header.php';
         echo ".tester-text-$tid { color: $col; }\n";
         $i++;
     }
-    ?>.tester-legend-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 0.85rem;
-        padding: 10px 14px;
-        border-radius: 8px;
-        background: var(--bg-body);
-        border: 1px solid var(--border);
-        margin-bottom: 8px;
-        font-weight: 600;
-        font-family: 'Inter', sans-serif;
-    }
-
-    .color-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-    }
-
-    .mini-badge-main {
-        font-size: 0.65rem;
-        font-weight: 800;
-        color: var(--primary);
-        background: var(--bg-surface);
-        border: 1px solid var(--primary);
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-family: 'DM Sans', sans-serif;
-    }
-
-    .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 8px;
-    }
-
-    .grid-cell {
-        aspect-ratio: 1;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        cursor: help;
-        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        border: 1px solid transparent;
-        position: relative;
-    }
-
-    .cell-unassigned {
-        background: var(--bg-body);
-        border: 1px dashed var(--border);
-        color: var(--text-muted);
-    }
-
-    .grid-cell:hover {
-        z-index: 100;
-        transform: scale(1.15);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-    }
-
-    .tooltip-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 6px;
-    }
-
-    .tooltip-label {
-        color: #94a3b8;
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-    }
-
-    .tooltip-value {
-        font-weight: 600;
-        text-align: right;
-    }
-
-    .status-dot {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 6px;
-    }
+    ?>
+    .tester-legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; padding: 10px 14px; border-radius: 8px; background: var(--bg-body); border: 1px solid var(--border); margin-bottom: 8px; font-weight: 600; font-family: var(--font-body); }
+    .color-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .mini-badge-main { font-size: 0.65rem; font-weight: 800; color: var(--primary); background: var(--bg-surface); border: 1px solid var(--primary); padding: 2px 8px; border-radius: 12px; font-family: var(--font-body); }
+    .calendar-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .grid-cell { aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: help; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid transparent; position: relative; }
+    .cell-unassigned { background: var(--bg-body); border: 1px dashed var(--border); color: var(--text-muted); }
+    .grid-cell:hover { z-index: 100; transform: scale(1.15); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12); }
+    
+    .tooltip-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .tooltip-label { color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+    .tooltip-value { font-weight: 600; text-align: right; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
 </style>
 
 <header class="topbar">
@@ -797,7 +300,12 @@ require_once 'configs/header.php';
 
                         <div class="jira-box">
                             <div id="jira_edit_wrap_<?= $case['case_id'] ?>" class="jira-input-wrap <?= !empty($case['jira_url']) ? 'hidden' : '' ?>">
-                                <input type="text" id="jira_<?= $case['case_id'] ?>" class="jira-input" placeholder="Attach JIRA Bug URL..." value="<?= htmlspecialchars($case['jira_url'] ?? '') ?>" onkeydown="saveJira(event, <?= $case['case_id'] ?>)">
+                                <input type="text" id="jira_<?= $case['case_id'] ?>" class="jira-input" 
+                                       placeholder="Attach JIRA Bug URL..." 
+                                       value="<?= htmlspecialchars($case['jira_url'] ?? '') ?>" 
+                                       data-saved-url="<?= htmlspecialchars($case['jira_url'] ?? '') ?>"
+                                       onkeydown="handleJiraKey(event, <?= $case['case_id'] ?>)"
+                                       onblur="handleJiraBlur(<?= $case['case_id'] ?>)">
                                 <span class="material-symbols-outlined jira-enter-hint">keyboard_return</span>
                             </div>
                             <div id="jira_locked_wrap_<?= $case['case_id'] ?>" class="jira-locked <?= empty($case['jira_url']) ? 'hidden' : '' ?>">
@@ -931,60 +439,125 @@ require_once 'configs/header.php';
 
     // --- 2. BUSINESS LOGIC (AJAX & UI) ---
 
-    // Handles the explicit "Enter" to save the JIRA URL
-    function saveJira(event, caseId) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            const input = document.getElementById(`jira_${caseId}`);
-            const url = input.value.trim();
-            const card = document.getElementById(`card_${caseId}`);
-
-            let currentStatus = 'Pending';
-            if (card.classList.contains('status-Pass')) currentStatus = 'Pass';
-            if (card.classList.contains('status-Fail')) currentStatus = 'Fail';
-            if (card.classList.contains('status-Blocked')) currentStatus = 'Blocked';
-            if (card.classList.contains('status-NA')) currentStatus = 'N/A';
-
-            // Enforce required URL for Failed cases explicitly on Enter key
-            if (currentStatus === 'Fail' && url === '') {
-                if (typeof showDynamicToast === 'function') showDynamicToast("A JIRA URL is required to save a Failed test.", "error");
-                return;
-            }
-
-            window.showLoader();
-            const formData = new FormData();
-            formData.append('update_status', '1');
-            formData.append('case_id', caseId);
-            formData.append('status', currentStatus);
-            formData.append('jira_url', url);
-
-            fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    window.hideLoader();
-                    if (data.success) {
-                        if (url !== '') {
-                            document.getElementById(`jira_edit_wrap_${caseId}`).classList.add('hidden');
-                            document.getElementById(`jira_locked_wrap_${caseId}`).classList.remove('hidden');
-                            const linkEl = document.getElementById(`jira_link_${caseId}`);
-                            linkEl.href = url;
-                            linkEl.textContent = url;
-                        }
-                        if (typeof showDynamicToast === 'function') showDynamicToast("JIRA URL saved securely.", "success");
-                    } else {
-                        if (typeof showDynamicToast === 'function') showDynamicToast(data.error || "Failed to link JIRA URL.", "error");
-                    }
-                }).catch(() => {
-                    window.hideLoader();
-                    if (typeof showDynamicToast === 'function') showDynamicToast("Network error.", "error");
-                });
+    // Validates and formats the URL (Auto prepends https:// if missing)
+    function formatAndValidateUrl(inputUrl) {
+        let url = (inputUrl || '').trim();
+        if (!url) return { valid: true, url: '' }; 
+        if (!/^https?:\/\//i.test(url)) {
+            url = 'https://' + url;
+        }
+        try {
+            new URL(url);
+            return { valid: true, url: url };
+        } catch (e) {
+            return { valid: false, url: url }; // Still return the string so we don't wipe out their typing
         }
     }
 
-    // Unlocks the JIRA input
+    function triggerInputError(inputEl, message) {
+        inputEl.classList.remove('input-error');
+        void inputEl.offsetWidth; // Trigger reflow to restart animation
+        inputEl.classList.add('input-error');
+        if(typeof showDynamicToast === 'function') showDynamicToast(message, "error");
+        inputEl.focus();
+    }
+
+    // Handles the explicit "Enter" to save the JIRA URL, or "Escape" to cancel
+    function handleJiraKey(event, caseId) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            attemptSaveJira(caseId);
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            revertJiraEdit(caseId);
+        }
+    }
+
+    // Handles a user clicking away from an active edit
+    function handleJiraBlur(caseId) {
+        // We delay the revert slightly. If the user clicked "Pass" while editing, 
+        // the Pass button click event needs a fraction of a second to fire first.
+        setTimeout(() => revertJiraEdit(caseId), 200);
+    }
+
+    function revertJiraEdit(caseId) {
+        const input = document.getElementById(`jira_${caseId}`);
+        if (!input) return;
+
+        const savedUrl = input.getAttribute('data-saved-url') || '';
+        
+        // Revert value
+        input.value = savedUrl;
+        input.classList.remove('input-error');
+        
+        // If there was a saved URL, safely lock it back up
+        if (savedUrl !== '') {
+            document.getElementById(`jira_edit_wrap_${caseId}`).classList.add('hidden');
+            document.getElementById(`jira_locked_wrap_${caseId}`).classList.remove('hidden');
+        }
+    }
+
+    function attemptSaveJira(caseId) {
+        const input = document.getElementById(`jira_${caseId}`);
+        const card = document.getElementById(`card_${caseId}`);
+        
+        let currentStatus = 'Pending';
+        if (card.classList.contains('status-Pass')) currentStatus = 'Pass';
+        if (card.classList.contains('status-Fail')) currentStatus = 'Fail';
+        if (card.classList.contains('status-Blocked')) currentStatus = 'Blocked';
+        if (card.classList.contains('status-NA')) currentStatus = 'N/A';
+
+        // Format and validate
+        const validation = formatAndValidateUrl(input.value);
+
+        // Check Hard Requirement
+        if (currentStatus === 'Fail' && validation.url === '') {
+            triggerInputError(input, "A JIRA URL is required to save a Failed test.");
+            return;
+        }
+
+        // Check Validation Integrity
+        if (validation.url !== '' && !validation.valid) {
+            triggerInputError(input, "Please enter a valid URL.");
+            return;
+        }
+
+        const finalUrl = validation.url;
+        input.value = finalUrl; // visually clean up input
+        input.classList.remove('input-error');
+
+        window.showLoader();
+        const formData = new FormData();
+        formData.append('update_status', '1');
+        formData.append('case_id', caseId);
+        formData.append('status', currentStatus);
+        formData.append('jira_url', finalUrl);
+
+        fetch(window.location.href, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                window.hideLoader();
+                if (data.success) {
+                    input.setAttribute('data-saved-url', finalUrl); // Update local state!
+                    
+                    if (finalUrl !== '') {
+                        document.getElementById(`jira_edit_wrap_${caseId}`).classList.add('hidden');
+                        document.getElementById(`jira_locked_wrap_${caseId}`).classList.remove('hidden');
+                        const linkEl = document.getElementById(`jira_link_${caseId}`);
+                        linkEl.href = finalUrl;
+                        linkEl.textContent = finalUrl;
+                    }
+                    if (typeof showDynamicToast === 'function') showDynamicToast("JIRA URL saved securely.", "success");
+                } else {
+                    if (typeof showDynamicToast === 'function') showDynamicToast(data.error || "Failed to link JIRA URL.", "error");
+                }
+            }).catch(() => {
+                window.hideLoader();
+                if (typeof showDynamicToast === 'function') showDynamicToast("Network error.", "error");
+            });
+    }
+
+    // Unlocks the JIRA input safely
     function unlockJira(caseId) {
         document.getElementById(`jira_locked_wrap_${caseId}`).classList.add('hidden');
         const editWrap = document.getElementById(`jira_edit_wrap_${caseId}`);
@@ -992,6 +565,7 @@ require_once 'configs/header.php';
 
         const input = document.getElementById(`jira_${caseId}`);
         input.focus();
+        // Move cursor to the end of the text
         const val = input.value;
         input.value = '';
         input.value = val;
@@ -1001,8 +575,22 @@ require_once 'configs/header.php';
     function updateStatus(caseId, status) {
         const card = document.getElementById(`card_${caseId}`);
         const jiraInput = document.getElementById(`jira_${caseId}`);
-        const jiraUrl = jiraInput ? jiraInput.value.trim() : '';
-
+        
+        // Format and validate BEFORE saving status
+        const validation = formatAndValidateUrl(jiraInput ? jiraInput.value : '');
+        
+        if (validation.url !== '' && !validation.valid) {
+            unlockJira(caseId);
+            triggerInputError(jiraInput, "Please fix the invalid URL before updating the status.");
+            return;
+        }
+        
+        const finalUrl = validation.url;
+        if (jiraInput) {
+            jiraInput.value = finalUrl;
+            jiraInput.classList.remove('input-error');
+        }
+        
         const safeStatus = status.replace('/', '');
 
         // Optimistic UI Update - Card
@@ -1018,21 +606,11 @@ require_once 'configs/header.php';
         // Optimistic UI Update - Grid Tracker
         const gridCell = document.getElementById(`grid_cell_${caseId}`);
         if (gridCell) {
-            let color = 'var(--text-muted)';
-            let icon = 'more_horiz';
-            if (status === 'Pass') {
-                color = 'var(--success)';
-                icon = 'check';
-            } else if (status === 'Fail') {
-                color = 'var(--error)';
-                icon = 'close';
-            } else if (status === 'Blocked') {
-                color = 'var(--blocked)';
-                icon = 'block';
-            } else if (status === 'N/A') {
-                color = 'var(--na)';
-                icon = 'do_not_disturb_on';
-            }
+            let color = 'var(--text-muted)'; let icon = 'more_horiz';
+            if (status === 'Pass') { color = 'var(--success)'; icon = 'check'; }
+            else if (status === 'Fail') { color = 'var(--error)'; icon = 'close'; }
+            else if (status === 'Blocked') { color = 'var(--blocked)'; icon = 'block'; }
+            else if (status === 'N/A') { color = 'var(--na)'; icon = 'do_not_disturb_on'; }
 
             gridCell.setAttribute('data-status', status);
             gridCell.setAttribute('data-color', color);
@@ -1040,30 +618,29 @@ require_once 'configs/header.php';
             if (iconSpan) iconSpan.textContent = icon;
         }
 
-        // Silent Halt: If they click Fail, open the box and silently wait for them to press enter. No toast spam.
-        if (status === 'Fail' && jiraUrl === '') {
+        // Silent Halt: If Fail and NO URL, just open box and wait.
+        if (status === 'Fail' && finalUrl === '') {
             unlockJira(caseId);
             jiraInput.focus();
             return;
         }
 
-        // Execute Database Save for Passes or Fails that already have a URL
+        // Execute Database Save for valid status updates
         window.showLoader();
         const formData = new FormData();
         formData.append('update_status', '1');
         formData.append('case_id', caseId);
         formData.append('status', status);
-        formData.append('jira_url', jiraUrl);
+        formData.append('jira_url', finalUrl);
 
-        fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
+        fetch(window.location.href, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 window.hideLoader();
-                if (!data.success) {
-                    if (typeof showDynamicToast === 'function') showDynamicToast("Error saving to database: " + (data.error || "Unknown error"), 'error');
+                if (data.success) {
+                    if (jiraInput) jiraInput.setAttribute('data-saved-url', finalUrl); // Update local state!
+                } else {
+                    if (typeof showDynamicToast === 'function') showDynamicToast("Error saving: " + (data.error || "Unknown error"), 'error');
                 }
             })
             .catch(err => {
@@ -1084,10 +661,7 @@ require_once 'configs/header.php';
         formData.append('claim_case', '1');
         formData.append('case_id', caseId);
 
-        fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
+        fetch(window.location.href, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -1102,7 +676,6 @@ require_once 'configs/header.php';
                         btnElement.style.opacity = '0';
                         setTimeout(() => btnElement.remove(), 300);
                     }
-
                     setTimeout(() => location.reload(), 2500);
                 }
             })
@@ -1118,10 +691,7 @@ require_once 'configs/header.php';
         formData.append('unclaim_case', '1');
         formData.append('case_id', caseId);
 
-        fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
+        fetch(window.location.href, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -1138,5 +708,4 @@ require_once 'configs/header.php';
     }
 </script>
 </body>
-
 </html>

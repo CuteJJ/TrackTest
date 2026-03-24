@@ -95,9 +95,9 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 @media (max-width: 900px) { .f-grid { grid-template-columns: 1fr; } .f-grid .f-full { grid-column: span 1; } }
 
 .f-field { position: relative; }
-.f-input { display: block; width: 100%; padding: 20px 14px 7px; background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif; color: var(--text-main); outline: none; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; line-height: 1.35; height: 52px; }
+.f-input { display: block; width: 100%; padding: 20px 14px 7px; background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: var(--font-body); color: var(--text-main); outline: none; transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; line-height: 1.35; height: 52px; }
 .f-input:focus { border-color: var(--primary); background: var(--bg-surface); box-shadow: 0 0 0 3px rgba(2,136,209,0.1); }
-.f-input.f-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.83rem; }
+.f-input.f-mono { font-family: var(--font-mono); font-size: 0.83rem; }
 .f-label { position: absolute; left: 14px; top: 8px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); pointer-events: none; transition: color 0.14s; }
 .f-input:focus ~ .f-label { color: var(--primary); }
 input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: pointer; color: var(--text-main); }
@@ -166,7 +166,7 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
 .reg-wrap { position: relative; }
 .reg-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; display: flex; align-items: center; }
 .reg-icon .material-symbols-outlined { font-size: 14px; color: var(--text-muted); }
-.reg-input { width: 100%; padding: 10px 10px 10px 32px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.78rem; font-family: 'Inter', sans-serif; color: var(--text-main); background: var(--input-bg); outline: none; transition: border-color 0.14s, box-shadow 0.14s; }
+.reg-input { width: 100%; padding: 10px 10px 10px 32px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.78rem; font-family: var(--font-body); color: var(--text-main); background: var(--input-bg); outline: none; transition: border-color 0.14s, box-shadow 0.14s; }
 .reg-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(2,136,209,0.1); }
 
 .rp-foot { flex-shrink: 0; border-top: 1px solid var(--border); padding: 10px 16px; background: var(--bg-body); font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }

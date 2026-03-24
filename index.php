@@ -181,16 +181,11 @@ require_once 'configs/header.php';
                                                                             </span>
                                                                         <?php endif; ?>
                                                                     <?php endif; ?>
-                                                                    <span class="divider-line"></span>
-
                                                                     <?php if ($task['testing_type'] == 'Regression'): ?>
                                                                         <a href="<?= htmlspecialchars($task['regression_url'] ?? '#') ?>" target="_blank" class="icon-btn tooltip-trigger" data-tip="Open TestRail">
                                                                             <span class="material-symbols-outlined">open_in_new</span>
                                                                         </a>
                                                                     <?php else: ?>
-                                                                        <a href="execute_task.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="icon-btn tooltip-trigger" data-tip="Update Results">
-                                                                            <span class="material-symbols-outlined">fact_check</span>
-                                                                        </a>
                                                                     <?php endif; ?>
                                                                 </div>
                                                             </div>

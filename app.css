@@ -195,7 +195,7 @@ body {
 .enh-dropdown {
     position: relative;
     width: 100%;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
     user-select: none;
 }
 
@@ -377,7 +377,7 @@ body {
     margin: 0 !important;
     font-size: 0.88rem;
     color: var(--text-main);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
 }
 
 .enh-search-wrap .material-symbols-outlined {
