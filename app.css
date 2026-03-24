@@ -40,7 +40,7 @@
     --font-mono: 'JetBrains Mono', monospace;
     --nav-height: 60px;
     --border-radius: 6px;
-    --input-height: 48px;
+    --input-height: 32px;
 }
 
 /* Classic Dark Theme */
@@ -206,7 +206,7 @@ body {
     justify-content: space-between;
     height: var(--input-height);
     min-height: var(--input-height);
-    padding: 6px 14px;
+    padding: 2px 14px;
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
@@ -1669,7 +1669,6 @@ body {
 .filter-group select {
     padding: 6px 10px;
     border: 1px solid var(--border);
-    border-radius: 6px;
     font-size: 0.85rem;
     background: var(--input-bg);
     color: var(--text-main);

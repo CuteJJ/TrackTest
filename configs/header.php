@@ -1,8 +1,9 @@
 <?php
-// Fallback title if one isn't defined on the page
 if (!isset($TITLE)) {
     $TITLE = "Track Manager";
 }
+// Defaults to current directory if not explicitly set by an admin file
+$ASSET_PATH = $ASSET_PATH ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -17,9 +18,9 @@ if (!isset($TITLE)) {
     <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,500,0,0" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="<?= $ASSET_PATH ?>app.css">
+    <script src="<?= $ASSET_PATH ?>app.js" defer></script> 
     
-    <script src="app.js" defer></script>
     <script>
         let savedTheme = localStorage.getItem('track-manager-theme');
         if (!savedTheme) {

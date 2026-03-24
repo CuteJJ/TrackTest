@@ -28,78 +28,112 @@ $chart_data = $pdo->query($chart_sql)->fetchAll();
 $userCount = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $taskCount = $pdo->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
 $printerCount = $pdo->query("SELECT COUNT(*) FROM printers")->fetchColumn();
+
+$TITLE = "Admin Dashboard | Track Manager";
+$ASSET_PATH = "../";
+require_once '../configs/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard | Track Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,500,0,0" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="../app.css">
-    <script>
-        const savedTheme = localStorage.getItem('track-manager-theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-    </script>
-</head>
-<body>
-    <?php Helper::displayFlash(); ?>
-    <!-- Include navbar and sidebar -->
-    <?php include 'admin_navbar.php'; ?>
+<style>
+    .admin-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
+    .stat-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px; }
+    .stat-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--bg-body); display: flex; align-items: center; justify-content: center; color: var(--primary); }
+    .stat-icon .material-symbols-outlined { font-size: 24px; }
+    .stat-info { display: flex; flex-direction: column; }
+    .stat-val { font-size: 1.8rem; font-weight: 800; color: var(--text-main); line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    .admin-split-layout { display: grid; grid-template-columns: 350px 1fr; gap: 24px; align-items: start; }
+    
+    .tester-rank { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 8px;}
+    .tester-meta { display: flex; align-items: center; gap: 14px; }
+    .rank-num { font-weight: 800; color: var(--text-muted); width: 20px; text-align: center; }
+    .rank-1 { color: #eab308; } /* Gold */
+    .rank-2 { color: #94a3b8; } /* Silver */
+    .rank-3 { color: #b45309; } /* Bronze */
+    
+    @media (max-width: 1024px) {
+        .admin-split-layout { grid-template-columns: 1fr; }
+        .admin-stats-grid { grid-template-columns: 1fr; }
+    }
+</style>
 
-    <div class="page-content-scroll">
-        <main class="admin-content">
-            <h1 style="font-size: 1.6rem; font-weight: 800; margin: 0;">Dashboard Overview</h1>
+<?php require_once 'admin_nav.php'; ?>
 
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-                <div class="d-card"><div class="d-card-body" style="padding: 20px; text-align: center;"><div style="font-size: 2rem; font-weight: 800; color: var(--primary);"><?= $userCount ?></div><div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Users</div></div></div>
-                <div class="d-card"><div class="d-card-body" style="padding: 20px; text-align: center;"><div style="font-size: 2rem; font-weight: 800; color: var(--primary);"><?= $taskCount ?></div><div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Tasks</div></div></div>
-                <div class="d-card"><div class="d-card-body" style="padding: 20px; text-align: center;"><div style="font-size: 2rem; font-weight: 800; color: var(--primary);"><?= $printerCount ?></div><div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Active Printers</div></div></div>
+<div class="page-content-scroll">
+    <div class="dash-wrapper" style="padding-top: 20px;">
+        
+        <div style="margin-bottom: 24px;">
+            <h1 style="margin:0; font-size: 1.6rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: var(--primary);">dashboard</span>
+                Admin Overview
+            </h1>
+        </div>
+
+        <div class="admin-stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><span class="material-symbols-outlined">group</span></div>
+                <div class="stat-info"><span class="stat-val"><?= $userCount ?></span><span class="stat-label">Total Users</span></div>
             </div>
+            <div class="stat-card">
+                <div class="stat-icon"><span class="material-symbols-outlined">assignment</span></div>
+                <div class="stat-info"><span class="stat-val"><?= $taskCount ?></span><span class="stat-label">Total Tasks</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><span class="material-symbols-outlined">print</span></div>
+                <div class="stat-info"><span class="stat-val"><?= $printerCount ?></span><span class="stat-label">Printers</span></div>
+            </div>
+        </div>
 
-            <div class="dash-split-row" style="grid-template-columns: 1fr 1.5fr;">
-                <div class="d-card">
-                    <div class="d-card-header"><div class="d-card-title"><span class="material-symbols-outlined">military_tech</span> Top 3 Performers</div></div>
-                    <div class="d-card-body" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
-                        <?php foreach($top_testers as $idx => $tester): ?>
-                            <div style="display: flex; align-items: center; gap: 16px; padding: 12px; background: var(--bg-body); border-radius: 8px; border: 1px solid var(--border);">
-                                <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary); width: 30px;">#<?= $idx + 1 ?></div>
-                                <img src="../<?= htmlspecialchars($tester['pfp_path'] ?? 'imgs/default_pfp.svg') ?>" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                <div style="flex: 1;"><div style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($tester['full_name']) ?></div></div>
-                                <div style="font-size: 1.2rem; font-weight: 800; color: var(--success);"><?= $tester['completed_tasks'] ?> <span style="font-size: 0.6rem; color: var(--text-muted);">CASES</span></div>
+        <div class="admin-split-layout">
+            <div class="d-card">
+                <div class="d-card-header"><div class="d-card-title"><span class="material-symbols-outlined">military_tech</span> Top Testers</div></div>
+                <div class="d-card-body">
+                    <?php 
+                    $rank = 1;
+                    foreach($top_testers as $t): 
+                        $pfp = !empty($t['pfp_path']) ? '../' . $t['pfp_path'] : '../imgs/default_pfp.svg';
+                    ?>
+                        <div class="tester-rank">
+                            <div class="tester-meta">
+                                <span class="rank-num rank-<?= $rank ?>">#<?= $rank ?></span>
+                                <img src="<?= htmlspecialchars($pfp) ?>" style="width:32px; height:32px; border-radius:50%; border: 1px solid var(--border); object-fit:cover;">
+                                <div>
+                                    <div style="font-weight:700; color:var(--text-main); font-size:0.9rem;"><?= htmlspecialchars($t['full_name']) ?></div>
+                                    <div style="font-size:0.75rem; color:var(--text-muted);"><?= $t['completed_tasks'] ?> cases resolved</div>
+                                </div>
                             </div>
-                        <?php endforeach; ?>
-                        <?php if(empty($top_testers)) echo "<p style='color:var(--text-muted); text-align:center;'>No data yet.</p>"; ?>
-                    </div>
-                </div>
-
-                <div class="d-card">
-                    <div class="d-card-header"><div class="d-card-title"><span class="material-symbols-outlined">bar_chart</span> Global Pass/Fail Ratio</div></div>
-                    <div class="d-card-body" style="padding: 20px;"><canvas id="adminChart" style="max-height: 280px;"></canvas></div>
+                        </div>
+                    <?php $rank++; endforeach; ?>
+                    <?php if(empty($top_testers)) echo "<p style='color:var(--text-muted); text-align:center;'>No data yet.</p>"; ?>
                 </div>
             </div>
-        </main>
+
+            <div class="d-card">
+                <div class="d-card-header"><div class="d-card-title"><span class="material-symbols-outlined">bar_chart</span> Global Pass/Fail Ratio</div></div>
+                <div class="d-card-body" style="padding: 20px;"><canvas id="adminChart" style="max-height: 280px;"></canvas></div>
+            </div>
+        </div>
+        
     </div>
+</div>
 
-    <script src="../app.js"></script>
-    <script>
-        const rawData = <?= json_encode($chart_data) ?>;
-        const labels = rawData.map(d => d.model_name);
-        const passed = rawData.map(d => Number(d.passed));
-        const failed = rawData.map(d => Number(d.failed));
+<script>
+    const rawData = <?= json_encode($chart_data) ?>;
+    const labels = rawData.map(d => d.model_name);
+    const passed = rawData.map(d => Number(d.passed));
+    const failed = rawData.map(d => Number(d.failed));
 
-        new Chart(document.getElementById('adminChart').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    { label: 'Passed', data: passed, backgroundColor: '#10b981', borderRadius: 4 },
-                    { label: 'Failed', data: failed, backgroundColor: '#ef4444', borderRadius: 4 }
-                ]
-            },
-            options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { labels: { color: 'gray' } } } }
-        });
-    </script>
+    new Chart(document.getElementById('adminChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Passed', data: passed, backgroundColor: '#10b981', borderRadius: 4 },
+                { label: 'Failed', data: failed, backgroundColor: '#ef4444', borderRadius: 4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }, plugins: { legend: { position: 'bottom' } } }
+    });
+</script>
 </body>
 </html>
