@@ -135,8 +135,8 @@ require_once '../configs/header.php';
 
     .btn-reset-icon {
         display: inline-flex; align-items: center; justify-content: center;
-        min-height: var(--input-height); width: var(--input-height); background: transparent; 
-        border: 1px solid transparent; border-radius: var(--border-radius);
+        height: var(--input-height); width: var(--input-height); background: transparent; 
+        border: 1px solid transparent; border-radius: var(--border-radius); 
         cursor: pointer; color: var(--text-muted); transition: all 0.2s ease; flex-shrink: 0;
     }
     .btn-reset-icon:hover { background: var(--bg-body); color: var(--error); border-color: var(--border); }
@@ -147,7 +147,18 @@ require_once '../configs/header.php';
     .table-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     
     .d-table { width: 100%; min-width: 1000px; border-collapse: collapse; }
-    .d-table th, .d-table td { white-space: nowrap !important; }
+    
+    /* FIX: Force columns to show overflowing content (e.g. Buttons) and never truncate with ... */
+    .d-table th, .d-table td { 
+        white-space: nowrap !important; 
+        overflow: visible !important; 
+        text-overflow: clip !important; 
+    }
+    .btn-mini {
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
 </style>
 
 <?php require_once 'admin_nav.php'; ?>
@@ -268,7 +279,6 @@ require_once '../configs/header.php';
             if (checkedCount > 0) {
                 container.style.display = 'block';
                 countSpan.textContent = checkedCount;
-                
             } else {
                 container.style.display = 'none';
             }
