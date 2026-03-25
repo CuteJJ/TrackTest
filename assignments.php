@@ -284,6 +284,21 @@ require_once 'configs/header.php';
     .modal-filter-reset-btn .material-symbols-outlined {
         font-size: 20px;
     }
+    
+    /* --- Locked Disabled Button --- */
+    .btn-disabled {
+        background: var(--bg-body);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .btn-disabled:hover {
+        background: none;
+        border-color: var(--border);
+    }
+
 </style>
 <?php require_once 'configs/nav.php'; ?>
 
@@ -376,7 +391,15 @@ require_once 'configs/header.php';
                                             <?php if ($task['testing_type'] == 'Regression'): ?>
                                                 <a href="<?= htmlspecialchars($task['regression_url']) ?>" target="_blank" class="btn-mini ghost"><span class="material-symbols-outlined">open_in_new</span> TestRail</a>
                                             <?php else: ?>
-                                                <a href="execute_task.php?task_id=<?= $task['id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini"><span class="material-symbols-outlined">play_arrow</span> Execute</a>
+                                                <?php if (in_array($task['overall_status'], ['Pass', 'Fail', 'Blocked', 'N/A'])): ?>
+                                                    <button class="btn-disabled btn-mini" title="Task finalized (<?= htmlspecialchars($task['overall_status']) ?>)">
+                                                        <span class="material-symbols-outlined">lock</span> Locked
+                                                    </button>
+                                                <?php else: ?>
+                                                    <a href="execute_task.php?task_id=<?= $task['id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini">
+                                                        <span class="material-symbols-outlined">play_arrow</span> Execute
+                                                    </a>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -398,9 +421,7 @@ require_once 'configs/header.php';
     <div class="drawer-header">
         <h3><span class="material-symbols-outlined">tune</span> Filters</h3>
         <button type="button" class="modal-filter-reset-btn" onclick="confirmReset()">
-            <span class="material-symbols-outlined"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M2.39 1.73L1.11 3l8.39 8.37l.47.63H10v5.87c-.04.29.06.6.29.83l2.01 2.01c.39.39 1.02.39 1.41 0c.23-.21.33-.53.29-.83v-3.99l6.84 6.84l1.27-1.27L14 13.35L9.41 8.76L4.15 3.5zM6.21 3l8.33 8.34l5.25-6.72a1 1 0 0 0-.17-1.4c-.19-.14-.4-.22-.62-.22z" />
-                </svg></span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><defs><mask id="SVG7xZIMtwn"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke="#fff" stroke-dasharray="54" d="M5 4h14l-5 6.5v9.5l-4 -4v-5.5Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.39s" values="54;0"/></path><path stroke="#000" stroke-dasharray="28" stroke-dashoffset="28" d="M-1 11h26" transform="rotate(45 12 12)"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.455s" dur="0.26s" to="0"/></path></g></mask></defs><path fill="currentColor" d="M0 0h24v24H0z" mask="url(#SVG7xZIMtwn)"/><path fill="none" stroke="currentColor" stroke-dasharray="28" stroke-dashoffset="28" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M-1 13h26" transform="rotate(45 12 12)"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.455s" dur="0.26s" to="0"/></path></svg>
         </button>
         <button type="button" class="modal-close-btn" onclick="toggleFilterDrawer()" title="Close">
             <span class="material-symbols-outlined">close</span>

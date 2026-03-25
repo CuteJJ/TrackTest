@@ -195,7 +195,7 @@ require_once '../configs/header.php';
                     </div>
                     
                     <button type="button" id="reset-filter" class="btn-reset-icon" title="Clear all filters">
-                        <span class="material-symbols-outlined" style="font-size:22px;">filter_alt_off</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><defs><mask id="SVG7xZIMtwn"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke="#fff" stroke-dasharray="54" d="M5 4h14l-5 6.5v9.5l-4 -4v-5.5Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.39s" values="54;0"/></path><path stroke="#000" stroke-dasharray="28" stroke-dashoffset="28" d="M-1 11h26" transform="rotate(45 12 12)"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.455s" dur="0.26s" to="0"/></path></g></mask></defs><path fill="currentColor" d="M0 0h24v24H0z" mask="url(#SVG7xZIMtwn)"/><path fill="none" stroke="currentColor" stroke-dasharray="28" stroke-dashoffset="28" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M-1 13h26" transform="rotate(45 12 12)"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.455s" dur="0.26s" to="0"/></path></svg>
                     </button>
                 </form>
 
