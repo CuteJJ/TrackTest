@@ -390,18 +390,35 @@ require_once 'configs/header.php';
 
 <script>
     // --- 1. TOOLTIP LOGIC ---
-    const tooltip = document.getElementById('custom-tooltip');
-    const gridCells = document.querySelectorAll('.grid-cell');
+    document.addEventListener('DOMContentLoaded', () => {
+        const tooltip = document.getElementById('custom-tooltip');
+        if (!tooltip) return;
 
-    gridCells.forEach(cell => {
-        cell.addEventListener('mouseenter', (e) => {
-            const code = cell.getAttribute('data-code');
-            const title = cell.getAttribute('data-title');
-            const tester = cell.getAttribute('data-tester');
-            const status = cell.getAttribute('data-status');
-            const color = cell.getAttribute('data-color');
+        // A. Standard Text Tooltips (Team Roster, Edit Buttons)
+        document.body.addEventListener('mouseenter', (e) => {
+            if (e.target.classList && e.target.classList.contains('tooltip-trigger')) {
+                tooltip.textContent = e.target.getAttribute('data-tip');
+                tooltip.classList.add('visible');
+            }
+        }, true);
 
-            tooltip.innerHTML = `
+        document.body.addEventListener('mouseleave', (e) => {
+            if (e.target.classList && e.target.classList.contains('tooltip-trigger')) {
+                tooltip.classList.remove('visible');
+            }
+        }, true);
+
+        // B. Rich HTML Tooltips (Calendar Grid)
+        const gridCells = document.querySelectorAll('.grid-cell');
+        gridCells.forEach(cell => {
+            cell.addEventListener('mouseenter', (e) => {
+                const code = cell.getAttribute('data-code');
+                const title = cell.getAttribute('data-title');
+                const tester = cell.getAttribute('data-tester');
+                const status = cell.getAttribute('data-status');
+                const color = cell.getAttribute('data-color');
+
+                tooltip.innerHTML = `
                     <div class="tooltip-row">
                         <span class="tooltip-label">Case ID</span>
                         <span class="tooltip-value" style="font-family: var(--font-mono);">#${code}</span>
@@ -409,7 +426,7 @@ require_once 'configs/header.php';
                     <div style="margin-bottom:10px; font-size:0.95rem; font-weight:700; line-height:1.4;">${title}</div>
                     <div style="border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;"></div>
                     <div class="tooltip-row">
-                        <span class="tooltip-label">Assigned</span>
+                        <span class="tooltip-label" style="margin-right: 22px;">Assigned</span>
                         <span class="tooltip-value">${tester}</span>
                     </div>
                     <div class="tooltip-row" style="margin-bottom:0;">
@@ -420,21 +437,34 @@ require_once 'configs/header.php';
                         </div>
                     </div>
                 `;
-            tooltip.classList.add('visible');
+                tooltip.classList.add('visible');
+            });
+
+            cell.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible');
+            });
         });
 
-        cell.addEventListener('mousemove', (e) => {
-            let top = e.clientY + 15;
-            let left = e.clientX + 15;
-            if (left + 240 > window.innerWidth) left = e.clientX - 250;
-            if (top + 160 > window.innerHeight) top = e.clientY - 170;
-            tooltip.style.top = `${top}px`;
-            tooltip.style.left = `${left}px`;
-        });
+        // C. Global Mouse Move & Out-of-Bounds Flipping
+        document.body.addEventListener('mousemove', (e) => {
+            if (!tooltip.classList.contains('visible')) return;
 
-        cell.addEventListener('mouseleave', () => {
-            tooltip.classList.remove('visible');
-        });
+            let leftPos = e.clientX + 14;
+            let topPos = e.clientY + 14;
+
+            // Flip to the left if it overflows the right edge
+            if (leftPos + tooltip.offsetWidth > window.innerWidth) {
+                leftPos = e.clientX - tooltip.offsetWidth - 14;
+            }
+            
+            // Flip upwards if it overflows the bottom edge
+            if (topPos + tooltip.offsetHeight > window.innerHeight) {
+                topPos = e.clientY - tooltip.offsetHeight - 14;
+            }
+
+            tooltip.style.left = `${leftPos}px`;
+            tooltip.style.top = `${topPos}px`;
+        }, true);
     });
 
     // --- 2. BUSINESS LOGIC (AJAX & UI) ---
@@ -707,5 +737,6 @@ require_once 'configs/header.php';
             .catch(() => window.hideLoader());
     }
 </script>
+<div id="custom-tooltip" ></div>
 </body>
 </html>

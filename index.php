@@ -170,17 +170,6 @@ require_once 'configs/header.php';
                                                                 </div>
                                                                 
                                                                 <div class="expand-actions">
-                                                                    <?php if ($task['testing_type'] == 'Smoke'): ?>
-                                                                        <?php if ($is_complete): ?>
-                                                                            <a href="generate_report.php?task_id=<?= $task['task_id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini ghost">
-                                                                                <span class="material-symbols-outlined">description</span> Report
-                                                                            </a>
-                                                                        <?php else: ?>
-                                                                            <span class="btn-mini disabled">
-                                                                                <span class="material-symbols-outlined">hourglass_top</span> In Progress
-                                                                            </span>
-                                                                        <?php endif; ?>
-                                                                    <?php endif; ?>
                                                                     <?php if ($task['testing_type'] == 'Regression'): ?>
                                                                         <a href="<?= htmlspecialchars($task['regression_url'] ?? '#') ?>" target="_blank" class="icon-btn tooltip-trigger" data-tip="Open TestRail">
                                                                             <span class="material-symbols-outlined">open_in_new</span>
@@ -497,24 +486,6 @@ require_once 'configs/header.php';
                 if (triggerElement) triggerElement.classList.add('is-open');
             }
         }
-
-        // ── Tooltip ──────────────────────────────────────────
-        const tooltip = document.getElementById('custom-tooltip');
-
-        function attachTooltips() {
-            document.querySelectorAll('[data-tip]').forEach(el => {
-                el.addEventListener('mouseenter', (e) => {
-                    tooltip.textContent = el.dataset.tip;
-                    tooltip.classList.add('visible');
-                });
-                el.addEventListener('mousemove', (e) => {
-                    tooltip.style.left = (e.clientX + 14) + 'px';
-                    tooltip.style.top = (e.clientY - 32) + 'px';
-                });
-                el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
-            });
-        }
-        attachTooltips();
 
         // ── AJAX Pagination ─────────────────────────
         document.addEventListener('DOMContentLoaded', () => {

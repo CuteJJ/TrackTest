@@ -605,4 +605,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btn) btn.classList.remove('active');
         }
     });
+
+// ── Tooltip ──────────────────────────────────────────
+const tooltip = document.getElementById('custom-tooltip');
+
+function attachTooltips() {
+    document.querySelectorAll('[data-tip]').forEach(el => {
+        el.addEventListener('mouseenter', (e) => {
+            tooltip.textContent = el.dataset.tip;
+            tooltip.classList.add('visible');
+        });
+        el.addEventListener('mousemove', (e) => {
+            let leftPos = e.clientX + 14;
+            let topPos = e.clientY - 32;
+
+            // Check if tooltip goes out of bounds on the right
+            if (leftPos + tooltip.offsetWidth > window.innerWidth) {
+                // Flip to the left side of the cursor
+                leftPos = e.clientX - tooltip.offsetWidth - 14;
+            }
+
+            tooltip.style.left = leftPos + 'px';
+            tooltip.style.top = topPos + 'px';
+        });
+        el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+    });
+}
+attachTooltips();
 });

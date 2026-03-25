@@ -412,10 +412,10 @@ require_once 'configs/header.php';
                                         </td>
                                         <td>
                                             <div class="action-icons">
-                                                <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn tooltip-trigger" data-tip="Edit Task">
+                                                <a href="edit_task.php?id=<?= $task['task_id'] ?>" class="icon-btn icon-tooltip" data-tip="Edit Task">
                                                     <span class="material-symbols-outlined">edit</span>
                                                 </a>
-                                                <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete tooltip-trigger" data-tip="Delete Task" onclick="return confirm('Delete this task completely?');">
+                                                <a href="delete_task.php?id=<?= $task['task_id'] ?>" class="icon-btn delete icon-tooltip" data-tip="Delete Task" onclick="return confirm('Delete this task completely?');">
                                                     <span class="material-symbols-outlined">delete</span>
                                                 </a>
                                             </div>

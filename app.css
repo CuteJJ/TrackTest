@@ -167,6 +167,71 @@
     box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--primary);
 }
 
+/* ==============================================
+   TRACK MANAGER ICON TOOLTIP (PURE CSS)
+   ============================================== */
+.icon-tooltip {
+    position: relative;
+    display: inline-flex; /* Keeps icons aligned */
+}
+
+.icon-tooltip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 10px); /* Spacing above the icon */
+    left: 50%;
+    transform: translateX(-50%);
+    
+    /* Match the "Last Login" styling */
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    
+    /* Animation defaults */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 1000;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The small pointer arrow at the bottom */
+.icon-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--border) transparent transparent transparent;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1001;
+}
+
+/* Hover State - Smooth fade and slide up */
+.icon-tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+    bottom: calc(100% + 6px);
+}
+
+.icon-tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+    bottom: calc(100% + 1px);
+}
+
 /* =========================================
    1. BASE STYLES & LAYOUT
    ========================================= */
