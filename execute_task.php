@@ -469,19 +469,28 @@ require_once 'configs/header.php';
 
     // --- 2. BUSINESS LOGIC (AJAX & UI) ---
 
-    // Validates and formats the URL (Auto prepends https:// if missing)
-    function formatAndValidateUrl(inputUrl) {
-        let url = (inputUrl || '').trim();
-        if (!url) return { valid: true, url: '' }; 
-        if (!/^https?:\/\//i.test(url)) {
-            url = 'https://' + url;
+    // Validates and formats multiple URLs (Auto prepends https:// if missing, allows comma separation)
+    function formatAndValidateUrl(inputStr) {
+        let rawStr = (inputStr || '').trim();
+        if (!rawStr) return { valid: true, url: '' }; 
+
+        // Split by comma, clean up spaces
+        let urls = rawStr.split(',').map(s => s.trim()).filter(s => s !== '');
+        let validUrls = [];
+        let allValid = true;
+
+        for (let u of urls) {
+            if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+            try {
+                new URL(u);
+                validUrls.push(u);
+            } catch (e) {
+                allValid = false;
+                break;
+            }
         }
-        try {
-            new URL(url);
-            return { valid: true, url: url };
-        } catch (e) {
-            return { valid: false, url: url }; // Still return the string so we don't wipe out their typing
-        }
+        
+        return { valid: allValid, url: validUrls.join(', ') };
     }
 
     function triggerInputError(inputEl, message) {

@@ -362,7 +362,7 @@ require_once 'configs/header.php';
                                     <?= Helper::renderSortHeader('task_date', 'Date', $sort, $order) ?>
                                     <?= Helper::renderSortHeader('testing_type', 'Type', $sort, $order) ?>
                                     <?= Helper::renderSortHeader('model_name', 'Printer', $sort, $order) ?>
-                                    <?= Helper::renderSortHeader('fw_version_current', 'Target FW', $sort, $order) ?>
+                                    <?= Helper::renderSortHeader('fw_version_current', 'Current FW', $sort, $order) ?>
                                     <?= Helper::renderSortHeader('fw_type', 'Branch', $sort, $order) ?>
                                     <th>Assigned Testers</th>
                                     <?= Helper::renderSortHeader('overall_status', 'Status', $sort, $order) ?>

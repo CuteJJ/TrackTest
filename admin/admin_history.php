@@ -30,7 +30,7 @@ $dropdownOptions = [
     'Status' => ['Pass' => 'Passed', 'Fail' => 'Failed', 'Blocked' => 'Blocked', 'N/A' => 'N/A', 'Pending' => 'Pending'],
     'Workflow Type' => ['Smoke' => 'Smoke', 'Regression' => 'Regression'],
     'Printers' => $printerOpts,
-    'Target FW' => $fwOpts
+    'Current FW' => $fwOpts
 ];
 
 // ─── Sorting & Pagination Setup ───
@@ -218,7 +218,7 @@ require_once '../configs/header.php';
                                     <?= Helper::renderSortHeader('task_date', 'Date', $sortBy, $sortDir) ?>
                                     <?= Helper::renderSortHeader('model_name', 'Printer', $sortBy, $sortDir) ?>
                                     <?= Helper::renderSortHeader('testing_type', 'Type', $sortBy, $sortDir) ?>
-                                    <th>Target FW</th>
+                                    <th>Current FW</th>
                                     <?= Helper::renderSortHeader('overall_status', 'Status', $sortBy, $sortDir) ?>
                                     <th style="text-align:right; padding-right: 24px;">Actions</th>
                                 </tr>

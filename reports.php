@@ -173,11 +173,132 @@ require_once 'configs/header.php';
         
         <div class="unified-card">
             <?php if ($user_role === 'lead' || $user_role === 'admin'): ?>
-                <div class="empty-state" style="border:none; padding: 60px 20px;">
-                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--primary);">construction</span>
-                    <h3 style="margin: 16px 0 8px; color: var(--text-main);">Lead Dashboard In Progress</h3>
-                    <p style="color: var(--text-muted);">The master overview for reporting is currently being configured.</p>
+                <?php
+                // --- LEAD SPECIFIC DATA FETCHING ---
+                $selected_date = $_GET['date'] ?? date('Y-m-d');
+                
+                // FIXED: Joined through task_assignments and grouped to prevent duplicates
+                $stmt = $pdo->prepare("
+                    SELECT t.id as task_id, t.fw_version_current, t.fw_type, 
+                           p.id as printer_id, p.model_name, p.printer_path,
+                           (SELECT MAX(overall_status) FROM task_assignments ta2 WHERE ta2.task_id = t.id AND ta2.printer_id = p.id) as overall_status
+                    FROM tasks t
+                    JOIN task_assignments ta ON t.id = ta.task_id
+                    JOIN printers p ON ta.printer_id = p.id
+                    WHERE t.task_date = ? AND t.testing_type = 'Smoke'
+                    GROUP BY t.id, t.fw_version_current, t.fw_type, p.id, p.model_name, p.printer_path
+                    ORDER BY p.model_name ASC
+                ");
+                $stmt->execute([$selected_date]);
+                $lead_reports = $stmt->fetchAll();
+
+                $has_pending = false;
+                foreach ($lead_reports as &$lr) {
+                    if ($lr['overall_status'] === 'Pending' || empty($lr['overall_status'])) {
+                        $has_pending = true;
+                    }
+                    
+                    // Get Progress
+                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM test_cases WHERE printer_model = ?");
+                    $stmt->execute([$lr['model_name']]);
+                    $total = $stmt->fetchColumn();
+                    
+                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM test_results WHERE task_id = ? AND printer_id = ? AND status IN ('Pass', 'Fail', 'Blocked', 'N/A')");
+                    $stmt->execute([$lr['task_id'], $lr['printer_id']]);
+                    $completed = $stmt->fetchColumn();
+                    
+                    $lr['total'] = $total;
+                    $lr['completed'] = $completed;
+                    $lr['progress'] = $total > 0 ? round(($completed / $total) * 100) : 0;
+                }
+                unset($lr);
+                ?>
+
+                <div style="padding: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <label style="font-size: 0.68rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; display: block; letter-spacing: 0.05em;">Select Report Date</label>
+                        <form method="GET" id="lead-date-form" style="display: flex; gap: 12px; align-items: center;">
+                            <input type="date" name="date" value="<?= htmlspecialchars($selected_date) ?>" onchange="document.getElementById('lead-date-form').submit();" style="height: 48px; padding: 0 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-body); color: var(--text-main); font-size: 0.95rem; font-weight: 600; outline: none; cursor: pointer;">
+                        </form>
+                    </div>
+                    
+                    <button type="button" class="btn" style="height: 48px; padding: 0 24px; border-radius: 8px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;" onclick="generateMasterReport('<?= $selected_date ?>', <?= $has_pending ? 'true' : 'false' ?>)">
+                        <span class="material-symbols-outlined">download</span> Download Master Report
+                    </button>
                 </div>
+
+                <div class="table-section">
+                    <?php if (empty($lead_reports)): ?>
+                        <div class="empty-state" style="border:none; border-radius:0; padding: 60px 20px;">
+                            <span class="material-symbols-outlined" style="font-size: 48px;">event_busy</span>
+                            <p style="margin-top: 16px;">No Smoke Tests scheduled for <?= date('M d, Y', strtotime($selected_date)) ?>.</p>
+                        </div>
+                    <?php else: ?>
+                        <table class="d-table">
+                            <thead>
+                                <tr>
+                                    <th>Printer Model</th>
+                                    <th>Target Firmware</th>
+                                    <th>Branch</th>
+                                    <th>Progress</th>
+                                    <th>Overall Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach($lead_reports as $lr): ?>
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
+                                                    <?= renderPrinterImage($lr['printer_path'] ?? null, htmlspecialchars($lr['model_name'])) ?>
+                                                </div>
+                                                <strong style="font-size:0.9rem;"><?= htmlspecialchars($lr['model_name']) ?></strong>
+                                            </div>
+                                        </td>
+                                        <td><span class="mono" style="font-size:0.85rem; color:var(--primary); font-weight:600;"><?= htmlspecialchars($lr['fw_version_current']) ?></span></td>
+                                        <td style="font-size:0.85rem; color:var(--text-muted);"><?= htmlspecialchars($lr['fw_type']) ?></td>
+                                        <td>
+                                            <div class="progress-wrap" style="width: 140px;">
+                                                <div class="progress-labels">
+                                                    <span>COMPLETED</span>
+                                                    <span style="color: <?= $lr['progress'] == 100 ? 'var(--success)' : 'var(--primary)' ?>;"><?= $lr['progress'] ?>%</span>
+                                                </div>
+                                                <div class="progress-bar-bg">
+                                                    <div class="progress-bar-fill" style="width: <?= $lr['progress'] ?>%; background: <?= $lr['progress'] == 100 ? 'var(--success)' : 'var(--primary)' ?>;"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <?php if ($lr['overall_status'] == 'Pass'): ?>
+                                                <span class="badge badge-pass"><span class="material-symbols-outlined">check_circle</span> PASSED</span>
+                                            <?php elseif ($lr['overall_status'] == 'Fail'): ?>
+                                                <span class="badge badge-fail"><span class="material-symbols-outlined">cancel</span> FAILED</span>
+                                            <?php elseif ($lr['overall_status'] == 'Blocked'): ?>
+                                                <span class="badge" style="background: rgba(249, 115, 22, 0.1); color: #f97316; border: 1px solid #f97316;">BLOCKED</span>
+                                            <?php elseif ($lr['overall_status'] == 'N/A'): ?>
+                                                <span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid #8b5cf6;">N/A</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-pending"><span class="material-symbols-outlined">schedule</span> Pending</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+
+                <script>
+                    function generateMasterReport(date, hasPending) {
+                        let msg = "This will generate a master report of the chosen date for every single printer.";
+                        if (hasPending) {
+                            msg += "\n\n⚠️ WARNING: Some tasks on this date are still PENDING or INCOMPLETE. The report will contain partial data.";
+                        }
+                        if (confirm(msg)) {
+                            window.open('generate_fullreport_date.php?date=' + date, '_blank');
+                        }
+                    }
+                </script>
             <?php else: ?>
 
                 <div class="table-controls">
@@ -202,7 +323,7 @@ require_once 'configs/header.php';
                                     <tr>
                                         <?= Helper::renderSortHeader('task_date', 'Date', $sort, $order) ?>
                                         <?= Helper::renderSortHeader('model_name', 'Printer', $sort, $order) ?>
-                                        <?= Helper::renderSortHeader('fw_version_current', 'Target FW', $sort, $order) ?>
+                                        <?= Helper::renderSortHeader('fw_version_current', 'Current FW', $sort, $order) ?>
                                         <th>Progress</th>
                                         <?= Helper::renderSortHeader('overall_status', 'Status', $sort, $order) ?>
                                         <th style="text-align: right; padding-right: 24px;">Action</th>

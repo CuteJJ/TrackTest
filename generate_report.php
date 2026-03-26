@@ -137,8 +137,11 @@ require_once 'configs/header.php';
     .report-table td { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--text-main); }
     .report-table tr:last-child td { border-bottom: none; }
     
-    .jira-link { color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; }
-    .jira-link:hover { text-decoration: underline; }
+    /* Updated JIRA Link CSS to handle multiple URLs cleanly */
+    .bug-links { display: flex; flex-direction: column; gap: 6px; }
+    .bug-link { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.8rem; word-break: break-all; display: inline-flex; align-items: flex-start; gap: 4px; line-height: 1.3; white-space: normal !important; }
+    .bug-link .material-symbols-outlined { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+    .bug-link:hover { text-decoration: underline; }
 
     /* Finalize Box */
     .finalize-box { background: var(--bg-surface); border: 2px solid var(--primary); border-radius: 12px; padding: 24px; text-align: center; box-shadow: 0 8px 24px rgba(2,136,209,0.1); }
@@ -229,14 +232,14 @@ require_once 'configs/header.php';
                         <th style="width: 35%;">Test Title</th>
                         <th style="width: 20%;">Tested By</th>
                         <th style="width: 15%;">Status</th>
-                        <th style="width: 15%;">JIRA Bug URL</th>
+                        <th style="width: 15%;">JIRA Bug URLs</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach($cases as $c): ?>
                         <tr>
                             <td class="mono" style="font-weight: 700; color: var(--primary);">#<?= htmlspecialchars($c['case_code']) ?></td>
-                            <td style="font-weight: 500;"><?= htmlspecialchars($c['title']) ?></td>
+                            <td style="font-weight: 500; white-space: normal !important; line-height: 1.4;"><?= htmlspecialchars($c['title']) ?></td>
                             <td style="color: var(--text-muted); font-size: 0.85rem;"><?= htmlspecialchars($c['tester_name'] ?? '--') ?></td>
                             <td>
                                 <?php if ($c['status'] == 'Pass'): ?>
@@ -251,11 +254,19 @@ require_once 'configs/header.php';
                                     <span class="badge badge-pending">PENDING</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <?php if(!empty($c['jira_url'])): ?>
-                                    <a href="<?= htmlspecialchars($c['jira_url']) ?>" target="_blank" class="jira-link">
-                                        <span class="material-symbols-outlined" style="font-size: 16px;">link</span> Open Link
-                                    </a>
+                            <td style="white-space: normal !important;">
+                                <?php 
+                                // Split comma-separated URLs
+                                $urls = array_filter(array_map('trim', explode(',', $c['jira_url'] ?? '')));
+                                if(!empty($urls)): 
+                                ?>
+                                    <div class="bug-links">
+                                        <?php foreach($urls as $url): ?>
+                                            <a href="<?= htmlspecialchars($url) ?>" target="_blank" class="bug-link">
+                                                <span class="material-symbols-outlined">link</span> <?= htmlspecialchars($url) ?>
+                                            </a>
+                                        <?php endforeach; ?>
+                                    </div>
                                 <?php else: ?>
                                     <span style="color: var(--text-muted); font-size: 0.8rem;">--</span>
                                 <?php endif; ?>

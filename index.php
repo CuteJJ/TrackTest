@@ -153,7 +153,7 @@ require_once 'configs/header.php';
                                                                     <span class="expand-detail-value" style="font-family:var(--font-body);"><?= date('M d, Y', strtotime($task['due_date'])) ?></span>
                                                                 </div>
                                                                 <div class="expand-detail">
-                                                                    <span class="expand-detail-label">Target FW</span>
+                                                                    <span class="expand-detail-label">Current FW</span>
                                                                     <span class="expand-detail-value" style="color:var(--primary);"><?= htmlspecialchars($task['fw_version_current']) ?></span>
                                                                 </div>
                                                                 <div class="expand-detail">
@@ -212,7 +212,7 @@ require_once 'configs/header.php';
                                                 <th>Date</th>
                                                 <th>Type</th>
                                                 <th>Printer</th>
-                                                <th>Target FW</th>
+                                                <th>Current FW</th>
                                                 <th>Branch</th>
                                                 <th>My Role</th>
                                                 <th>Status</th>
