@@ -340,4 +340,43 @@ class Helper
 
         return "<span class='material-symbols-outlined' style='font-size: {$iconSize}px;'>{$icon}</span>";
     }
+    
+    // ----------------------------------------------
+    // ENV PARSER
+    // Simple .env file parser to retrieve configuration values without external dependencies
+    // Usage: Helper::getEnv('GMAIL_USERNAME') or Helper::getEnv('GMAIL_USERNAME', 'default_value')
+    // ----------------------------------------------
+    private static $envData = null;
+
+    /**
+     * Parses the .env file in the root directory and retrieves the value.
+     */
+    public static function getEnv($key, $default = null)
+    {
+        // Only read the file once per page load to save performance
+        if (self::$envData === null) {
+            self::$envData = [];
+            // Assuming this file is inside /configs/, so root is one level up
+            $envPath = __DIR__ . '/../.env'; 
+
+            if (file_exists($envPath)) {
+                $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    // Skip comments
+                    if (str_starts_with($line, '#')) continue; 
+                    
+                    if (str_contains($line, '=')) {
+                        list($name, $value) = explode('=', $line, 2);
+                        $name = trim($name);
+                        // Remove spaces and surrounding quotes
+                        $value = trim(trim($value), "\"'"); 
+                        self::$envData[$name] = $value;
+                    }
+                }
+            }
+        }
+
+        return self::$envData[$key] ?? $default;
+    }
 }
