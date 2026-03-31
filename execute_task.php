@@ -236,7 +236,15 @@ require_once 'configs/header.php';
                     </div>
                 <?php endif; ?>
             </div>
-            <h3 class="section-title">Step 2: My Execution List</h3>
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">
+                <h3 class="section-title" style="margin: 0;">Step 2: My Execution List</h3>
+                <?php if (count($testers) === 1 && !empty($my_cases)): ?>
+                    <button type="button" class="btn-mini ghost" onclick="passAllCases()" style="border: 1px solid var(--success); color: var(--success); display: flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">done_all</span> Pass All
+                    </button>
+                <?php endif; ?>
+            </div>
         <?php else: ?>
             <div style="margin-bottom: 20px;">
                 <h3 class="section-title">Master Evaluation Control</h3>
@@ -301,7 +309,7 @@ require_once 'configs/header.php';
                         <div class="jira-box">
                             <div id="jira_edit_wrap_<?= $case['case_id'] ?>" class="jira-input-wrap <?= !empty($case['jira_url']) ? 'hidden' : '' ?>">
                                 <input type="text" id="jira_<?= $case['case_id'] ?>" class="jira-input" 
-                                       placeholder="Attach JIRA Bug URL..." 
+                                       placeholder="Attach JIRA Bug URL... (Add ',' to separate multiple URLs, Enter to save)" 
                                        value="<?= htmlspecialchars($case['jira_url'] ?? '') ?>" 
                                        data-saved-url="<?= htmlspecialchars($case['jira_url'] ?? '') ?>"
                                        onkeydown="handleJiraKey(event, <?= $case['case_id'] ?>)"
@@ -309,11 +317,20 @@ require_once 'configs/header.php';
                                 <span class="material-symbols-outlined jira-enter-hint">keyboard_return</span>
                             </div>
                             <div id="jira_locked_wrap_<?= $case['case_id'] ?>" class="jira-locked <?= empty($case['jira_url']) ? 'hidden' : '' ?>">
-                                <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
-                                    <span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">link</span>
-                                    <a href="<?= htmlspecialchars($case['jira_url'] ?? '#') ?>" target="_blank" id="jira_link_<?= $case['case_id'] ?>" class="jira-link-text"><?= htmlspecialchars($case['jira_url'] ?? '') ?></a>
+                                
+                                <div id="jira_links_container_<?= $case['case_id'] ?>" style="display:flex; align-items:center; gap:12px; overflow:hidden; flex-wrap:wrap;">
+                                    <?php 
+                                    $urls = array_filter(array_map('trim', explode(',', $case['jira_url'] ?? '')));
+                                    foreach ($urls as $url): 
+                                    ?>
+                                        <div style="display:flex; align-items:center; gap:4px;">
+                                            <span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">link</span>
+                                            <a href="<?= htmlspecialchars($url) ?>" target="_blank" class="jira-link-text"><?= htmlspecialchars($url) ?></a>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
-                                <button type="button" class="icon-btn tooltip-trigger" data-tip="Edit URL" onclick="unlockJira(<?= $case['case_id'] ?>)" style="width:24px; height:24px; border:none;">
+                                
+                                <button type="button" class="icon-btn tooltip-trigger" data-tip="Edit URL" onclick="unlockJira(<?= $case['case_id'] ?>)" style="width:24px; height:24px; border:none; flex-shrink:0;">
                                     <span class="material-symbols-outlined" style="font-size: 14px;">edit</span>
                                 </button>
                             </div>
@@ -418,6 +435,14 @@ require_once 'configs/header.php';
                 const status = cell.getAttribute('data-status');
                 const color = cell.getAttribute('data-color');
 
+                // ENHANCED CONTRAST COLOR LOGIC FOR TOOLTIP
+                let displayColor = color;
+                if (status === 'Pass') displayColor = '#34d399'; // Emerald 400
+                else if (status === 'Fail') displayColor = '#fb7185'; // Rose 400
+                else if (status === 'Blocked') displayColor = '#fbbf24'; // Amber 400
+                else if (status === 'N/A') displayColor = '#a78bfa'; // Violet 400
+                else displayColor = '#cbd5e1'; // Slate 300
+
                 tooltip.innerHTML = `
                     <div class="tooltip-row">
                         <span class="tooltip-label">Case ID</span>
@@ -431,8 +456,8 @@ require_once 'configs/header.php';
                     </div>
                     <div class="tooltip-row" style="margin-bottom:0;">
                         <span class="tooltip-label">Status</span>
-                        <div class="tooltip-value" style="display:flex; align-items:center; justify-content:flex-end; color:${color}">
-                            <span class="status-dot" style="background:${color}"></span>
+                        <div class="tooltip-value" style="display:flex; align-items:center; justify-content:flex-end; color:${displayColor}; font-weight:800;">
+                            <span class="status-dot" style="background:${color}; border: 1px solid rgba(255,255,255,0.2);"></span>
                             ${status}
                         </div>
                     </div>
@@ -582,9 +607,23 @@ require_once 'configs/header.php';
                     if (finalUrl !== '') {
                         document.getElementById(`jira_edit_wrap_${caseId}`).classList.add('hidden');
                         document.getElementById(`jira_locked_wrap_${caseId}`).classList.remove('hidden');
-                        const linkEl = document.getElementById(`jira_link_${caseId}`);
-                        linkEl.href = finalUrl;
-                        linkEl.textContent = finalUrl;
+                        
+                        // JS MULTIPLE URLS FIX: Rebuild the links container visually
+                        const linksContainer = document.getElementById(`jira_links_container_${caseId}`);
+                        linksContainer.innerHTML = '';
+                        
+                        const urlArray = finalUrl.split(',').map(s => s.trim()).filter(s => s !== '');
+                        urlArray.forEach(url => {
+                            const linkWrap = document.createElement('div');
+                            linkWrap.style.display = "flex";
+                            linkWrap.style.alignItems = "center";
+                            linkWrap.style.gap = "4px";
+                            linkWrap.innerHTML = `
+                                <span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">link</span>
+                                <a href="${url}" target="_blank" class="jira-link-text">${url}</a>
+                            `;
+                            linksContainer.appendChild(linkWrap);
+                        });
                     }
                     if (typeof showDynamicToast === 'function') showDynamicToast("JIRA URL saved securely.", "success");
                 } else {
@@ -686,6 +725,41 @@ require_once 'configs/header.php';
                 window.hideLoader();
                 console.error('Fetch error:', err);
             });
+    }
+
+    // --- PASS ALL CASES (AUTOFILL) ---
+    function passAllCases() {
+        if (!confirm("Are you sure you want to mark all your assigned cases as 'Pass'?")) return;
+        
+        const cases = document.querySelectorAll('.case-card');
+        if (cases.length === 0) return;
+        
+        window.showLoader();
+        let promises = [];
+        
+        cases.forEach(card => {
+            const caseId = card.id.replace('card_', '');
+            
+            const formData = new FormData();
+            formData.append('update_status', '1');
+            formData.append('case_id', caseId);
+            formData.append('status', 'Pass');
+            
+            // Ensure we don't accidentally overwrite an existing JIRA link
+            const jiraInput = document.getElementById(`jira_${caseId}`);
+            if (jiraInput) formData.append('jira_url', jiraInput.getAttribute('data-saved-url') || '');
+            
+            promises.push(fetch(window.location.href, { method: 'POST', body: formData }));
+        });
+        
+        // Wait for all cases to update, then reload page for clean state
+        Promise.all(promises).then(() => {
+            location.reload(); 
+        }).catch(() => {
+            window.hideLoader();
+            alert("Some updates failed to sync to the server.");
+            location.reload();
+        });
     }
 
     function toggleDeleteMode(cardId) {
