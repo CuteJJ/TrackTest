@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 12, 2026 at 02:57 AM
+-- Generation Time: Mar 31, 2026 at 08:27 AM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -20,6 +20,22 @@ SET time_zone = "+00:00";
 --
 -- Database: `track_manager`
 --
+CREATE DATABASE IF NOT EXISTS `track_manager` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `track_manager`;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `token` varchar(255) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -72,8 +88,10 @@ CREATE TABLE `tasks` (
 INSERT INTO `tasks` (`id`, `task_date`, `testing_type`, `fw_version_current`, `fw_version_prev`, `fw_version_rec`, `fw_type`, `due_date`, `created_at`) VALUES
 (23, '2026-03-04', 'Smoke', '123.457', '123.456', '63.0.1.6', 'Trunk', '2026-03-04', '2026-03-04 03:36:47'),
 (25, '2026-03-11', 'Smoke', '6.3.0.3', '6.3.0.1', '6.3.1.1', 'Trunk', '2026-03-11', '2026-03-11 02:18:27'),
-(26, '2026-03-11', 'Regression', '6.37.0.196', '6.37.0.54', '6.37.0.196', 'Trunk', '2026-03-11', '2026-03-11 02:47:19'),
-(27, '2026-03-11', 'Smoke', '123.457', '123.456', '123.001', 'Trunk', '2026-03-11', '2026-03-11 06:07:21');
+(28, '2026-03-24', 'Smoke', '12.2.2.2.3', '12.2.2.2.2', '12.0.0.0.1', 'Branch', '2026-03-24', '2026-03-24 03:37:32'),
+(29, '2026-03-24', 'Smoke', '123.456', '6.3.0.3', '123.457', 'Trunk', '2026-03-24', '2026-03-24 03:45:42'),
+(30, '2026-03-26', 'Smoke', '123.457', '123.456', '63.0.1.6', 'Trunk', '2026-03-26', '2026-03-26 07:04:57'),
+(31, '2026-03-27', 'Smoke', '6.39.0.94', '6.38.0.512', '6.30.1.6', 'Trunk', '2026-03-27', '2026-03-26 09:10:58');
 
 -- --------------------------------------------------------
 
@@ -88,7 +106,7 @@ CREATE TABLE `task_assignments` (
   `user_id` int(11) NOT NULL,
   `designation` enum('Main','Support') DEFAULT 'Main',
   `regression_url` text DEFAULT NULL,
-  `overall_status` enum('Pass','Fail','Pending') DEFAULT 'Pending'
+  `overall_status` enum('Pass','Fail','Pending','Blocked','N/A') DEFAULT 'Pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -100,14 +118,12 @@ INSERT INTO `task_assignments` (`id`, `task_id`, `printer_id`, `user_id`, `desig
 (87, 23, 2, 6, 'Support', NULL, 'Fail'),
 (95, 25, 3, 4, 'Main', NULL, 'Pass'),
 (96, 25, 3, 6, 'Support', NULL, 'Pass'),
-(97, 26, 6, 2, 'Main', 'https://hp-testrail.external.hp.com/index.php?/plans/view/1043537', 'Pending'),
-(98, 27, 2, 5, 'Main', NULL, 'Pending'),
-(99, 27, 2, 6, 'Support', NULL, 'Pending'),
-(100, 27, 2, 7, 'Support', NULL, 'Pending'),
-(101, 27, 2, 4, 'Support', NULL, 'Pending'),
-(102, 27, 6, 5, 'Main', NULL, 'Pending'),
-(103, 27, 6, 1, 'Support', NULL, 'Pending'),
-(104, 27, 6, 6, 'Support', NULL, 'Pending');
+(105, 28, 8, 1, 'Main', NULL, 'Pending'),
+(106, 29, 10, 1, 'Main', NULL, 'Pass'),
+(107, 30, 3, 1, 'Main', NULL, 'Pass'),
+(108, 30, 2, 1, 'Main', NULL, 'Pass'),
+(109, 30, 6, 1, 'Main', NULL, 'Fail'),
+(111, 31, 1, 5, 'Main', NULL, 'Pending');
 
 -- --------------------------------------------------------
 
@@ -204,11 +220,11 @@ CREATE TABLE `test_results` (
 INSERT INTO `test_results` (`id`, `task_id`, `printer_id`, `test_case_id`, `status`, `jira_url`, `updated_by`, `updated_at`, `assigned_to`) VALUES
 (114, 23, 2, 12, 'Blocked', '', 1, '2026-03-04 03:58:01', 1),
 (115, 23, 2, 13, 'N/A', '', 1, '2026-03-04 03:58:03', 1),
-(116, 23, 2, 11, 'Pass', '', 1, '2026-03-04 03:57:55', 1),
-(117, 23, 2, 14, 'Fail', '', 1, '2026-03-04 03:57:59', 1),
+(116, 23, 2, 11, 'Pass', 'jh', 1, '2026-03-24 02:32:19', 1),
+(117, 23, 2, 14, 'Pass', '', 1, '2026-03-24 02:34:28', 1),
 (118, 23, 2, 8, 'Pass', '', 2, '2026-03-04 03:39:57', 2),
 (119, 23, 2, 9, 'N/A', '', 6, '2026-03-04 03:58:23', 6),
-(120, 23, 2, 10, 'Blocked', '', 6, '2026-03-04 03:58:22', 6),
+(120, 23, 2, 10, 'Blocked', '', 6, '2026-03-25 02:14:55', 6),
 (133, 25, 3, 15, 'Pass', '', 6, '2026-03-11 02:46:35', 6),
 (134, 25, 3, 17, 'Pass', '', 6, '2026-03-11 02:44:50', 6),
 (135, 25, 3, 22, 'Pass', '', 6, '2026-03-11 02:19:58', 6),
@@ -218,13 +234,36 @@ INSERT INTO `test_results` (`id`, `task_id`, `printer_id`, `test_case_id`, `stat
 (139, 25, 3, 19, 'Pass', '', 6, '2026-03-11 02:44:58', 6),
 (140, 25, 3, 23, 'Pass', '', 6, '2026-03-11 02:45:00', 6),
 (141, 25, 3, 16, 'Pass', '', 6, '2026-03-11 02:44:58', 6),
-(142, 27, 2, 12, 'Fail', 'https://jira.com/.test/1234', 6, '2026-03-11 06:20:52', 6),
-(143, 27, 2, 13, 'Fail', 'https://jira.com/.test/123', 6, '2026-03-11 06:20:45', 6),
-(144, 27, 2, 8, 'Pass', '', 4, '2026-03-11 06:10:12', 4),
-(145, 27, 2, 9, 'Pass', '', 4, '2026-03-11 06:15:01', 4),
-(146, 27, 2, 11, 'Pass', '', 4, '2026-03-11 06:16:26', 4),
-(147, 27, 2, 10, 'Pass', '', 4, '2026-03-11 06:16:23', 4),
-(148, 27, 2, 14, 'Pass', '', 4, '2026-03-11 06:16:24', 4);
+(150, 29, 10, 52, 'Blocked', '', 1, '2026-03-25 02:14:10', 1),
+(151, 28, 8, 51, 'Fail', 'https://asd, https://qwe', 1, '2026-03-26 08:58:16', 1),
+(152, 30, 3, 15, 'Fail', 'https://123, https://234', 1, '2026-03-26 07:08:12', 1),
+(153, 30, 3, 17, 'Pass', '', 1, '2026-03-26 07:06:12', 1),
+(154, 30, 3, 21, 'Blocked', '', 1, '2026-03-26 07:08:14', 1),
+(155, 30, 3, 20, 'Blocked', '', 1, '2026-03-26 07:08:16', 1),
+(156, 30, 3, 22, 'N/A', '', 1, '2026-03-26 07:08:17', 1),
+(157, 30, 3, 18, 'N/A', '', 1, '2026-03-26 07:08:19', 1),
+(158, 30, 3, 19, 'N/A', '', 1, '2026-03-26 07:08:21', 1),
+(159, 30, 3, 16, 'Pass', '', 1, '2026-03-26 07:06:37', 1),
+(160, 30, 3, 23, 'Pass', '', 1, '2026-03-26 07:06:36', 1),
+(161, 30, 2, 11, 'Pass', '', 1, '2026-03-26 07:07:02', 1),
+(162, 30, 2, 8, 'Pass', '', 1, '2026-03-26 07:07:03', 1),
+(163, 30, 2, 10, 'Pass', '', 1, '2026-03-26 07:07:05', 1),
+(164, 30, 2, 14, 'Pass', '', 1, '2026-03-26 07:07:10', 1),
+(165, 30, 2, 12, 'Pass', '', 1, '2026-03-26 07:07:09', 1),
+(166, 30, 2, 13, 'Pass', '', 1, '2026-03-26 07:07:07', 1),
+(167, 30, 2, 9, 'Pass', '', 1, '2026-03-26 07:07:06', 1),
+(168, 30, 6, 48, 'Pass', '', 1, '2026-03-26 07:07:39', 1),
+(169, 30, 6, 45, 'Pass', '', 1, '2026-03-26 07:07:37', 1),
+(170, 30, 6, 44, 'Pass', '', 1, '2026-03-26 07:07:36', 1),
+(171, 30, 6, 49, 'Pass', '', 1, '2026-03-26 07:07:35', 1),
+(172, 30, 6, 46, 'Pass', '', 1, '2026-03-26 07:07:33', 1),
+(173, 30, 6, 47, 'Pass', '', 1, '2026-03-26 07:07:32', 1),
+(174, 30, 6, 42, 'Pass', '', 1, '2026-03-26 07:07:31', 1),
+(175, 30, 6, 43, 'Pass', '', 1, '2026-03-26 07:07:30', 1),
+(176, 31, 1, 39, 'Pass', 'https://xcsdcsD', 5, '2026-03-26 09:13:26', 5),
+(177, 31, 1, 33, 'Pass', '', 5, '2026-03-26 09:14:16', 5),
+(178, 31, 1, 34, 'Pass', '', 5, '2026-03-26 09:14:06', 5),
+(179, 31, 1, 35, 'Pass', '', 5, '2026-03-26 09:13:59', 5);
 
 -- --------------------------------------------------------
 
@@ -236,31 +275,41 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `full_name` varchar(255) NOT NULL,
   `username` varchar(50) NOT NULL,
+  `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
   `role` enum('lead','tester','admin') NOT NULL,
   `last_login` datetime DEFAULT NULL,
   `pfp_path` varchar(255) DEFAULT NULL,
-  `status` enum('active','blocked') DEFAULT 'active'
+  `status` enum('active','blocked') DEFAULT 'active',
+  `remember_token` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `full_name`, `username`, `password`, `role`, `last_login`, `pfp_path`, `status`) VALUES
-(1, 'Chan Jian Feng', 'jf', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 14:01:20', 'imgs/profile_pics/user_1_1771571234.png', 'active'),
-(2, 'Kali', 'kali', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'lead', '2026-03-11 13:48:26', 'imgs/profile_pics/user_2_1773195924.png', 'active'),
-(3, 'joon', 'joon', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 10:36:28', 'imgs/profile_pics/user_3_1773196620.png', 'active'),
-(4, 'jonathan', 'jon', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 14:08:33', 'imgs/profile_pics/user_4_1773195706.png', 'active'),
-(5, 'Alya', 'alya', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 10:26:27', 'imgs/profile_pics/user_5_1773194790.png', 'active'),
-(6, 'matt', 'matt', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 13:49:19', 'imgs/profile_pics/user_6_1773195922.png', 'active'),
-(7, 'chingsheng', 'cs', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 10:37:59', 'imgs/profile_pics/user_7_1773196269.png', 'active'),
-(8, 'Adila', 'adila', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 10:47:28', 'imgs/profile_pics/user_8_1773194765.png', 'active'),
-(9, 'admin', 'admin', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'admin', '2026-03-11 14:42:31', NULL, 'active');
+INSERT INTO `users` (`id`, `full_name`, `username`, `email`, `password`, `role`, `last_login`, `pfp_path`, `status`, `remember_token`) VALUES
+(1, 'Chan Jian Feng', 'jf', 'jfchan2015@gmail.com', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-31 14:25:07', 'imgs/profile_pics/user_1_1771571234.png', 'active', NULL),
+(2, 'Kali', 'kali', '', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'lead', '2026-03-26 17:19:33', 'imgs/profile_pics/user_2_1773195924.png', 'active', NULL),
+(3, 'joon', 'joon', '', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 10:36:28', 'imgs/profile_pics/user_3_1773196620.png', 'active', NULL),
+(4, 'jonathan', 'jon', '', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 14:08:33', 'imgs/profile_pics/user_4_1773195706.png', 'active', NULL),
+(5, 'Alya', 'alya', '', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-26 17:20:28', 'imgs/profile_pics/user_5_1773194790.png', 'active', NULL),
+(6, 'matt', 'matt', '', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-25 10:16:09', 'imgs/profile_pics/user_6_1773195922.png', 'active', NULL),
+(7, 'chingsheng', 'cs', '', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 10:37:59', 'imgs/profile_pics/user_7_1773196269.png', 'active', NULL),
+(8, 'Adila', 'adila', '', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'tester', '2026-03-11 10:47:28', 'imgs/profile_pics/user_8_1773194765.png', 'active', NULL),
+(9, 'admin', 'admin', '', '$2y$10$PuDwLb3pVVvMpi3Tk.he/uj4.IkTVYvrAdFrs.IR309NTzZvxGsH.', 'admin', '2026-03-16 16:32:34', NULL, 'active', NULL);
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `email` (`email`),
+  ADD KEY `token` (`token`);
 
 --
 -- Indexes for table `printers`
@@ -311,6 +360,12 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
 -- AUTO_INCREMENT for table `printers`
 --
 ALTER TABLE `printers`
@@ -320,13 +375,13 @@ ALTER TABLE `printers`
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `task_assignments`
 --
 ALTER TABLE `task_assignments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=105;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=112;
 
 --
 -- AUTO_INCREMENT for table `test_cases`
@@ -338,7 +393,7 @@ ALTER TABLE `test_cases`
 -- AUTO_INCREMENT for table `test_results`
 --
 ALTER TABLE `test_results`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=180;
 
 --
 -- AUTO_INCREMENT for table `users`
