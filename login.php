@@ -1,11 +1,13 @@
 <?php
+require_once 'configs/helper.php'; // MUST be first to start the session!
+
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
 }
-require_once 'configs/helper.php';
 ?>
+<!DOCTYPE html>
 <!DOCTYPE html>
 <html lang="en">
 <head>

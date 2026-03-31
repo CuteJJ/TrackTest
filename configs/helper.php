@@ -3,15 +3,15 @@ session_start();
 
 class Helper
 {
-    public static function isLoggedIn()
-    {
-        return isset($_SESSION['user_id']);
-    }
-
     public static function requireLogin()
     {
-        if (!self::isLoggedIn()) {
-            header("Location: login.php");
+        if (!(isset($_SESSION['user_id']))) {
+            self::setFlash("Please sign in first.", "error");
+            
+            // Auto-adjust redirect path if accessed from a subdirectory like /admin/
+            $prefix = (str_contains($_SERVER['SCRIPT_NAME'], '/admin/')) ? '../' : '';
+            
+            header("Location: {$prefix}login.php");
             exit();
         }
     }

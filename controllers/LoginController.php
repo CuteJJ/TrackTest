@@ -18,6 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: ../login.php");
             exit();
         }
+        
+        session_regenerate_id(true);
 
         // Set session variables for logged-in user
         $_SESSION['user_id'] = $user['id'];
