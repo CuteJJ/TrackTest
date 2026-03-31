@@ -53,7 +53,10 @@ if (isset($_SESSION['user_id'])) {
     .fake-line { height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.2); }
     .w-80 { width: 80%; } .w-50 { width: 50%; } .w-100 { width: 100%; height: 60px; margin-top: auto; }
     .showcase-text { position: absolute; bottom: 40px; left: 40px; color: rgba(255, 255, 255, 0.9); font-size: 1.1rem; font-weight: 500; line-height: 1.5; max-width: 400px; }
-    
+    .input-error { border-color: var(--error) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; background: var(--bg-surface) !important; }
+    .error-msg { color: var(--error); font-size: 0.75rem; position: absolute; bottom: -20px; left: 4px; font-weight: 600; display: none; }
+    .input-error ~ .error-msg { display: block; }
+
     @media (max-width: 900px) { .login-right { display: none; } }
     </style>
 </head>
@@ -75,9 +78,10 @@ if (isset($_SESSION['user_id'])) {
             <form action="controllers/PasswordController.php" method="POST" class="login-form">
                 <input type="hidden" name="action" value="request_reset">
                 
-                <div class="form-group">
-                    <input type="email" name="email" id="email" class="form-control" autocomplete="off" required>
+                <div class="form-group" style="margin-bottom: 28px;">
+                    <input type="text" name="email" id="email" class="form-control" autocomplete="off" required onblur="validateEmail(this)">
                     <label for="email" class="form-label">Email Address</label>
+                    <span class="error-msg">Please enter a valid email address (requires '@').</span>
                 </div>
 
                 <button type="submit" class="btn-login">
@@ -109,5 +113,25 @@ if (isset($_SESSION['user_id'])) {
     </div>
     
     <script src="app.js" defer></script>
+    <script>
+        function validateEmail(input) {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (input.value.trim() !== '' && !regex.test(input.value)) {
+            input.classList.add('input-error');
+            return false;
+        } else {
+            input.classList.remove('input-error');
+            return true;
+        }
+    }
+
+    document.addEventListener('submit', function(e) {
+        const emailInput = e.target.querySelector('input[name="email"]');
+        if (emailInput && !validateEmail(emailInput)) {
+            e.preventDefault();
+            emailInput.focus();
+        }
+    });
+    </script>
 </body>
 </html>

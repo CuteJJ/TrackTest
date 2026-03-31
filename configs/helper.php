@@ -38,7 +38,6 @@ class Helper
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['pfp_path'] = !empty($user['pfp_path']) ? $user['pfp_path'] : 'imgs/default_pfp.svg';
                 session_regenerate_id(true);
-                return; // Let them through!
             }
         }
 
@@ -47,6 +46,21 @@ class Helper
             self::setFlash("Please sign in to access this workspace.", "error");
             $prefix = (str_contains($_SERVER['SCRIPT_NAME'], '/admin/')) ? '../' : '';
             header("Location: {$prefix}login.php");
+            exit();
+        }
+
+        // 3. Real-time Block Check (If they are currently logged in)
+        global $pdo; 
+        if (!$pdo) require_once __DIR__ . '/db.php';
+
+        $stmt = $pdo->prepare("SELECT status FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $status = $stmt->fetchColumn();
+
+        if ($status === 'blocked') {
+            // Redirect to logout and pass a 'blocked' flag in the URL
+            $prefix = (str_contains($_SERVER['SCRIPT_NAME'], '/admin/')) ? '../' : '';
+            header("Location: {$prefix}logout.php?blocked=1");
             exit();
         }
     }

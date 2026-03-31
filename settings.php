@@ -42,16 +42,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['update_info'])) {
             $full_name = trim($_POST['full_name']);
             $username = trim($_POST['username']);
+            $email = trim($_POST['email']); // Retrieve new email field
             
-            if(empty($full_name) || empty($username)) throw new Exception("Name and Username are required.");
+            if(empty($full_name) || empty($username) || empty($email)) throw new Exception("Name, Username, and Email are required.");
             
-            // Ensure unique username
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
-            $stmt->execute([$username, $user_id]);
-            if($stmt->fetch()) throw new Exception("That username is already taken.");
+            // Ensure unique username and email across other users
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?");
+            $stmt->execute([$username, $email, $user_id]);
+            if($stmt->fetch()) throw new Exception("That username or email is already taken by another account.");
 
-            $stmt = $pdo->prepare("UPDATE users SET full_name = ?, username = ? WHERE id = ?");
-            $stmt->execute([$full_name, $username, $user_id]);
+            // Apply updates
+            $stmt = $pdo->prepare("UPDATE users SET full_name = ?, username = ?, email = ? WHERE id = ?");
+            $stmt->execute([$full_name, $username, $email, $user_id]);
             
             $_SESSION['full_name'] = $full_name;
             $_SESSION['username'] = $username;
@@ -91,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // --- 2. Fetch User Data ---
-$stmt = $pdo->prepare("SELECT username, full_name, role, pfp_path, last_login FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT username, full_name, email, role, pfp_path, last_login FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $u = $stmt->fetch();
 $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
@@ -140,6 +142,10 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
         .btn-back:hover .material-symbols-outlined {
             transform: translateX(-4px);
         }
+
+        .input-error { border-color: var(--error) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; background: var(--bg-surface) !important; }
+    .error-msg { color: var(--error); font-size: 0.75rem; position: absolute; bottom: -20px; left: 4px; font-weight: 600; display: none; }
+    .input-error ~ .error-msg { display: block; }
     </style>
 </head>
 <body>
@@ -222,7 +228,11 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
                                 <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($u['full_name']) ?>" autocomplete="off" required>
                                 <label class="form-label">Full Name</label>
                             </div>
-                            
+                            <div class="form-group" style="margin-bottom: 28px;">
+                                <input type="text" name="email" class="form-control" value="<?= htmlspecialchars($u['email'] ?? '') ?>" autocomplete="off" required onblur="validateEmail(this)">
+                                <label class="form-label">Email Address</label>
+                                <span class="error-msg">Please enter a valid email address (requires '@').</span>
+                            </div>
                             <div class="form-group">
                                 <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($u['username']) ?>" autocomplete="off" required>
                                 <label class="form-label">Username</label>
@@ -362,6 +372,25 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
         // Push into hidden form and submit
         document.getElementById('croppedImageInput').value = base64;
         document.getElementById('pfpForm').submit();
+    });
+
+    function validateEmail(input) {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (input.value.trim() !== '' && !regex.test(input.value)) {
+            input.classList.add('input-error');
+            return false;
+        } else {
+            input.classList.remove('input-error');
+            return true;
+        }
+    }
+
+    document.addEventListener('submit', function(e) {
+        const emailInput = e.target.querySelector('input[name="email"]');
+        if (emailInput && !validateEmail(emailInput)) {
+            e.preventDefault();
+            emailInput.focus();
+        }
     });
 </script>
 

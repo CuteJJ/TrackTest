@@ -2,23 +2,32 @@
 require_once 'configs/db.php';
 require_once 'configs/helper.php';
 
-// Clear Remember Me Token from DB if it exists
+// Check if they were forced out by the helper block check
+$is_blocked = isset($_GET['blocked']) && $_GET['blocked'] == '1';
+
+// 1. Clear Remember Me Token from DB if it exists
 if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare("UPDATE users SET remember_token = NULL WHERE id = ?");
     $stmt->execute([$_SESSION['user_id']]);
 }
 
-// Destroy Remember Me Cookie securely
+// 2. Destroy Remember Me Cookie securely
 setcookie('rmb_token', '', time() - 3600, "/");
 
-// Wipe all existing session variables and destroy the session completely
+// 3. Wipe all existing session variables and destroy the session completely
 session_unset();
 session_destroy();
 
-// Start a clean session specifically to hold the flash message
+// 4. Start a brand NEW, clean session specifically to hold the flash message
 session_start();
-Helper::setFlash("You have been successfully logged out.", "success");
 
-// Redirect back to login
+// 5. Show the correct message depending on how they logged out
+if ($is_blocked) {
+    Helper::setFlash("Your account has been suspended by an administrator.", "error");
+} else {
+    Helper::setFlash("You have been successfully logged out.", "success");
+}
+
+// 6. Redirect back to login
 header("Location: login.php");
 exit();

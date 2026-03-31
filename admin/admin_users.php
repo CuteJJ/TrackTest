@@ -15,17 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$_POST['full_name'], $_POST['role'], $_POST['user_id']]);
         Helper::setFlash("User updated.", "success");
     }
-    elseif (isset($_POST['reset_pass'])) {
-        $pwd = password_hash('1234', PASSWORD_DEFAULT);
-        $pdo->prepare("UPDATE users SET password = ? WHERE id = ?")->execute([$pwd, $_POST['user_id']]);
-        Helper::setFlash("Password reset to '1234'.", "success");
-    }
     elseif (isset($_POST['reset_pfp'])) {
         $pdo->prepare("UPDATE users SET pfp_path = NULL WHERE id = ?")->execute([$_POST['user_id']]);
         Helper::setFlash("Profile picture cleared.", "success");
     }
     elseif (isset($_POST['toggle_status'])) {
-        $new_status = $_POST['current_status'] === 'active' ? 'inactive' : 'active';
+        $new_status = $_POST['current_status'] === 'active' ? 'blocked' : 'active';
         $pdo->prepare("UPDATE users SET status = ? WHERE id = ?")->execute([$new_status, $_POST['user_id']]);
         Helper::setFlash("User status updated.", "success");
     }
@@ -57,7 +52,7 @@ require_once '../configs/header.php';
                 <span class="material-symbols-outlined" style="font-size: 28px; color: var(--primary);">group</span>
                 User Management
             </h1>
-            <button class="btn" style="width:auto;" onclick="openModal('addModal')">
+            <button class="btn" style="width:auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px;" onclick="openModal('addModal')">
                 <span class="material-symbols-outlined">person_add</span> Add User
             </button>
         </div>
@@ -96,7 +91,7 @@ require_once '../configs/header.php';
                                     <?php if($u['status'] === 'active'): ?>
                                         <span class="badge" style="background:rgba(16,185,129,0.1); color:#10b981; border:1px solid #10b981;">Active</span>
                                     <?php else: ?>
-                                        <span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid #ef4444;">Inactive</span>
+                                        <span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid #ef4444;">Blocked</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="mono" style="font-size:0.8rem; color:var(--text-muted);">
@@ -107,16 +102,12 @@ require_once '../configs/header.php';
                                         <button class="icon-btn tooltip-trigger" data-tip="Edit Info" onclick="openEdit(<?= $u['id'] ?>, '<?= htmlspecialchars($u['full_name'], ENT_QUOTES) ?>', '<?= $u['role'] ?>')">
                                             <span class="material-symbols-outlined">edit</span>
                                         </button>
-                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Reset password to 1234?');">
-                                            <input type="hidden" name="reset_pass" value="1">
-                                            <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                            <button type="submit" class="icon-btn tooltip-trigger" data-tip="Reset Password"><span class="material-symbols-outlined">key</span></button>
-                                        </form>
-                                        <form method="POST" style="display:inline;">
+
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to <?= $u['status'] === 'active' ? 'block' : 'unblock' ?> access for <?= htmlspecialchars(addslashes($u['full_name'])) ?>?');">
                                             <input type="hidden" name="toggle_status" value="1">
                                             <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                                             <input type="hidden" name="current_status" value="<?= $u['status'] ?>">
-                                            <button type="submit" class="icon-btn tooltip-trigger <?= $u['status'] === 'active' ? 'delete' : '' ?>" data-tip="<?= $u['status'] === 'active' ? 'Deactivate' : 'Activate' ?>">
+                                            <button type="submit" class="icon-btn tooltip-trigger <?= $u['status'] === 'active' ? 'delete' : '' ?>" data-tip="<?= $u['status'] === 'active' ? 'Block Access' : 'Unblock Access' ?>">
                                                 <span class="material-symbols-outlined"><?= $u['status'] === 'active' ? 'block' : 'check_circle' ?></span>
                                             </button>
                                         </form>
@@ -138,23 +129,29 @@ require_once '../configs/header.php';
             <h3>Add New User</h3>
             <button class="modal-close-btn" onclick="closeModal('addModal')"><span class="material-symbols-outlined">close</span></button>
         </div>
-        <form method="POST" class="modal-body">
+        <form method="POST" class="modal-body" style="overflow: visible;">
             <input type="hidden" name="add_user" value="1">
-            <div class="form-group">
-                <input type="text" name="full_name" class="form-control" required>
-                <label>Full Name</label>
+            
+            <div class="form-group" style="margin-top: 10px;">
+                <input type="text" name="full_name" class="form-control" autocomplete="off" required>
+                <label class="form-label">Full Name</label>
             </div>
+            
             <div class="form-group">
-                <input type="text" name="username" class="form-control" required>
-                <label>Login ID (Username)</label>
+                <input type="text" name="username" class="form-control" autocomplete="off" required>
+                <label class="form-label">Login ID (Username)</label>
             </div>
+            
             <div class="form-group" style="margin-top: 10px;">
                 <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom:8px; display:block;">Role</label>
-                <select name="role" class="form-control">
-                    <option value="tester">Tester</option>
-                    <option value="lead">Lead</option>
-                    <option value="admin">Admin</option>
-                </select>
+                <?= Helper::enhancedDropdown([
+                    'id' => 'add_role_dd',
+                    'name' => 'role',
+                    'placeholder' => 'Select Role...',
+                    'multiple' => false,
+                    'options' => ['tester' => 'Tester', 'lead' => 'Lead', 'admin' => 'Admin'],
+                    'selected' => 'tester'
+                ]) ?>
             </div>
             <button type="submit" class="btn" style="width:100%; margin-top:24px;">Create User</button>
         </form>
@@ -167,20 +164,26 @@ require_once '../configs/header.php';
             <h3>Edit User</h3>
             <button class="modal-close-btn" onclick="closeModal('editModal')"><span class="material-symbols-outlined">close</span></button>
         </div>
-        <form method="POST" class="modal-body">
+        <form method="POST" class="modal-body" style="overflow: visible;">
             <input type="hidden" name="user_id" id="edit_id">
-            <div class="form-group">
-                <input type="text" name="full_name" id="edit_name" class="form-control" required>
-                <label>Full Name</label>
+            
+            <div class="form-group" style="margin-top: 10px;">
+                <input type="text" name="full_name" id="edit_name" class="form-control" autocomplete="off" required>
+                <label class="form-label">Full Name</label>
             </div>
+            
             <div class="form-group" style="margin-top: 10px;">
                 <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom:8px; display:block;">Role</label>
-                <select name="role" id="edit_role" class="form-control">
-                    <option value="tester">Tester</option>
-                    <option value="lead">Lead</option>
-                    <option value="admin">Admin</option>
-                </select>
+                <?= Helper::enhancedDropdown([
+                    'id' => 'edit_role_dd',
+                    'name' => 'role',
+                    'placeholder' => 'Select Role...',
+                    'multiple' => false,
+                    'options' => ['tester' => 'Tester', 'lead' => 'Lead', 'admin' => 'Admin'],
+                    'selected' => '' 
+                ]) ?>
             </div>
+            
             <div style="display:flex; justify-content:space-between; margin-top:24px; align-items: center;">
                 <div style="display:flex; gap:10px; flex: 1;">
                     <button type="submit" name="edit_user" class="btn">Save Changes</button>
@@ -196,13 +199,31 @@ require_once '../configs/header.php';
     function openEdit(id, name, role) {
         document.getElementById('edit_id').value = id;
         document.getElementById('edit_name').value = name;
-        document.getElementById('edit_role').value = role;
         
-        // Force label to float
-        document.getElementById('edit_name').focus();
-        document.getElementById('edit_name').blur();
+        const dd = document.getElementById('edit_role_dd');
+        
+        const hiddenContainer = dd.querySelector('.enh-hidden-inputs');
+        hiddenContainer.innerHTML = `<input type='hidden' name='role' value='${role}'>`;
+        
+        const triggerContent = dd.querySelector('.enh-trigger-content');
+        const roleLabels = { 'tester': 'Tester', 'lead': 'Lead', 'admin': 'Admin' };
+        triggerContent.textContent = roleLabels[role] || 'Select...';
+        
+        dd.querySelectorAll('.enh-option').forEach(opt => {
+            if(opt.dataset.value === role) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
         
         openModal('editModal');
+        
+        setTimeout(() => {
+            const nameInput = document.getElementById('edit_name');
+            nameInput.focus();
+            nameInput.blur();
+        }, 50);
     }
 </script>
 </body>

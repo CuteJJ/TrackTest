@@ -1,5 +1,20 @@
 <?php 
 require_once 'controllers/DashboardController.php'; 
+require_once 'configs/db.php';
+require_once 'configs/helper.php';
+
+// --- MISSING EMAIL ALERT ---
+if (isset($_SESSION['user_id']) && !isset($_SESSION['flash'])) {
+    $stmt = $pdo->prepare("SELECT email FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user_email = $stmt->fetchColumn();
+    
+    // If the email column is completely empty, throw the flash error
+    if (empty(trim((string)$user_email))) {
+        Helper::setFlash("⚠️ Action Required: Please update your Account Settings with a valid email address for password recovery.", "error");
+    }
+}
+
 $TITLE = "Dashboard | Track Manager";
 require_once 'configs/header.php';
 ?>
