@@ -218,8 +218,17 @@ require_once 'configs/header.php';
 
         <?php if ($_SESSION['role'] !== 'lead' && $_SESSION['role'] !== 'admin'): ?>
             <div class="selection-box">
-                <h3 class="section-title">Step 1: Select Cases to Execute</h3>
-                <span class="section-sub">Click a case below to add it to your execution list.</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                    <div>
+                        <h3 class="section-title" style="margin-bottom: 4px;">Step 1: Select Cases to Execute</h3>
+                        <span class="section-sub" style="margin-bottom: 0;">Click a case below to add it to your execution list.</span>
+                    </div>
+                    <?php if (!empty($available_cases)): ?>
+                        <button type="button" class="btn-mini ghost" onclick="claimAllCases()" style="border: 1px solid var(--primary); color: var(--primary); display: flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">library_add</span> Claim All
+                        </button>
+                    <?php endif; ?>
+                </div>
 
                 <?php if (empty($available_cases)): ?>
                     <div style="font-size:0.9rem; padding:15px; color:var(--text-muted); font-style:italic; text-align:center; background:var(--bg-body); border-radius:8px;">
@@ -228,7 +237,7 @@ require_once 'configs/header.php';
                 <?php else: ?>
                     <div class="chip-grid">
                         <?php foreach ($available_cases as $case): ?>
-                            <button class="case-chip" onclick="claimCase(<?= $case['case_id'] ?>, this)" title="ID: <?= $case['case_code'] ?>">
+                            <button class="case-chip" data-id="<?= $case['case_id'] ?>" onclick="claimCase(<?= $case['case_id'] ?>, this)" title="ID: <?= $case['case_code'] ?>">
                                 <span class="material-symbols-outlined" style="font-size:18px; color:var(--primary); flex-shrink:0;">add_circle</span>
                                 <span><?= htmlspecialchars($case['title']) ?></span>
                             </button>
@@ -239,9 +248,9 @@ require_once 'configs/header.php';
             
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">
                 <h3 class="section-title" style="margin: 0;">Step 2: My Execution List</h3>
-                <?php if (count($testers) === 1 && !empty($my_cases)): ?>
+                <?php if (!empty($my_cases)): ?>
                     <button type="button" class="btn-mini ghost" onclick="passAllCases()" style="border: 1px solid var(--success); color: var(--success); display: flex; align-items: center; gap: 4px;">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">done_all</span> Pass All
+                        <span class="material-symbols-outlined" style="font-size: 16px;">done_all</span> Pass Pending
                     </button>
                 <?php endif; ?>
             </div>
@@ -435,7 +444,6 @@ require_once 'configs/header.php';
                 const status = cell.getAttribute('data-status');
                 const color = cell.getAttribute('data-color');
 
-                // ENHANCED CONTRAST COLOR LOGIC FOR TOOLTIP
                 let displayColor = color;
                 if (status === 'Pass') displayColor = '#34d399'; // Emerald 400
                 else if (status === 'Fail') displayColor = '#fb7185'; // Rose 400
@@ -477,12 +485,9 @@ require_once 'configs/header.php';
             let leftPos = e.clientX + 14;
             let topPos = e.clientY + 14;
 
-            // Flip to the left if it overflows the right edge
             if (leftPos + tooltip.offsetWidth > window.innerWidth) {
                 leftPos = e.clientX - tooltip.offsetWidth - 14;
             }
-            
-            // Flip upwards if it overflows the bottom edge
             if (topPos + tooltip.offsetHeight > window.innerHeight) {
                 topPos = e.clientY - tooltip.offsetHeight - 14;
             }
@@ -499,7 +504,6 @@ require_once 'configs/header.php';
         let rawStr = (inputStr || '').trim();
         if (!rawStr) return { valid: true, url: '' }; 
 
-        // Split by comma, clean up spaces
         let urls = rawStr.split(',').map(s => s.trim()).filter(s => s !== '');
         let validUrls = [];
         let allValid = true;
@@ -520,13 +524,12 @@ require_once 'configs/header.php';
 
     function triggerInputError(inputEl, message) {
         inputEl.classList.remove('input-error');
-        void inputEl.offsetWidth; // Trigger reflow to restart animation
+        void inputEl.offsetWidth; 
         inputEl.classList.add('input-error');
         if(typeof showDynamicToast === 'function') showDynamicToast(message, "error");
         inputEl.focus();
     }
 
-    // Handles the explicit "Enter" to save the JIRA URL, or "Escape" to cancel
     function handleJiraKey(event, caseId) {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -537,10 +540,7 @@ require_once 'configs/header.php';
         }
     }
 
-    // Handles a user clicking away from an active edit
     function handleJiraBlur(caseId) {
-        // We delay the revert slightly. If the user clicked "Pass" while editing, 
-        // the Pass button click event needs a fraction of a second to fire first.
         setTimeout(() => revertJiraEdit(caseId), 200);
     }
 
@@ -549,12 +549,9 @@ require_once 'configs/header.php';
         if (!input) return;
 
         const savedUrl = input.getAttribute('data-saved-url') || '';
-        
-        // Revert value
         input.value = savedUrl;
         input.classList.remove('input-error');
         
-        // If there was a saved URL, safely lock it back up
         if (savedUrl !== '') {
             document.getElementById(`jira_edit_wrap_${caseId}`).classList.add('hidden');
             document.getElementById(`jira_locked_wrap_${caseId}`).classList.remove('hidden');
@@ -571,23 +568,20 @@ require_once 'configs/header.php';
         if (card.classList.contains('status-Blocked')) currentStatus = 'Blocked';
         if (card.classList.contains('status-NA')) currentStatus = 'N/A';
 
-        // Format and validate
         const validation = formatAndValidateUrl(input.value);
 
-        // Check Hard Requirement
         if (currentStatus === 'Fail' && validation.url === '') {
             triggerInputError(input, "A JIRA URL is required to save a Failed test.");
             return;
         }
 
-        // Check Validation Integrity
         if (validation.url !== '' && !validation.valid) {
             triggerInputError(input, "Please enter a valid URL.");
             return;
         }
 
         const finalUrl = validation.url;
-        input.value = finalUrl; // visually clean up input
+        input.value = finalUrl; 
         input.classList.remove('input-error');
 
         window.showLoader();
@@ -602,13 +596,12 @@ require_once 'configs/header.php';
             .then(data => {
                 window.hideLoader();
                 if (data.success) {
-                    input.setAttribute('data-saved-url', finalUrl); // Update local state!
+                    input.setAttribute('data-saved-url', finalUrl); 
                     
                     if (finalUrl !== '') {
                         document.getElementById(`jira_edit_wrap_${caseId}`).classList.add('hidden');
                         document.getElementById(`jira_locked_wrap_${caseId}`).classList.remove('hidden');
                         
-                        // JS MULTIPLE URLS FIX: Rebuild the links container visually
                         const linksContainer = document.getElementById(`jira_links_container_${caseId}`);
                         linksContainer.innerHTML = '';
                         
@@ -635,7 +628,6 @@ require_once 'configs/header.php';
             });
     }
 
-    // Unlocks the JIRA input safely
     function unlockJira(caseId) {
         document.getElementById(`jira_locked_wrap_${caseId}`).classList.add('hidden');
         const editWrap = document.getElementById(`jira_edit_wrap_${caseId}`);
@@ -643,18 +635,15 @@ require_once 'configs/header.php';
 
         const input = document.getElementById(`jira_${caseId}`);
         input.focus();
-        // Move cursor to the end of the text
         const val = input.value;
         input.value = '';
         input.value = val;
     }
 
-    // Standard Status Update 
     function updateStatus(caseId, status) {
         const card = document.getElementById(`card_${caseId}`);
         const jiraInput = document.getElementById(`jira_${caseId}`);
         
-        // Format and validate BEFORE saving status
         const validation = formatAndValidateUrl(jiraInput ? jiraInput.value : '');
         
         if (validation.url !== '' && !validation.valid) {
@@ -671,7 +660,6 @@ require_once 'configs/header.php';
         
         const safeStatus = status.replace('/', '');
 
-        // Optimistic UI Update - Card
         card.classList.remove('status-Pass', 'status-Fail', 'status-Blocked', 'status-NA', 'status-Pending');
         card.classList.add(`status-${safeStatus}`);
 
@@ -681,7 +669,6 @@ require_once 'configs/header.php';
         else if (status === 'Blocked') iconDiv.innerHTML = '<span class="material-symbols-outlined" style="color:var(--blocked); font-size: 28px;">block</span>';
         else if (status === 'N/A') iconDiv.innerHTML = '<span class="material-symbols-outlined" style="color:var(--na); font-size: 28px;">do_not_disturb_on</span>';
 
-        // Optimistic UI Update - Grid Tracker
         const gridCell = document.getElementById(`grid_cell_${caseId}`);
         if (gridCell) {
             let color = 'var(--text-muted)'; let icon = 'more_horiz';
@@ -696,14 +683,12 @@ require_once 'configs/header.php';
             if (iconSpan) iconSpan.textContent = icon;
         }
 
-        // Silent Halt: If Fail and NO URL, just open box and wait.
         if (status === 'Fail' && finalUrl === '') {
             unlockJira(caseId);
             jiraInput.focus();
             return;
         }
 
-        // Execute Database Save for valid status updates
         window.showLoader();
         const formData = new FormData();
         formData.append('update_status', '1');
@@ -716,7 +701,7 @@ require_once 'configs/header.php';
             .then(data => {
                 window.hideLoader();
                 if (data.success) {
-                    if (jiraInput) jiraInput.setAttribute('data-saved-url', finalUrl); // Update local state!
+                    if (jiraInput) jiraInput.setAttribute('data-saved-url', finalUrl);
                 } else {
                     if (typeof showDynamicToast === 'function') showDynamicToast("Error saving: " + (data.error || "Unknown error"), 'error');
                 }
@@ -727,17 +712,54 @@ require_once 'configs/header.php';
             });
     }
 
-    // --- PASS ALL CASES (AUTOFILL) ---
-    function passAllCases() {
-        if (!confirm("Are you sure you want to mark all your assigned cases as 'Pass'?")) return;
+    // --- CLAIM ALL CASES ---
+    function claimAllCases() {
+        if (!confirm("Are you sure you want to claim all available cases?")) return;
         
-        const cases = document.querySelectorAll('.case-card');
-        if (cases.length === 0) return;
+        const chips = document.querySelectorAll('.case-chip');
+        if (chips.length === 0) return;
         
         window.showLoader();
         let promises = [];
         
-        cases.forEach(card => {
+        chips.forEach(chip => {
+            const caseId = chip.getAttribute('data-id');
+            if(!caseId) return;
+
+            const formData = new FormData();
+            formData.append('claim_case', '1');
+            formData.append('case_id', caseId);
+            
+            promises.push(fetch(window.location.href, { method: 'POST', body: formData }));
+        });
+        
+        // Wait for all cases to sync with server, then reload page
+        Promise.all(promises).then(() => {
+            location.reload(); 
+        }).catch(() => {
+            window.hideLoader();
+            alert("Some claims failed to sync to the server.");
+            location.reload();
+        });
+    }
+
+    // --- PASS ALL CASES (AUTOFILL) ---
+    // --- PASS PENDING CASES (AUTOFILL) ---
+    function passAllCases() {
+        // Target ONLY cases that currently have the "Pending" status
+        const pendingCases = document.querySelectorAll('.case-card.status-Pending');
+        
+        if (pendingCases.length === 0) {
+            alert("You have no pending cases to pass.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to mark ${pendingCases.length} pending case(s) as 'Pass'?`)) return;
+        
+        window.showLoader();
+        let promises = [];
+        
+        pendingCases.forEach(card => {
             const caseId = card.id.replace('card_', '');
             
             const formData = new FormData();
@@ -745,14 +767,12 @@ require_once 'configs/header.php';
             formData.append('case_id', caseId);
             formData.append('status', 'Pass');
             
-            // Ensure we don't accidentally overwrite an existing JIRA link
             const jiraInput = document.getElementById(`jira_${caseId}`);
             if (jiraInput) formData.append('jira_url', jiraInput.getAttribute('data-saved-url') || '');
             
             promises.push(fetch(window.location.href, { method: 'POST', body: formData }));
         });
         
-        // Wait for all cases to update, then reload page for clean state
         Promise.all(promises).then(() => {
             location.reload(); 
         }).catch(() => {
