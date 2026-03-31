@@ -1,31 +1,24 @@
 <?php
-// logout.php
-require_once 'configs/helper.php'; // Access to session_start() via helper if needed, but best to be explicit here.
+require_once 'configs/db.php';
+require_once 'configs/helper.php';
 
-// 1. Initialize the session
-// (If your helper.php already starts the session, you can skip this line, 
-// but it's safe to call session_start() even if already started in newer PHP versions 
-// or check if session_status() === PHP_SESSION_NONE)
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Clear Remember Me Token from DB if it exists
+if (isset($_SESSION['user_id'])) {
+    $stmt = $pdo->prepare("UPDATE users SET remember_token = NULL WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
 }
 
-// 2. Unset all session variables
-$_SESSION = array();
+// Destroy Remember Me Cookie securely
+setcookie('rmb_token', '', time() - 3600, "/");
 
-// 3. Destroy the session cookie (Best practice for complete logout)
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
-}
-
-// 4. Destroy the session
+// Wipe all existing session variables and destroy the session completely
+session_unset();
 session_destroy();
 
-// 5. Redirect to Login
+// Start a clean session specifically to hold the flash message
+session_start();
+Helper::setFlash("You have been successfully logged out.", "success");
+
+// Redirect back to login
 header("Location: login.php");
 exit();
-?>

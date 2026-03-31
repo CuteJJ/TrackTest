@@ -1,16 +1,51 @@
 <?php
+$lifetime = 86400; // 24 hours
+
+session_set_cookie_params([
+    'lifetime' => 0, // 0 = Session cookie dies when browser closes (unless Remember Me is active)
+    'path' => '/',
+    'secure' => isset($_SERVER['HTTPS']),
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+
+ini_set('session.gc_maxlifetime', $lifetime);
 session_start();
 
 class Helper
 {
+    public static function isLoggedIn()
+    {
+        return isset($_SESSION['user_id']);
+    }
+    
     public static function requireLogin()
     {
-        if (!(isset($_SESSION['user_id']))) {
-            self::setFlash("Please sign in first.", "error");
-            
-            // Auto-adjust redirect path if accessed from a subdirectory like /admin/
+        // 1. If session is dead, check for a valid Remember Me cookie
+        if (!isset($_SESSION['user_id']) && isset($_COOKIE['rmb_token'])) {
+            global $pdo; 
+            if (!$pdo) require_once __DIR__ . '/db.php';
+
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = ?");
+            $stmt->execute([$_COOKIE['rmb_token']]);
+            $user = $stmt->fetch();
+
+            if ($user && (!isset($user['status']) || $user['status'] !== 'blocked')) {
+                // Restore the session silently in the background
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['pfp_path'] = !empty($user['pfp_path']) ? $user['pfp_path'] : 'imgs/default_pfp.svg';
+                session_regenerate_id(true);
+                return; // Let them through!
+            }
+        }
+
+        // 2. If no session AND no valid cookie, kick to login
+        if (!isset($_SESSION['user_id'])) {
+            self::setFlash("Please sign in to access this workspace.", "error");
             $prefix = (str_contains($_SERVER['SCRIPT_NAME'], '/admin/')) ? '../' : '';
-            
             header("Location: {$prefix}login.php");
             exit();
         }

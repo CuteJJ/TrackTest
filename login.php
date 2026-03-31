@@ -1,5 +1,24 @@
 <?php
-require_once 'configs/helper.php'; // MUST be first to start the session!
+require_once 'configs/helper.php';
+
+// Auto-Login if Remember Me token exists but session doesn't
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['rmb_token'])) {
+    require_once 'configs/db.php';
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = ?");
+    $stmt->execute([$_COOKIE['rmb_token']]);
+    $user = $stmt->fetch();
+
+    if ($user && (!isset($user['status']) || $user['status'] !== 'blocked')) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['full_name'] = $user['full_name'];
+        $_SESSION['pfp_path'] = !empty($user['pfp_path']) ? $user['pfp_path'] : 'imgs/default_pfp.svg';
+        session_regenerate_id(true);
+        header("Location: index.php");
+        exit();
+    }
+}
 
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
@@ -7,7 +26,6 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 ?>
-<!DOCTYPE html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,189 +38,56 @@ if (isset($_SESSION['user_id'])) {
     
     <script>
         let savedTheme = localStorage.getItem('track-manager-theme');
-        if (!savedTheme) {
-            savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
+        if (!savedTheme) savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
 
     <style>
-    /* ═══ SPLIT SCREEN LOGIN STYLES ═══ */
-    body {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: row !important; /* THE FIX: Forces side-by-side, overriding app.css */
-        height: 100vh;
-        background-color: var(--bg-surface);
-        font-family: var(--font-body);
-        overflow: hidden;
-    }
-
+    body { margin: 0; padding: 0; display: flex; flex-direction: row !important; height: 100vh; background-color: var(--bg-surface); font-family: var(--font-body); overflow: hidden; }
+    
     /* --- LEFT SIDE: FORM --- */
-    .login-left {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 40px 20px;
-        position: relative;
-        overflow-y: auto; /* Just in case they are on a tiny laptop, allows form scrolling */
-    }
+    .login-left { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; position: relative; overflow-y: auto; }
+    .form-wrapper { width: 100%; max-width: 380px; }
+    .brand-logo { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin-bottom: 40px; letter-spacing: -0.5px; }
+    .brand-dot { width: 12px; height: 12px; background: var(--primary); border-radius: 4px; }
+    .login-title { font-size: 2rem; font-weight: 800; color: var(--text-main); letter-spacing: -1px; margin: 0 0 8px 0; }
+    .login-subtitle { font-size: 0.95rem; color: var(--text-muted); margin: 0 0 32px 0; }
+    .login-form .form-group { margin-bottom: 24px; width: 100%; }
 
-    .form-wrapper {
-        width: 100%;
-        max-width: 380px;
-    }
+    /* Custom Login Actions (Checkbox & Forgot Password) */
+    .login-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; width: 100%; }
+    
+    .custom-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; user-select: none; transition: color 0.2s; }
+    .custom-checkbox:hover { color: var(--text-main); }
+    .custom-checkbox input { display: none; }
+    .checkmark { width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; background: var(--bg-body); }
+    .custom-checkbox:hover .checkmark { border-color: var(--primary); }
+    .custom-checkbox input:checked ~ .checkmark { background: var(--primary); border-color: var(--primary); }
+    .custom-checkbox input:checked ~ .checkmark::after { content: ''; width: 3px; height: 7px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-bottom: 2px; }
+    
+    .forgot-link { color: var(--primary); text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: color 0.15s; }
+    .forgot-link:hover { text-decoration: underline; color: var(--primary-hover); }
 
-    /* Brand / Header */
-    .brand-logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 1.2rem;
-        font-weight: 800;
-        color: var(--text-main);
-        margin-bottom: 40px;
-        letter-spacing: -0.5px;
-    }
-    .brand-dot {
-        width: 12px;
-        height: 12px;
-        background: var(--primary);
-        border-radius: 4px; 
-    }
-
-    .login-title {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--text-main);
-        letter-spacing: -1px;
-        margin: 0 0 8px 0;
-    }
-    .login-subtitle {
-        font-size: 0.95rem;
-        color: var(--text-muted);
-        margin: 0 0 32px 0;
-    }
-
-    /* MUI Input Overrides for Login */
-    .login-form .form-group {
-        margin-bottom: 24px;
-        width: 100%;
-    }
-
-    .btn-login {
-        width: 100%;
-        padding: 14px;
-        font-size: 0.95rem;
-        font-weight: 700;
-        border-radius: 8px;
-        margin-top: 8px;
-        background: var(--primary);
-        color: white;
-        border: none;
-        cursor: pointer;
-        transition: background 0.2s, transform 0.1s;
-    }
-    .btn-login:hover {
-        background: var(--primary-hover);
-    }
-    .btn-login:active {
-        transform: scale(0.98);
-    }
-
-    .login-footer {
-        margin-top: 32px;
-        font-size: 0.85rem;
-        color: var(--text-muted);
-    }
-    .login-footer a {
-        color: var(--primary);
-        text-decoration: none;
-        font-weight: 600;
-    }
-    .login-footer a:hover {
-        text-decoration: underline;
-    }
+    .btn-login { width: 100%; padding: 14px; font-size: 0.95rem; font-weight: 700; border-radius: 8px; background: var(--primary); color: white; border: none; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+    .btn-login:hover { background: var(--primary-hover); }
+    .btn-login:active { transform: scale(0.98); }
+    .login-footer { margin-top: 32px; font-size: 0.85rem; color: var(--text-muted); }
+    .login-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+    .login-footer a:hover { text-decoration: underline; }
 
     /* --- RIGHT SIDE: SHOWCASE --- */
-    .login-right {
-        flex: 1;
-        display: flex; /* Desktop-only, always display */
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-        position: relative;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        padding: 40px;
-    }
-
-    /* Decorative Abstract UI (CSS Only) */
-    .showcase-wrapper {
-        position: relative;
-        width: 100%;
-        max-width: 500px;
-        height: 400px;
-    }
-
-    .glass-card {
-        position: absolute;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        box-shadow: 0 24px 40px rgba(0, 0, 0, 0.1);
-    }
-
-    .card-main {
-        width: 80%;
-        height: 80%;
-        top: 10%;
-        left: 10%;
-        z-index: 2;
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        box-sizing: border-box;
-    }
-
-    .card-floater-1 {
-        width: 40%;
-        height: 30%;
-        bottom: 0;
-        right: 0;
-        z-index: 3;
-    }
-
-    .card-floater-2 {
-        width: 30%;
-        height: 40%;
-        top: 0;
-        left: 0;
-        z-index: 1;
-        background: rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    /* Fake UI Lines inside the glass card */
+    .login-right { flex: 1; display: flex; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); position: relative; align-items: center; justify-content: center; overflow: hidden; padding: 40px; }
+    .showcase-wrapper { position: relative; width: 100%; max-width: 500px; height: 400px; }
+    .glass-card { position: absolute; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; box-shadow: 0 24px 40px rgba(0, 0, 0, 0.1); }
+    .card-main { width: 80%; height: 80%; top: 10%; left: 10%; z-index: 2; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; }
+    .card-floater-1 { width: 40%; height: 30%; bottom: 0; right: 0; z-index: 3; }
+    .card-floater-2 { width: 30%; height: 40%; top: 0; left: 0; z-index: 1; background: rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.05); }
     .fake-line { height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.2); }
     .w-80 { width: 80%; } .w-50 { width: 50%; } .w-100 { width: 100%; height: 60px; margin-top: auto; }
-
-    .showcase-text {
-        position: absolute;
-        bottom: 40px;
-        left: 40px;
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 1.1rem;
-        font-weight: 500;
-        line-height: 1.5;
-        max-width: 400px;
-    }
-</style>
+    .showcase-text { position: absolute; bottom: 40px; left: 40px; color: rgba(255, 255, 255, 0.9); font-size: 1.1rem; font-weight: 500; line-height: 1.5; max-width: 400px; }
+    
+    @media (max-width: 900px) { .login-right { display: none; } }
+    </style>
 </head>
 <body>
 
@@ -231,6 +116,15 @@ if (isset($_SESSION['user_id'])) {
                     <label for="password" class="form-label">Password</label>
                 </div>
 
+                <div class="login-actions">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" name="remember_me">
+                        <span class="checkmark"></span>
+                        Remember Me
+                    </label>
+                    <a href="forgot_password.php" class="forgot-link">Forgot Password?</a>
+                </div>
+
                 <button type="submit" class="btn-login">Sign In</button>
             </form>
 
@@ -251,10 +145,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
             <div class="glass-card card-floater-1"></div>
         </div>
-
-        <div class="showcase-text">
-            Good work today.
-        </div>
+        <div class="showcase-text">Good work today.</div>
     </div>
     
     <script src="app.js" defer></script>
