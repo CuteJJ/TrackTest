@@ -59,12 +59,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: admin_printers.php"); exit();
     }
 
-    // 3. EDIT TEST CASE
+    // 3. EDIT TEST CASE (DUPLICATE CHECK)
     elseif (isset($_POST['edit_testcase'])) {
         try {
-            $stmt = $pdo->prepare("UPDATE test_cases SET case_code = ?, title = ? WHERE id = ?");
-            $stmt->execute([trim($_POST['case_code']), trim($_POST['title']), $_POST['tc_id']]);
-            Helper::setFlash("Test case updated successfully.", "success");
+            $code = trim($_POST['case_code']);
+            $title = trim($_POST['title']);
+            $tc_id = $_POST['tc_id'];
+            $printer_model = $_POST['printer_model'];
+
+            // Check if this case code already exists for THIS specific printer (ignoring the current one being edited)
+            $chk = $pdo->prepare("SELECT id FROM test_cases WHERE printer_model = ? AND case_code = ? AND id != ?");
+            $chk->execute([$printer_model, $code, $tc_id]);
+            
+            if ($chk->fetch()) {
+                Helper::setFlash("Test case already exists for this printer.", "error");
+            } else {
+                $stmt = $pdo->prepare("UPDATE test_cases SET case_code = ?, title = ? WHERE id = ?");
+                $stmt->execute([$code, $title, $tc_id]);
+                Helper::setFlash("Test case updated successfully.", "success");
+            }
         } catch (Exception $e) {
             Helper::setFlash("Error updating test case.", "error");
         }
@@ -153,7 +166,7 @@ $tc_map = [];
 $unique_codes = [];
 $unique_titles = [];
 $codeToTitleMap = [];
-$titleToCodeMap = []; // NEW: Reverse Map for Two-Way Sync
+$titleToCodeMap = []; 
 
 foreach ($all_testcases as $tc) {
     $tc_map[$tc['printer_model']][] = $tc;
@@ -368,7 +381,7 @@ require_once '../configs/header.php';
                                                         <div style="font-size:0.85rem; color:var(--text-muted); font-style:italic;">No test cases assigned yet.</div>
                                                     <?php else: ?>
                                                         <?php foreach($cases as $tc): ?>
-                                                            <button type="button" class="tc-edit-chip" onclick="openEditTcModal(<?= $tc['id'] ?>, '<?= htmlspecialchars($tc['case_code'], ENT_QUOTES) ?>', '<?= htmlspecialchars($tc['title'], ENT_QUOTES) ?>')">
+                                                            <button type="button" class="tc-edit-chip" onclick="openEditTcModal(<?= $tc['id'] ?>, '<?= htmlspecialchars($tc['case_code'], ENT_QUOTES) ?>', '<?= htmlspecialchars($tc['title'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['model_name'], ENT_QUOTES) ?>')">
                                                                 <span class="code">#<?= htmlspecialchars($tc['case_code']) ?></span>
                                                                 <span class="title"><?= htmlspecialchars($tc['title']) ?></span>
                                                             </button>
@@ -428,7 +441,7 @@ require_once '../configs/header.php';
                 
                 <div id="dynamicTcList" style="padding-right: 4px; margin-bottom: 12px; overflow: visible;">
                     <?php for ($i = 0; $i < 30; $i++): ?>
-                        <div class="dynamic-tc-row" id="tc_row_<?= $i ?>" style="<?= $i === 0 ? '' : 'display:none;' ?>">
+                        <div class="dynamic-tc-row tc-sync-group" id="tc_row_<?= $i ?>" style="<?= $i === 0 ? '' : 'display:none;' ?>">
                             <div class="tc-code-wrapper" style="width: 140px;">
                                 <?= Helper::enhancedDropdown([
                                     'name' => 'case_code[]',
@@ -468,22 +481,42 @@ require_once '../configs/header.php';
 </div>
 
 <div class="modal-overlay" id="editTcModal">
-    <div class="modal-box" style="max-width: 400px;">
+    <div class="modal-box" style="max-width: 450px;">
         <div class="modal-header">
-            <h3>Rename Test Case</h3>
+            <h3>Edit Test Case</h3>
             <button type="button" class="modal-close-btn" onclick="closeModal('editTcModal')"><span class="material-symbols-outlined">close</span></button>
         </div>
-        <form method="POST" class="modal-body">
+        <form method="POST" class="modal-body" style="overflow: visible !important;">
             <input type="hidden" name="tc_id" id="edit_tc_id">
-            <div class="form-group">
-                <input type="text" name="case_code" id="edit_tc_code" class="form-control" style="font-family: 'JetBrains Mono', monospace;" required placeholder=" ">
-                <label class="form-label">Case Code</label>
+            <input type="hidden" name="printer_model" id="edit_tc_printer_model">
+            
+            <div class="tc-sync-group" style="display:flex; flex-direction:column; gap:16px;">
+                
+                <div class="tc-code-wrapper" id="edit_code_wrapper">
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; display:block;">Case Code</span>
+                    <?= Helper::enhancedDropdown([
+                        'name' => 'case_code',
+                        'placeholder' => 'Case ID',
+                        'creatable' => true,
+                        'options' => $unique_codes,
+                        'selected' => ''
+                    ]) ?>
+                </div>
+                
+                <div class="tc-title-wrapper" id="edit_title_wrapper">
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; display:block;">Case Name</span>
+                    <?= Helper::enhancedDropdown([
+                        'name' => 'title',
+                        'placeholder' => 'Case Name',
+                        'creatable' => true,
+                        'options' => $unique_titles,
+                        'selected' => ''
+                    ]) ?>
+                </div>
+
             </div>
-            <div class="form-group" style="margin-top: 16px;">
-                <input type="text" name="title" id="edit_tc_title" class="form-control" required placeholder=" ">
-                <label class="form-label">Case Name</label>
-            </div>
-            <div style="display:flex; gap:10px; margin-top:24px;">
+
+            <div style="display:flex; gap:10px; margin-top:28px;">
                 <button type="submit" name="edit_testcase" class="btn">Update Case</button>
                 <button type="button" class="btn ghost" style="background:transparent; border:1px solid var(--border); color:var(--text-main);" onclick="closeModal('editTcModal')">Cancel</button>
             </div>
@@ -504,7 +537,7 @@ require_once '../configs/header.php';
             
             <div id="dynamicExistingTcList" style="padding-right: 4px; margin-bottom: 12px; overflow: visible;">
                 <?php for ($i = 0; $i < 30; $i++): ?>
-                    <div class="dynamic-tc-row" id="extc_row_<?= $i ?>" style="<?= $i === 0 ? '' : 'display:none;' ?>">
+                    <div class="dynamic-tc-row tc-sync-group" id="extc_row_<?= $i ?>" style="<?= $i === 0 ? '' : 'display:none;' ?>">
                         <div class="tc-code-wrapper" style="width: 140px;">
                             <?= Helper::enhancedDropdown([
                                 'name' => 'new_case_code[]',
@@ -671,7 +704,7 @@ require_once '../configs/header.php';
         currentExTcRow = 1;
     });
 
-    // --- Dynamic TWO-WAY Auto-Fill Logic ---
+    // --- Dynamic TWO-WAY Auto-Fill Logic (Updated for Sync Group) ---
     const caseMap = <?= json_encode($codeToTitleMap) ?>;
     const titleMap = <?= json_encode($titleToCodeMap) ?>;
 
@@ -685,7 +718,7 @@ require_once '../configs/header.php';
             if (hiddenInput) {
                 const code = hiddenInput.value.trim();
                 if (caseMap[code]) {
-                    const row = codeWrapper.closest('.dynamic-tc-row');
+                    const row = codeWrapper.closest('.tc-sync-group'); // Updated
                     const tWrap = row.querySelector('.tc-title-wrapper');
                     
                     if (tWrap) {
@@ -708,7 +741,7 @@ require_once '../configs/header.php';
             if (hiddenInput) {
                 const title = hiddenInput.value.trim();
                 if (titleMap[title]) {
-                    const row = titleWrapper.closest('.dynamic-tc-row');
+                    const row = titleWrapper.closest('.tc-sync-group'); // Updated
                     const cWrap = row.querySelector('.tc-code-wrapper');
                     
                     if (cWrap) {
@@ -744,14 +777,41 @@ require_once '../configs/header.php';
         }
     }
 
-    function openEditTcModal(id, code, title) {
+    function openEditTcModal(id, code, title, printerModel) {
         event.stopPropagation();
+        
+        // Setup Hidden inputs for the Backend
         document.getElementById('edit_tc_id').value = id;
-        document.getElementById('edit_tc_code').value = code;
-        document.getElementById('edit_tc_title').value = title;
-        document.getElementById('edit_tc_code').focus();
-        document.getElementById('edit_tc_title').focus();
-        document.getElementById('edit_tc_title').blur();
+        document.getElementById('edit_tc_printer_model').value = printerModel;
+        
+        const codeWrap = document.getElementById('edit_code_wrapper');
+        const titleWrap = document.getElementById('edit_title_wrapper');
+        
+        // Manually Populate the Enhanced Dropdown UI for "Case Code"
+        const codeHidden = codeWrap.querySelector('.enh-hidden-inputs');
+        codeHidden.innerHTML = `<input type='hidden' name='case_code' value='${code}'>`;
+        
+        const codeTrigger = codeWrap.querySelector('.enh-trigger-content');
+        codeTrigger.innerHTML = `<span class="enh-single-val">${code}</span>`;
+        
+        // Manually Populate the Enhanced Dropdown UI for "Case Title"
+        const titleHidden = titleWrap.querySelector('.enh-hidden-inputs');
+        titleHidden.innerHTML = `<input type='hidden' name='title' value='${title}'>`;
+        
+        const titleTrigger = titleWrap.querySelector('.enh-trigger-content');
+        titleTrigger.innerHTML = `<span class="enh-single-val">${title}</span>`;
+        
+        // Update the visual selection state within the dropdown lists
+        codeWrap.querySelectorAll('.enh-option').forEach(opt => {
+            if(opt.dataset.value === code) opt.classList.add('selected');
+            else opt.classList.remove('selected');
+        });
+        
+        titleWrap.querySelectorAll('.enh-option').forEach(opt => {
+            if(opt.dataset.value === title) opt.classList.add('selected');
+            else opt.classList.remove('selected');
+        });
+        
         openModal('editTcModal');
     }
 
