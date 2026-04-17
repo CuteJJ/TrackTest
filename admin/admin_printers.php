@@ -59,20 +59,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: admin_printers.php"); exit();
     }
 
-    // 3. EDIT TEST CASE (DUPLICATE CHECK)
+    // 3. EDIT TEST CASE (DUPLICATE CHECK FIXED)
     elseif (isset($_POST['edit_testcase'])) {
         try {
-            $code = trim($_POST['case_code']);
-            $title = trim($_POST['title']);
+            $code = trim($_POST['case_code'] ?? '');
+            $title = trim($_POST['title'] ?? '');
             $tc_id = $_POST['tc_id'];
             $printer_model = $_POST['printer_model'];
+
+            if (empty($code) || empty($title)) {
+                Helper::setFlash("Case Code and Title cannot be empty.", "error");
+                header("Location: admin_printers.php"); exit();
+            }
 
             // Check if this case code already exists for THIS specific printer (ignoring the current one being edited)
             $chk = $pdo->prepare("SELECT id FROM test_cases WHERE printer_model = ? AND case_code = ? AND id != ?");
             $chk->execute([$printer_model, $code, $tc_id]);
             
             if ($chk->fetch()) {
-                Helper::setFlash("Test case already exists for this printer.", "error");
+                Helper::setFlash("Test case ID '#{$code}' already exists for this printer.", "error");
             } else {
                 $stmt = $pdo->prepare("UPDATE test_cases SET case_code = ?, title = ? WHERE id = ?");
                 $stmt->execute([$code, $title, $tc_id]);
@@ -98,15 +103,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $stmt_tc = $pdo->prepare("INSERT INTO test_cases (printer_model, case_code, title) VALUES (?, ?, ?)");
             $added = 0;
+            $attempted = 0;
+
             for($i=0; $i<count($codes); $i++) {
                 $code = trim($codes[$i]);
-                if(!empty($code) && !in_array($code, $processed_codes)) {
-                    $stmt_tc->execute([$model_name, $code, trim($titles[$i])]);
-                    $processed_codes[] = $code;
-                    $added++;
+                if(!empty($code)) {
+                    $attempted++;
+                    if(!in_array($code, $processed_codes)) {
+                        $stmt_tc->execute([$model_name, $code, trim($titles[$i])]);
+                        $processed_codes[] = $code;
+                        $added++;
+                    }
                 }
             }
-            Helper::setFlash("$added new test case(s) added to $model_name.", "success");
+
+            // Custom Flash Message Logic
+            if ($added > 0) {
+                Helper::setFlash("$added new test case(s) added to $model_name.", "success");
+            } elseif ($attempted > 0) {
+                Helper::setFlash("The selected test case(s) already exist for $model_name.", "error");
+            } else {
+                Helper::setFlash("No valid test cases were entered.", "error");
+            }
+
         } catch (Exception $e) {
             Helper::setFlash("Error adding test cases.", "error");
         }
@@ -148,6 +167,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
         } catch (Exception $e) {
             Helper::setFlash("Error updating printer image.", "error");
+        }
+        header("Location: admin_printers.php"); exit();
+    }
+
+    // 6. DELETE TEST CASE
+    elseif (isset($_POST['delete_testcase'])) {
+        try {
+            $pdo->prepare("DELETE FROM test_cases WHERE id = ?")->execute([$_POST['tc_id']]);
+            Helper::setFlash("Test case removed.", "success");
+        } catch(Exception $e) {
+            Helper::setFlash("Error removing test case. It may be linked to active tests.", "error");
         }
         header("Location: admin_printers.php"); exit();
     }
@@ -516,9 +546,15 @@ require_once '../configs/header.php';
 
             </div>
 
-            <div style="display:flex; gap:10px; margin-top:28px;">
-                <button type="submit" name="edit_testcase" class="btn">Update Case</button>
-                <button type="button" class="btn ghost" style="background:transparent; border:1px solid var(--border); color:var(--text-main);" onclick="closeModal('editTcModal')">Cancel</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px;">
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" name="edit_testcase" class="btn">Update Case</button>
+                    <button type="button" class="btn ghost" style="background:transparent; border:1px solid var(--border); color:var(--text-main);" onclick="closeModal('editTcModal')">Cancel</button>
+                </div>
+                
+                <button type="submit" name="delete_testcase" class="btn-mini ghost" style="color:var(--error); border-color:var(--error); height:42px; width:42px; padding:0; display:flex; align-items:center; justify-content:center;" title="Delete Test Case" onclick="return confirm('Are you sure you want to permanently delete this test case from the printer?');">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
             </div>
         </form>
     </div>
@@ -704,7 +740,7 @@ require_once '../configs/header.php';
         currentExTcRow = 1;
     });
 
-    // --- Dynamic TWO-WAY Auto-Fill Logic (Updated for Sync Group) ---
+    // --- Dynamic TWO-WAY Auto-Fill Logic (Updated to FIX missing hidden inputs) ---
     const caseMap = <?= json_encode($codeToTitleMap) ?>;
     const titleMap = <?= json_encode($titleToCodeMap) ?>;
 
@@ -714,17 +750,22 @@ require_once '../configs/header.php';
 
         // 1. If user changes the Case Code
         if (codeWrapper) {
-            const hiddenInput = codeWrapper.querySelector('input[type="hidden"]');
+            const hiddenContainer = codeWrapper.querySelector('.enh-hidden-inputs');
+            const hiddenInput = hiddenContainer.querySelector('input');
             if (hiddenInput) {
                 const code = hiddenInput.value.trim();
                 if (caseMap[code]) {
-                    const row = codeWrapper.closest('.tc-sync-group'); // Updated
+                    const row = codeWrapper.closest('.tc-sync-group'); 
                     const tWrap = row.querySelector('.tc-title-wrapper');
                     
                     if (tWrap) {
-                        const tInput = tWrap.querySelector('input[type="hidden"]');
-                        if (tInput) tInput.value = caseMap[code];
+                        const dd = tWrap.querySelector('.enh-dropdown');
+                        const config = JSON.parse(dd.dataset.config);
                         
+                        // Force hidden input update using config name so POST payload works
+                        tWrap.querySelector('.enh-hidden-inputs').innerHTML = `<input type='hidden' name='${config.name}' value='${caseMap[code]}'>`;
+                        
+                        // Visual update
                         const tText = tWrap.querySelector('.enh-single-val') || tWrap.querySelector('.enh-placeholder');
                         if (tText) {
                             tText.textContent = caseMap[code];
@@ -737,17 +778,22 @@ require_once '../configs/header.php';
         } 
         // 2. If user changes the Case Title
         else if (titleWrapper) {
-            const hiddenInput = titleWrapper.querySelector('input[type="hidden"]');
+            const hiddenContainer = titleWrapper.querySelector('.enh-hidden-inputs');
+            const hiddenInput = hiddenContainer.querySelector('input');
             if (hiddenInput) {
                 const title = hiddenInput.value.trim();
                 if (titleMap[title]) {
-                    const row = titleWrapper.closest('.tc-sync-group'); // Updated
+                    const row = titleWrapper.closest('.tc-sync-group'); 
                     const cWrap = row.querySelector('.tc-code-wrapper');
                     
                     if (cWrap) {
-                        const cInput = cWrap.querySelector('input[type="hidden"]');
-                        if (cInput) cInput.value = titleMap[title];
+                        const dd = cWrap.querySelector('.enh-dropdown');
+                        const config = JSON.parse(dd.dataset.config);
                         
+                        // Force hidden input update using config name so POST payload works
+                        cWrap.querySelector('.enh-hidden-inputs').innerHTML = `<input type='hidden' name='${config.name}' value='${titleMap[title]}'>`;
+                        
+                        // Visual update
                         const cText = cWrap.querySelector('.enh-single-val') || cWrap.querySelector('.enh-placeholder');
                         if (cText) {
                             cText.textContent = titleMap[title];
