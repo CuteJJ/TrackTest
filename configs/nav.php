@@ -1,3 +1,6 @@
+<?php
+// configs/nav.php - Updated to show Printers and Test Cases to Leaders
+?>
 <style>
     /* ── Fixed Side Navbar Styles ── */
     .main-sidebar {
@@ -105,7 +108,10 @@
                 </div>
                 <div class="profile-menu-divider"></div>
 
-                <?php if ($_SESSION['role'] === 'lead' || $_SESSION['role'] === 'admin'): ?>
+                <?php 
+                // Only show Admin Panel link for users with 'admin' role
+                if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): 
+                ?>
                     <a href="admin/admin_dashboard.php" class="profile-menu-item">
                         <span class="material-symbols-outlined">admin_panel_settings</span> Admin Panel
                     </a>
@@ -144,5 +150,15 @@
         <a href="reports.php" class="sidebar-item <?= $currentPage === 'reports.php' ? 'active' : '' ?>">
             <span class="material-symbols-outlined">assessment</span> Reports
         </a>
+
+        <!-- NEW MENU ITEMS FOR LEADERS AND ADMINS -->
+        <?php if ($_SESSION['role'] === 'lead' || $_SESSION['role'] === 'admin'): ?>
+            <a href="printers.php" class="sidebar-item <?= $currentPage === 'printers.php' ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">print</span> Printers
+            </a>
+            <a href="test_cases.php" class="sidebar-item <?= $currentPage === 'test_cases.php' ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">list_alt</span> Test Cases
+            </a>
+        <?php endif; ?>
     </aside>
     <div id="custom-tooltip"></div>

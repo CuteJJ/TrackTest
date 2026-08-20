@@ -66,11 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 // If unassigned (or assigned to self), update it
-                $upd = $pdo->prepare("UPDATE test_results SET assigned_to = ?, status = 'Pending' WHERE task_id=? AND printer_id=? AND test_case_id=?");
+                // FIX: Set status to 'In Progress' instead of 'Pending'
+                $upd = $pdo->prepare("UPDATE test_results SET assigned_to = ?, status = 'In Progress' WHERE task_id=? AND printer_id=? AND test_case_id=?");
                 $upd->execute([$user_id, $task_id, $printer_id, $case_id]);
             } else {
                 // Insert new row
-                $ins = $pdo->prepare("INSERT INTO test_results (task_id, printer_id, test_case_id, status, assigned_to) VALUES (?, ?, ?, 'Pending', ?)");
+                // FIX: Set status to 'In Progress' instead of 'Pending'
+                $ins = $pdo->prepare("INSERT INTO test_results (task_id, printer_id, test_case_id, status, assigned_to) VALUES (?, ?, ?, 'In Progress', ?)");
                 $ins->execute([$task_id, $printer_id, $case_id, $user_id]);
             }
             echo json_encode(['success' => true]);

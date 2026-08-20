@@ -45,7 +45,8 @@ $team_members = $stmt->fetchAll();
 
 // 2. Firmware Overview
 $firmware_overview = [];
-$printers = $pdo->query("SELECT * FROM printers")->fetchAll();
+// FIX: Added "WHERE status = 'active'" to exclude inactive printers
+$printers = $pdo->query("SELECT * FROM printers WHERE status = 'active'")->fetchAll();
 foreach ($printers as $p) {
     $pid = $p['id'];
     $stmt = $pdo->prepare("SELECT t.fw_version_current FROM tasks t JOIN task_assignments ta ON t.id = ta.task_id WHERE ta.printer_id = ? AND t.fw_type = ? ORDER BY t.task_date DESC LIMIT 1");
@@ -92,21 +93,43 @@ $chart_data = $pdo->query($stats_sql)->fetchAll();
 $lead_tasks = []; $lead_totalRows = 0;
 $my_tasks = []; $my_totalRows = 0;
 
-// 4. LEAD VIEW (Current Week Only)
+// 4. LEAD VIEW (Current Week Only) - FIXED: Group by task only, merge printers for Regression
 if ($user_role === 'lead') {
     // YEARWEEK(..., 1) sets Monday as the start of the week.
     $whereClause = "WHERE YEARWEEK(t.task_date, 1) = YEARWEEK(CURDATE(), 1)";
 
     $lead_totalRows = $pdo->query("
-        SELECT COUNT(DISTINCT CONCAT(t.id, '-', p.id)) FROM task_assignments ta JOIN tasks t ON ta.task_id = t.id JOIN printers p ON ta.printer_id = p.id $whereClause
+        SELECT COUNT(DISTINCT t.id) FROM task_assignments ta 
+        JOIN tasks t ON ta.task_id = t.id 
+        $whereClause
     ")->fetchColumn();
 
     $lead_sql = "
-        SELECT t.id as task_id, t.task_date, t.due_date, t.testing_type, t.fw_version_prev, t.fw_version_current, t.fw_version_rec, t.fw_type, p.id as printer_id, p.model_name, p.printer_path, MAX(ta.overall_status) as overall_status,
-            (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = p.model_name) as total_cases,
-            (SELECT COUNT(*) FROM test_results tr WHERE tr.task_id = t.id AND tr.printer_id = p.id AND tr.status IN ('Pass', 'Fail', 'Blocked', 'N/A')) as completed_cases
-        FROM task_assignments ta JOIN tasks t ON ta.task_id = t.id JOIN printers p ON ta.printer_id = p.id
-        $whereClause GROUP BY t.id, p.id ORDER BY t.task_date DESC LIMIT $perPage OFFSET $offset
+        SELECT 
+            t.id as task_id, 
+            t.task_date, 
+            t.due_date, 
+            t.testing_type, 
+            t.fw_version_prev, 
+            t.fw_version_current, 
+            t.fw_version_rec, 
+            t.fw_type, 
+            t.status,
+            -- For Regression: merge all model names and paths
+            IF(t.testing_type = 'Regression', GROUP_CONCAT(DISTINCT p.model_name SEPARATOR ', '), MAX(p.model_name)) as model_name,
+            IF(t.testing_type = 'Regression', GROUP_CONCAT(DISTINCT p.printer_path SEPARATOR ','), MAX(p.printer_path)) as printer_path,
+            -- Get the overall_status from task_assignments (first found is sufficient)
+            MAX(ta.overall_status) as overall_status,
+            -- Calculate total and completed cases
+            (SELECT COUNT(*) FROM test_cases tc WHERE tc.printer_model = MAX(p.model_name)) as total_cases,
+            (SELECT COUNT(*) FROM test_results tr WHERE tr.task_id = t.id AND tr.status IN ('Pass', 'Fail', 'Blocked', 'N/A')) as completed_cases
+        FROM task_assignments ta 
+        JOIN tasks t ON ta.task_id = t.id 
+        JOIN printers p ON ta.printer_id = p.id
+        $whereClause 
+        GROUP BY t.id 
+        ORDER BY t.task_date DESC 
+        LIMIT $perPage OFFSET $offset
     ";
     $lead_tasks = $pdo->query($lead_sql)->fetchAll();
 }
@@ -120,9 +143,17 @@ if ($user_role !== 'lead') {
     ")->fetchColumn();
 
     $my_sql = "
-        SELECT t.id, t.task_date, t.testing_type, t.fw_version_current, t.fw_type, p.model_name, p.printer_path, ta.printer_id, ta.designation, ta.overall_status, ta.regression_url
-        FROM task_assignments ta JOIN tasks t ON ta.task_id = t.id JOIN printers p ON ta.printer_id = p.id
-        $whereClause ORDER BY t.task_date DESC LIMIT $perPage OFFSET $offset
+        SELECT 
+            t.id, t.task_date, t.testing_type, 
+            t.fw_version_current, t.fw_type, t.status,
+            p.model_name, p.printer_path, ta.printer_id, ta.designation,
+            ta.overall_status, ta.regression_url
+        FROM task_assignments ta
+        JOIN tasks t ON ta.task_id = t.id
+        JOIN printers p ON ta.printer_id = p.id
+        $whereClause 
+        ORDER BY t.task_date DESC 
+        LIMIT $perPage OFFSET $offset
     ";
     $my_tasks = $pdo->query($my_sql)->fetchAll();
 }

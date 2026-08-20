@@ -249,8 +249,8 @@ require_once '../configs/header.php';
                                                 <?php endif; ?>
                                             </td>
                                             <td style="text-align:right; padding-right: 24px;">
-                                                <a href="../generate_report.php?task_id=<?= $h['task_id'] ?>&printer_id=<?= $h['printer_id'] ?>" class="btn-mini ghost" target="_blank">
-                                                    <span class="material-symbols-outlined">visibility</span> View Report
+                                                <a href="admin_task_details.php?id=<?= $h['task_id'] ?>" class="btn-mini ghost">
+                                                    <span class="material-symbols-outlined">visibility</span> View
                                                 </a>
                                             </td>
                                         </tr>

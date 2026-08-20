@@ -1,30 +1,30 @@
 <style>
-        /* ── Fixed Admin Side Navbar Styles ── */
-        .main-sidebar {
-            position: fixed; top: var(--nav-height, 60px); left: 0; width: 240px; bottom: 0;
-            background: var(--bg-surface); border-right: 1px solid var(--border);
-            padding: 20px 0; overflow-y: auto; z-index: 90;
-        }
-        .sidebar-item {
-            display: flex; align-items: center; gap: 12px; padding: 12px 24px;
-            color: var(--text-main); text-decoration: none; font-size: 0.9rem;
-            font-weight: 600; transition: all 0.15s; border-right: 3px solid transparent;
-        }
-        .sidebar-item:hover, .sidebar-item.active {
-            background: var(--bg-body); color: var(--primary); border-right-color: var(--primary);
-        }
-        .sidebar-item .material-symbols-outlined {
-            font-size: 20px; color: var(--text-muted); transition: color 0.15s;
-        }
-        .sidebar-item:hover .material-symbols-outlined, .sidebar-item.active .material-symbols-outlined {
-            color: var(--primary);
-        }
-        .page-content-scroll { margin-left: 240px; width: calc(100% - 240px); }
-        @media (max-width: 768px) {
-            .main-sidebar { display: none; }
-            .page-content-scroll { margin-left: 0; width: 100%; }
-        }
-    </style>
+    /* ── Fixed Admin Side Navbar Styles ── */
+    .main-sidebar {
+        position: fixed; top: var(--nav-height, 60px); left: 0; width: 240px; bottom: 0;
+        background: var(--bg-surface); border-right: 1px solid var(--border);
+        padding: 20px 0; overflow-y: auto; z-index: 90;
+    }
+    .sidebar-item {
+        display: flex; align-items: center; gap: 12px; padding: 12px 24px;
+        color: var(--text-main); text-decoration: none; font-size: 0.9rem;
+        font-weight: 600; transition: all 0.15s; border-right: 3px solid transparent;
+    }
+    .sidebar-item:hover, .sidebar-item.active {
+        background: var(--bg-body); color: var(--primary); border-right-color: var(--primary);
+    }
+    .sidebar-item .material-symbols-outlined {
+        font-size: 20px; color: var(--text-muted); transition: color 0.15s;
+    }
+    .sidebar-item:hover .material-symbols-outlined, .sidebar-item.active .material-symbols-outlined {
+        color: var(--primary);
+    }
+    .page-content-scroll { margin-left: 240px; width: calc(100% - 240px); }
+    @media (max-width: 768px) {
+        .main-sidebar { display: none; }
+        .page-content-scroll { margin-left: 0; width: 100%; }
+    }
+</style>
 </head>
 
 <body>
@@ -78,7 +78,10 @@
             <span class="material-symbols-outlined">history</span> Global History
         </a>
         <a href="admin_printers.php" class="sidebar-item <?= $currentPage === 'admin_printers.php' ? 'active' : '' ?>">
-            <span class="material-symbols-outlined">print</span> Printers & Cases
+            <span class="material-symbols-outlined">print</span> Printers
+        </a>
+        <a href="admin_cases.php" class="sidebar-item <?= $currentPage === 'admin_cases.php' ? 'active' : '' ?>">
+            <span class="material-symbols-outlined">list_alt</span> Test Cases
         </a>
         <a href="admin_users.php" class="sidebar-item <?= $currentPage === 'admin_users.php' ? 'active' : '' ?>">
             <span class="material-symbols-outlined">group</span> User Management

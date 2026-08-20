@@ -85,13 +85,28 @@ class Helper
         }
     }
 
+    /**
+     * NEW: Checks if the current user has the management role (Admin or Lead).
+     * This is used for the shared Printer and Test Cases management pages.
+     */
+    public static function requireManagementRole()
+    {
+        self::requireLogin();
+        
+        $userRole = strtolower($_SESSION['role'] ?? '');
+        $allowedRoles = ['admin', 'lead'];
+        
+        if (!in_array($userRole, $allowedRoles)) {
+            self::denyAccess();
+        }
+    }
+
     private static function denyAccess()
     {
         self::setFlash("Access Denied: You do not have permission to view that page.", "error");
         header("Location: index.php");
         exit();
     }
-    // ----------------------------------------------
 
     public static function displayLoader()
     {
@@ -176,7 +191,7 @@ class Helper
         // 1. Rows Per Page Selector
         $html .= '<div style="display:flex; align-items:center; gap:8px;">';
         $html .= '<span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Rows:</span>';
-        $html .= '<select class="per-page-select form-control" style="padding: 4px 28px 4px 10px; width:auto; font-size:0.8rem; min-height: 30px;">';
+        $html .= '<select class="per-page-select form-control" style="padding: 4px 28px 4px 10px; width:auto; font-size:0.8rem; min-height: 30px; background-color: #374151; color: #ffffff; border: 1px solid #4b5563; border-radius: 6px; cursor: pointer;">';
         foreach ($options as $opt) {
             $sel = ($opt == $perPage) ? 'selected' : '';
             $html .= "<option value=\"$opt\" $sel>$opt</option>";
@@ -275,8 +290,10 @@ class Helper
         $html .= "<span class='material-symbols-outlined enh-chevron'>expand_more</span>";
         $html .= "</div>";
 
-        // Popover Menu
+        // --- MENU (Search Bar Inside) ---
         $html .= "<div class='enh-menu hidden'>";
+        
+        // Search Bar (Inside the menu)
         $html .= "<div class='enh-search-wrap'>";
         $html .= "<span class='material-symbols-outlined'>search</span>";
         $html .= "<input type='text' class='enh-search' placeholder='Search...'>";
@@ -394,3 +411,4 @@ class Helper
         return self::$envData[$key] ?? $default;
     }
 }
+?>

@@ -7,10 +7,9 @@ Helper::requireLogin();
 
 // Fetch Data for the Form
 function getData($pdo) {
-    $printers = $pdo->query("SELECT * FROM printers ORDER BY model_name")->fetchAll();
+    $printers = $pdo->query("SELECT * FROM printers WHERE status = 'active' ORDER BY model_name")->fetchAll();
     $users = $pdo->query("SELECT * FROM users ORDER BY full_name")->fetchAll();
     
-    // 1. Combined Query: Fetch ALL distinct firmwares across all 3 columns
     $sql = "
         SELECT DISTINCT fw, fw_type FROM (
             SELECT fw_version_current AS fw, fw_type FROM tasks WHERE fw_version_current != '' AND fw_type IS NOT NULL
@@ -24,7 +23,6 @@ function getData($pdo) {
     
     $fw_data = $pdo->query($sql)->fetchAll();
     
-    // 2. Group by Type
     $trunk_fws = [];
     $branch_fws = [];
     
@@ -36,7 +34,6 @@ function getData($pdo) {
         }
     }
     
-    // 3. Sort Descending (Using native version_compare to handle strings like '25.1.0' correctly)
     usort($trunk_fws, 'version_compare');
     $trunk_fws = array_reverse($trunk_fws);
     
@@ -47,8 +44,8 @@ function getData($pdo) {
         'printers' => $printers, 
         'users' => $users,
         'firmwares' => [
-            'Trunk' => $trunk_fws,
-            'Branch' => $branch_fws
+            'Trunk' => array_values($trunk_fws),
+            'Branch' => array_values($branch_fws)
         ]
     ];
 }
@@ -58,19 +55,62 @@ function getData($pdo) {
 // ============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
     try {
-        // 1. Validation: Ensure at least one printer is selected
-        $selected_printers = $_POST['printers'] ?? [];
-        if (empty($selected_printers)) {
-            throw new Exception("Please select at least one printer and assign testers/URL.");
+        // --- 1. Validate Task Details ---
+        if (empty($_POST['task_date']) || empty($_POST['due_date'])) {
+            throw new Exception("Please fill in both Task Date and Due Date.");
         }
 
+        // --- 2. Validate Firmware Configuration ---
+        if (empty($_POST['fw_type'])) {
+            throw new Exception("Please select a Firmware Type (Trunk or Branch).");
+        }
+        
+        // Validate all 3 Firmware versions
+        if (empty($_POST['fw_prev'])) {
+            throw new Exception("Please enter the Previous Firmware version.");
+        }
+        if (empty($_POST['fw_curr'])) {
+            throw new Exception("Please enter the Current Firmware version.");
+        }
+        if (empty($_POST['fw_rec'])) {
+            throw new Exception("Please enter the Recovery Firmware version.");
+        }
+
+        // --- 3. Validate Printers ---
+        $selected_printers = $_POST['printers'] ?? [];
+        if (empty($selected_printers)) {
+            throw new Exception("Please select at least one printer in the sidebar.");
+        }
+
+        // --- 4. Validate Assignments/URLs based on Workflow ---
+        $type = $_POST['testing_type'];
+
+        if ($type === 'Smoke') {
+            foreach ($selected_printers as $pid) {
+                $assigned_users = $_POST['assignments'][$pid] ?? [];
+                if (empty($assigned_users)) {
+                    throw new Exception("Please assign at least one tester to the selected printer(s).");
+                }
+            }
+        } elseif ($type === 'Regression') {
+            foreach ($selected_printers as $pid) {
+                $reg_url = $_POST['regression_urls'][$pid] ?? '';
+                $trimmed_url = trim($reg_url);
+                
+                // --- CRITICAL FIX: Check against pure prefixes ---
+                if (empty($trimmed_url) || $trimmed_url === 'https://' || $trimmed_url === 'http://' || $trimmed_url === 'https:///' || $trimmed_url === 'http:///') {
+                    throw new Exception("Please enter a valid TestRail URL for all selected Regression printer(s).");
+                }
+            }
+        }
+
+        // --- PROCEED WITH DATABASE INSERTION ---
         $pdo->beginTransaction();
 
-        // 2. Create the Main Task
         $stmt = $pdo->prepare("INSERT INTO tasks (task_date, testing_type, fw_version_current, fw_version_prev, fw_version_rec, fw_type, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $_POST['task_date'],
-            $_POST['testing_type'],
+            $type,
             $_POST['fw_curr'],
             $_POST['fw_prev'],
             $_POST['fw_rec'],
@@ -79,29 +119,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
         ]);
         $task_id = $pdo->lastInsertId();
 
-        // 3. Handle Assignments
-        $type = $_POST['testing_type'];
-
         foreach ($selected_printers as $pid) {
             if ($type === 'Regression') {
-                // Regression: Get the specific URL for this printer
                 $reg_url = $_POST['regression_urls'][$pid] ?? '';
-                
-                // Assign to current user (Lead) as placeholder/owner
                 $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation, regression_url) VALUES (?, ?, ?, 'Main', ?)");
                 $stmt->execute([$task_id, $pid, $_SESSION['user_id'], $reg_url]);
                 
             } elseif ($type === 'Smoke') {
-                // Smoke: Process Main/Support assignments
                 $assigned_users = $_POST['assignments'][$pid] ?? [];
-                
-                // Fallback: If no testers were dragged in, auto-assign the Lead so the task is created and visible
-                if (empty($assigned_users)) {
-                    $assigned_users = [$_SESSION['user_id']];
-                    $main_tester = $_SESSION['user_id'];
-                } else {
-                    $main_tester = $_POST['main_tester'][$pid] ?? null;
-                }
+                $main_tester = $_POST['main_tester'][$pid] ?? null;
 
                 foreach ($assigned_users as $uid) {
                     $role = ($uid == $main_tester) ? 'Main' : 'Support';
@@ -113,18 +139,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
 
         $pdo->commit();
         Helper::setFlash("Task created successfully!", "success");
-        unset($_SESSION['create_task_form']); // Clear saved form data on success
-        header("Location: ../index.php");
+        unset($_SESSION['create_task_form']);
+        header("Location: ../tasks.php");
         exit();
 
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        
-        // Save form data into session so the user doesn't lose their inputs
         $_SESSION['create_task_form'] = $_POST; 
-        
         Helper::setFlash("Error: " . $e->getMessage(), "error");
         header("Location: ../create_task.php");
         exit();
@@ -132,12 +155,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_task'])) {
 }
 
 // ============================================
-// UPDATE TASK (EDIT)
+// UPDATE TASK (EDIT) - REFINED LOGIC
 // ============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task'])) {
     try {
         $task_id = $_POST['task_id'];
         $selected_printers = $_POST['printers'] ?? [];
+        $printer_id_to_edit = $_POST['printer_id'] ?? null;
 
         if (empty($selected_printers)) {
             throw new Exception("Please select at least one printer and assign testers/URL.");
@@ -145,64 +169,159 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task'])) {
 
         $pdo->beginTransaction();
 
-        // 1. Update the main task
+        // 1. Fetch current task type
+        $stmt = $pdo->prepare("SELECT testing_type FROM tasks WHERE id = ?");
+        $stmt->execute([$task_id]);
+        $current_type = $stmt->fetchColumn();
+        $new_type = $_POST['testing_type'];
+
+        // 2. Update the main task details
         $stmt = $pdo->prepare("
             UPDATE tasks SET
                 task_date = ?,
+                due_date = ?,
                 testing_type = ?,
                 fw_version_current = ?,
                 fw_version_prev = ?,
                 fw_version_rec = ?,
-                fw_type = ?,
-                due_date = ?
+                fw_type = ?
             WHERE id = ?
         ");
         $stmt->execute([
             $_POST['task_date'],
-            $_POST['testing_type'],
+            $_POST['due_date'],
+            $new_type,
             $_POST['fw_curr'],
             $_POST['fw_prev'],
             $_POST['fw_rec'],
             $_POST['fw_type'],
-            $_POST['due_date'],
             $task_id
         ]);
 
-        // 2. Delete all existing assignments for this task
-        $stmt = $pdo->prepare("DELETE FROM task_assignments WHERE task_id = ?");
-        $stmt->execute([$task_id]);
-
-        // 3. Re-insert assignments based on current form data
-        $type = $_POST['testing_type'];
-
-        foreach ($selected_printers as $pid) {
-            if ($type === 'Regression') {
-                $reg_url = $_POST['regression_urls'][$pid] ?? '';
-                // Assign to current user (lead) as placeholder
-                $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation, regression_url) VALUES (?, ?, ?, 'Main', ?)");
-                $stmt->execute([$task_id, $pid, $_SESSION['user_id'], $reg_url]);
-            } else {
-                $assigned_users = $_POST['assignments'][$pid] ?? [];
-                // If no testers, auto-assign the lead so task remains visible
-                if (empty($assigned_users)) {
-                    $assigned_users = [$_SESSION['user_id']];
-                    $main_tester = $_SESSION['user_id'];
-                } else {
+        // 3. Handle assignments based on workflow type
+        if ($current_type !== $new_type) {
+            // Type changed workflow
+            if ($new_type === 'Regression') {
+                $stmt = $pdo->prepare("DELETE FROM task_assignments WHERE task_id = ?");
+                $stmt->execute([$task_id]);
+                foreach ($selected_printers as $pid) {
+                    $reg_url = $_POST['regression_urls'][$pid] ?? '';
+                    $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation, regression_url) VALUES (?, ?, ?, 'Main', ?)");
+                    $stmt->execute([$task_id, $pid, $_SESSION['user_id'], $reg_url]);
+                }
+            } elseif ($new_type === 'Smoke') {
+                $stmt = $pdo->prepare("DELETE FROM task_assignments WHERE task_id = ?");
+                $stmt->execute([$task_id]);
+                foreach ($selected_printers as $pid) {
+                    $assigned_users = $_POST['assignments'][$pid] ?? [];
                     $main_tester = $_POST['main_tester'][$pid] ?? null;
+                    if (empty($assigned_users)) {
+                        $assigned_users = [$_SESSION['user_id']];
+                        $main_tester = $_SESSION['user_id'];
+                    }
+                    foreach ($assigned_users as $uid) {
+                        $role = ($uid == $main_tester) ? 'Main' : 'Support';
+                        $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation) VALUES (?, ?, ?, ?)");
+                        $stmt->execute([$task_id, $pid, $uid, $role]);
+                    }
+                }
+            }
+        } else {
+            // Type did NOT change
+            $type = $_POST['testing_type'];
+
+            if ($type === 'Smoke') {
+                // --- CRITICAL FIX: Fetch EXISTING printers for this task ---
+                $stmt = $pdo->prepare("SELECT DISTINCT printer_id FROM task_assignments WHERE task_id = ?");
+                $stmt->execute([$task_id]);
+                $existingPrinters = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+                // --- 1. DELETE printers that were UNCHECKED (User removed them) ---
+                $printersToRemove = array_diff($existingPrinters, $selected_printers);
+                if (!empty($printersToRemove)) {
+                    $placeholders = implode(',', array_fill(0, count($printersToRemove), '?'));
+                    $stmt = $pdo->prepare("DELETE FROM task_assignments WHERE task_id = ? AND printer_id IN ($placeholders)");
+                    $stmt->execute(array_merge([$task_id], $printersToRemove));
                 }
 
-                foreach ($assigned_users as $uid) {
-                    $role = ($uid == $main_tester) ? 'Main' : 'Support';
-                    $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation) VALUES (?, ?, ?, ?)");
-                    $stmt->execute([$task_id, $pid, $uid, $role]);
+                // --- 2. Process NEWLY SELECTED or REMAINING printers ---
+                foreach ($selected_printers as $pid) {
+                    $new_user_ids = $_POST['assignments'][$pid] ?? [];
+                    $main_tester = $_POST['main_tester'][$pid] ?? null;
+
+                    if (empty($new_user_ids)) {
+                        $new_user_ids = [$_SESSION['user_id']];
+                        $main_tester = $_SESSION['user_id'];
+                    }
+
+                    // Fetch existing users for this specific printer
+                    $stmt = $pdo->prepare("SELECT user_id FROM task_assignments WHERE task_id = ? AND printer_id = ?");
+                    $stmt->execute([$task_id, $pid]);
+                    $existing_user_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+                    // 3. DELETE users that are in DB but NOT in new list
+                    $users_to_delete = array_diff($existing_user_ids, $new_user_ids);
+                    if (!empty($users_to_delete)) {
+                        $placeholders = implode(',', array_fill(0, count($users_to_delete), '?'));
+                        $stmt = $pdo->prepare("DELETE FROM task_assignments WHERE task_id = ? AND printer_id = ? AND user_id IN ($placeholders)");
+                        $stmt->execute(array_merge([$task_id, $pid], $users_to_delete));
+                    }
+
+                    // 4. INSERT or UPDATE remaining users
+                    foreach ($new_user_ids as $uid) {
+                        $role = ($uid == $main_tester) ? 'Main' : 'Support';
+                        $stmt = $pdo->prepare("SELECT id FROM task_assignments WHERE task_id = ? AND printer_id = ? AND user_id = ?");
+                        $stmt->execute([$task_id, $pid, $uid]);
+                        
+                        if ($stmt->fetch()) {
+                            $stmt = $pdo->prepare("UPDATE task_assignments SET designation = ? WHERE task_id = ? AND printer_id = ? AND user_id = ?");
+                            $stmt->execute([$role, $task_id, $pid, $uid]);
+                        } else {
+                            $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation) VALUES (?, ?, ?, ?)");
+                            $stmt->execute([$task_id, $pid, $uid, $role]);
+                        }
+                    }
+                }
+            } else {
+                // REGRESSION LOGIC (Keep as is)
+                $stmt = $pdo->prepare("SELECT printer_id FROM task_assignments WHERE task_id = ?");
+                $stmt->execute([$task_id]);
+                $existingPrinters = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+                if (!empty($existingPrinters)) {
+                    $printersToRemove = array_diff($existingPrinters, $selected_printers);
+                    if (!empty($printersToRemove)) {
+                        $placeholders = implode(',', array_fill(0, count($printersToRemove), '?'));
+                        $stmt = $pdo->prepare("DELETE FROM task_assignments WHERE task_id = ? AND printer_id IN ($placeholders)");
+                        $stmt->execute(array_merge([$task_id], $printersToRemove));
+                    }
+                }
+
+                foreach ($selected_printers as $pid) {
+                    $stmt = $pdo->prepare("SELECT user_id, designation, regression_url FROM task_assignments WHERE task_id = ? AND printer_id = ?");
+                    $stmt->execute([$task_id, $pid]);
+                    $existingAssignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $hasExisting = !empty($existingAssignments);
+
+                    $reg_url = $_POST['regression_urls'][$pid] ?? '';
+                    
+                    if ($hasExisting) {
+                        $stmt = $pdo->prepare("UPDATE task_assignments SET regression_url = ? WHERE task_id = ? AND printer_id = ?");
+                        $stmt->execute([$reg_url, $task_id, $pid]);
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO task_assignments (task_id, printer_id, user_id, designation, regression_url) VALUES (?, ?, ?, 'Main', ?)");
+                        $stmt->execute([$task_id, $pid, $_SESSION['user_id'], $reg_url]);
+                    }
                 }
             }
         }
 
         $pdo->commit();
-        Helper::setFlash("Task updated successfully! All assignments have been reset.", "success");
+        Helper::setFlash("Task updated successfully! Assignments and test results preserved.", "success");
         unset($_SESSION['edit_task_form']);
-        header("Location: ../index.php");
+        
+        // --- FIX: Redirect to tasks.php without forcing a printer_id ---
+        header("Location: ../tasks.php");
         exit();
 
     } catch (Exception $e) {
@@ -211,7 +330,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_task'])) {
         }
         $_SESSION['edit_task_form'] = $_POST;
         Helper::setFlash("Error updating task: " . $e->getMessage(), "error");
+        
+        // --- FIX: Redirect to edit_task.php with ONLY the task_id ---
         header("Location: ../edit_task.php?id=" . $_POST['task_id']);
         exit();
     }
 }
+?>

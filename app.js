@@ -82,20 +82,16 @@ class EnhancedDropdown {
 
         // Events
         this.trigger.addEventListener('click', (e) => {
-            // Ignore click if clicking a chip close button
             if (e.target.closest('.enh-chip-close')) return;
             this.toggle();
         });
 
-        // Close on outside click
         document.addEventListener('click', (e) => {
             if (this.isOpen && !this.el.contains(e.target)) this.close();
         });
 
-        // Search filtering
         this.searchInput.addEventListener('input', () => this.filterOptions());
 
-        // Option clicks
         this.optionsContainer.addEventListener('click', (e) => {
             const opt = e.target.closest('.enh-option');
             if (opt) this.handleSelect(opt.dataset.value, opt.querySelector('.enh-opt-label').textContent);
@@ -104,19 +100,21 @@ class EnhancedDropdown {
             if (createOpt) this.handleCreate();
         });
 
-        // Keyboard support (Enter in search)
         this.searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                // If create is visible and active
                 if (this.config.creatable && this.createOpt && !this.createOpt.classList.contains('hidden')) {
                     this.handleCreate();
                 } else {
-                    // Select first visible option
                     const firstVisible = this.options.find(o => !o.classList.contains('hidden'));
                     if (firstVisible) this.handleSelect(firstVisible.dataset.value, firstVisible.querySelector('.enh-opt-label').textContent);
                 }
             }
+        });
+
+        // --- FIX: Reposition menu if window resizes while open ---
+        window.addEventListener('resize', () => {
+            if (this.isOpen) this.positionMenu();
         });
     }
 
@@ -136,6 +134,31 @@ class EnhancedDropdown {
         this.isOpen ? this.close() : this.open();
     }
 
+    // --- FIX: Centralized positioning logic ---
+    positionMenu() {
+        const triggerRect = this.trigger.getBoundingClientRect();
+        const menuHeight = this.menu.offsetHeight;
+        const spaceBelow = window.innerHeight - triggerRect.bottom;
+        const spaceAbove = triggerRect.top;
+
+        // 1. Set the exact width of the trigger
+        this.menu.style.width = triggerRect.width + 'px';
+
+        // 2. Align left edge with trigger
+        this.menu.style.left = triggerRect.left + 'px';
+
+        // 3. Determine Drop Up or Down
+        if (spaceBelow < (menuHeight + 20) && spaceAbove > spaceBelow) {
+            // Drop Up
+            this.menu.classList.add('drop-up');
+            this.menu.style.top = (triggerRect.top - menuHeight - 8) + 'px';
+        } else {
+            // Drop Down
+            this.menu.classList.remove('drop-up');
+            this.menu.style.top = (triggerRect.bottom + 8) + 'px';
+        }
+    }
+
     open() {
         // Close other open dropdowns first
         document.querySelectorAll('.enh-dropdown').forEach(el => {
@@ -150,24 +173,14 @@ class EnhancedDropdown {
         this.isOpen = true;
         this.el.classList.add('open');
 
-        // --- SMART POSITIONING LOGIC ---
-        // Temporarily remove hidden to calculate actual height
+        // Temporarily unhide to calculate dimensions
         this.menu.style.visibility = 'hidden';
         this.menu.classList.remove('hidden');
 
-        const triggerRect = this.trigger.getBoundingClientRect();
-        const menuHeight = this.menu.offsetHeight;
-        const spaceBelow = window.innerHeight - triggerRect.bottom;
-        const spaceAbove = triggerRect.top;
+        // Run the positioning logic
+        this.positionMenu();
 
-        // If it doesn't fit below, AND there is more space above, drop it UP.
-        if (spaceBelow < (menuHeight + 20) && spaceAbove > spaceBelow) {
-            this.menu.classList.add('drop-up');
-        } else {
-            this.menu.classList.remove('drop-up');
-        }
-
-        // Restore visibility and animate in
+        // Restore visibility
         this.menu.style.visibility = '';
 
         this.searchInput.value = '';
@@ -199,7 +212,6 @@ class EnhancedDropdown {
             }
         });
 
-        // Handle Group Labels visibility
         this.el.querySelectorAll('.enh-optgroup-label').forEach(label => {
             let nextElement = label.nextElementSibling;
             let hasVisibleSiblings = false;
@@ -210,7 +222,6 @@ class EnhancedDropdown {
             label.style.display = hasVisibleSiblings ? 'block' : 'none';
         });
 
-        // Handle Create Option Logic
         if (this.config.creatable && this.createOpt) {
             if (query.length > 0 && !hasExactMatch) {
                 this.createOpt.classList.remove('hidden');
@@ -226,11 +237,10 @@ class EnhancedDropdown {
 
         if (this.config.multiple) {
             if (existingIdx > -1) {
-                this.selectedValues.splice(existingIdx, 1); // Remove
+                this.selectedValues.splice(existingIdx, 1);
             } else {
-                this.selectedValues.push({ value, label }); // Add
+                this.selectedValues.push({ value, label });
             }
-            // Keep menu open for multiple, just refocus search
             this.searchInput.focus();
         } else {
             this.selectedValues = [{ value, label }];
@@ -244,14 +254,13 @@ class EnhancedDropdown {
         const newVal = this.searchInput.value.trim();
         if (!newVal) return;
 
-        // Add to DOM as a new option so it persists
         const optHtml = `
             <div class='enh-option' data-value='${newVal}'>
                 ${this.config.multiple ? "<div class='enh-checkbox'><span class='material-symbols-outlined'>check</span></div>" : ""}
                 <span class='enh-opt-label'>${newVal}</span>
             </div>`;
         this.optionsContainer.insertAdjacentHTML('beforeend', optHtml);
-        this.options = Array.from(this.el.querySelectorAll('.enh-option')); // Refresh cache
+        this.options = Array.from(this.el.querySelectorAll('.enh-option'));
 
         this.handleSelect(newVal, newVal);
     }
@@ -262,7 +271,6 @@ class EnhancedDropdown {
     }
 
     updateDOM() {
-        // 1. Update Hidden Inputs for Form Submission
         this.hiddenContainer.innerHTML = '';
         this.selectedValues.forEach(item => {
             const inp = document.createElement('input');
@@ -272,15 +280,12 @@ class EnhancedDropdown {
             this.hiddenContainer.appendChild(inp);
         });
 
-        // 2. Update Options UI (checkmarks/bolding)
         this.options.forEach(opt => {
             const isSelected = this.selectedValues.some(item => item.value === opt.dataset.value);
             opt.classList.toggle('selected', isSelected);
         });
 
-        // 3. Update Trigger UI (Chips or Text)
         this.renderTrigger();
-
         this.el.dispatchEvent(new CustomEvent('change', { bubbles: true }));
     }
 
@@ -299,9 +304,8 @@ class EnhancedDropdown {
                     ${item.label}
                     <span class="material-symbols-outlined enh-chip-close" data-val="${item.value}">close</span>
                 `;
-                // Add remove listener to the close button specifically
                 chip.querySelector('.enh-chip-close').addEventListener('click', (e) => {
-                    e.stopPropagation(); // Stop dropdown from opening
+                    e.stopPropagation();
                     this.removeValue(e.target.dataset.val);
                 });
                 this.content.appendChild(chip);

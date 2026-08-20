@@ -44,13 +44,134 @@ require_once 'configs/header.php';
         /* Modal Table Overrides for cleaner look */
         .fw-modal-table th { padding: 14px 24px !important; background: var(--bg-surface) !important; }
         .fw-modal-table td { padding: 14px 24px !important; }
+        
+        /* Fix for 13-inch laptop cutoff */
+        .d-table th, .d-table td {
+            padding: 8px 10px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        .d-table .btn-mini {
+            padding: 4px 10px;
+            font-size: 0.7rem;
+        }
+        .d-table .badge {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+        }
+        .dash-wrapper {
+            padding: 12px;
+        }
+        @media (max-width: 1100px) {
+            .dash-split-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- ALIGNMENT FIX: Full width rows --- */
+        .dash-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 12px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .d-card {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .d-card-body {
+            width: 100%;
+        }
+        
+        .fw-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            padding: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .chart-layout {
+            display: flex;
+            min-height: 350px;
+            width: 100%;
+        }
+        
+        .chart-sidebar {
+            flex: 0 0 340px;
+        }
+        
+        .chart-display {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-sidebar {
+                flex: auto;
+                flex-basis: auto;
+            }
+        }
+        
+        /* Ensure the main content wrapper stretches to fit */
+        .page-content-scroll {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .dash-wrapper {
+            flex: 1;
+        }
+
+        /* --- In Progress Badge Styles --- */
+        .badge-in-progress {
+            background: rgba(234, 179, 8, 0.15);
+            color: #ca8a04;
+            border: 1px solid rgba(234, 179, 8, 0.35);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .badge-in-progress .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ca8a04;
+            display: inline-block;
+            position: relative;
+        }
+        .badge-in-progress .pulse-dot::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            background: rgba(234, 179, 8, 0.35);
+            animation: pulse-ring 1.5s ease-out infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
     </style>
 
 <?php require_once 'configs/nav.php'; ?>
 
     <div class="page-content-scroll">
         <div class="dash-wrapper">
-
+            
+            <!-- 1. MY ASSIGNMENTS TABLE (Full Width) -->
+            <?php if ($_SESSION['role'] !== 'admin'): ?>
             <div class="d-card">
                 <div class="d-card-header">
                     <div class="d-card-title">
@@ -75,19 +196,21 @@ require_once 'configs/header.php';
                                 <div class="table-responsive">
                                     <table class="d-table">
                                         <colgroup>
-                                            <col style="width:12%">
-                                            <col style="width:12%">
-                                            <col style="width:26%">
-                                            <col style="width:26%">
-                                            <col style="width:18%">
-                                            <col style="width:6%">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
                                         </colgroup>
                                         <thead>
                                             <tr>
                                                 <th>Date</th>
                                                 <th>Type</th>
-                                                <th>Printer</th>
+                                                <th>Printer(s)</th>
                                                 <th>Progress</th>
+                                                <th>Firmware</th>
                                                 <th>Status</th>
                                                 <th></th>
                                             </tr>
@@ -96,14 +219,20 @@ require_once 'configs/header.php';
                                             <?php foreach ($lead_tasks as $task): ?>
                                                 <?php
                                                 $is_complete = ($task['completed_cases'] >= $task['total_cases']) && ($task['total_cases'] > 0);
-                                                $percent = $task['total_cases'] > 0 ? round(($task['completed_cases'] / $task['total_cases']) * 100) : 0;
-                                                $rowId = "task_" . $task['task_id'] . "_" . $task['printer_id'];
+                                                // Calculate percentage: Smoke uses cases, Regression uses 100% if Completed, otherwise 0%
+                                                if ($task['testing_type'] == 'Regression') {
+                                                    $percent = ($task['overall_status'] == 'Completed') ? 100 : 0;
+                                                } else {
+                                                    $percent = $task['total_cases'] > 0 ? round(($task['completed_cases'] / $task['total_cases']) * 100) : 0;
+                                                }
+                                                $is_complete = ($percent == 100);
+                                                $rowId = "task_" . $task['task_id'];
                                                 $printerName = htmlspecialchars($task['model_name']);
                                                 ?>
 
                                                 <tr class="expand-trigger main-row" onclick="toggleRow('<?= $rowId ?>', this)">
                                                     <td>
-                                                        <span class="mono" style="font-size:0.8rem; color:var(--text-muted);">
+                                                        <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
                                                             <?= date('M d', strtotime($task['task_date'])) ?>
                                                         </span>
                                                     </td>
@@ -113,23 +242,55 @@ require_once 'configs/header.php';
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <div style="display: flex; align-items: center; gap: 10px;">
-                                                            <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
-                                                                <?= Helper::renderPrinterImage($task['printer_path'] ?? null, $printerName, 16) ?>
+                                                        <?php if ($task['testing_type'] == 'Regression'): ?>
+                                                            <!-- Regression: Display printers as a vertical list -->
+                                                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                                <?php 
+                                                                $printerNames = explode(', ', $printerName);
+                                                                $printerPaths = explode(',', $task['printer_path'] ?? '');
+                                                                foreach ($printerNames as $idx => $name): 
+                                                                    $path = isset($printerPaths[$idx]) ? trim($printerPaths[$idx]) : '';
+                                                                ?>
+                                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                                        <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
+                                                                            <?= Helper::renderPrinterImage($path ?: null, trim($name), 12) ?>
+                                                                        </div>
+                                                                        <span style="font-size:0.82rem; font-weight:600; color:var(--text-main);"><?= htmlspecialchars(trim($name)) ?></span>
+                                                                    </div>
+                                                                <?php endforeach; ?>
                                                             </div>
-                                                            <strong style="font-size:0.88rem;" title="<?= $printerName ?>"><?= $printerName ?></strong>
-                                                        </div>
+                                                        <?php else: ?>
+                                                            <!-- Smoke: Single printer -->
+                                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                                <div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
+                                                                    <?= Helper::renderPrinterImage($task['printer_path'] ?? null, $printerName, 14) ?>
+                                                                </div>
+                                                                <strong style="font-size:0.82rem;"><?= $printerName ?></strong>
+                                                            </div>
+                                                        <?php endif; ?>
                                                     </td>
                                                     <td>
                                                         <div class="prog-wrap">
                                                             <div class="prog-meta">
-                                                                <span><?= $task['completed_cases'] ?>/<?= $task['total_cases'] ?></span>
-                                                                <span><?= $percent ?>%</span>
+                                                                <?php if ($task['testing_type'] == 'Regression'): ?>
+                                                                    <!-- Regression: Only show percentage, no fraction -->
+                                                                    <span></span>
+                                                                    <span><?= ($task['overall_status'] == 'Completed') ? '100%' : '0%' ?></span>
+                                                                <?php else: ?>
+                                                                    <!-- Smoke: Show fraction and percentage -->
+                                                                    <span><?= $task['completed_cases'] ?>/<?= $task['total_cases'] ?></span>
+                                                                    <span><?= $percent ?>%</span>
+                                                                <?php endif; ?>
                                                             </div>
                                                             <div class="prog-track">
-                                                                <div class="prog-fill <?= $is_complete ? 'complete' : '' ?>" style="width:<?= $percent ?>%;"></div>
+                                                                <div class="prog-fill <?= $is_complete ? 'complete' : '' ?>" 
+                                                                     style="width:<?= ($task['testing_type'] == 'Regression' && $task['overall_status'] == 'Completed') ? '100%' : $percent ?>%;">
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                    </td>
+                                                    <td style="font-size:0.8rem; color:var(--text-muted);">
+                                                        <?= htmlspecialchars($task['fw_type']) ?>
                                                     </td>
                                                     <td>
                                                         <?php if ($task['overall_status'] == 'Pass'): ?>
@@ -149,8 +310,9 @@ require_once 'configs/header.php';
                                                                 <span class="material-symbols-outlined">do_not_disturb_on</span> N/A
                                                             </span>
                                                         <?php else: ?>
-                                                            <span class="badge badge-pending">
-                                                                <span class="material-symbols-outlined">schedule</span> Pending
+                                                            <!-- FIXED: Show "In Progress" for Pending or empty status -->
+                                                            <span class="badge-in-progress">
+                                                                <span class="pulse-dot"></span> IN PROGRESS
                                                             </span>
                                                         <?php endif; ?>
                                                     </td>
@@ -160,7 +322,7 @@ require_once 'configs/header.php';
                                                 </tr>
 
                                                 <tr class="expanded-row">
-                                                    <td colspan="6" style="padding: 0;">
+                                                    <td colspan="7" style="padding: 0;">
                                                         <div class="accordion-wrapper" id="<?= $rowId ?>">
                                                             <div class="expanded-content">
                                                                 <div class="expand-detail">
@@ -172,25 +334,12 @@ require_once 'configs/header.php';
                                                                     <span class="expand-detail-value" style="color:var(--primary);"><?= htmlspecialchars($task['fw_version_current']) ?></span>
                                                                 </div>
                                                                 <div class="expand-detail">
-                                                                    <span class="expand-detail-label">Branch</span>
-                                                                    <span class="expand-detail-value"><?= htmlspecialchars($task['fw_type']) ?></span>
-                                                                </div>
-                                                                <div class="expand-detail">
                                                                     <span class="expand-detail-label">Prev / Rec FW</span>
                                                                     <span class="expand-detail-value">
                                                                         <span style="color:var(--text-muted); opacity:0.8;"><?= htmlspecialchars($task['fw_version_prev']) ?></span>
                                                                         <span style="color:var(--border); margin:0 4px;">/</span>
                                                                         <span style="color:var(--error);"><?= htmlspecialchars($task['fw_version_rec']) ?></span>
                                                                     </span>
-                                                                </div>
-                                                                
-                                                                <div class="expand-actions">
-                                                                    <?php if ($task['testing_type'] == 'Regression'): ?>
-                                                                        <a href="<?= htmlspecialchars($task['regression_url'] ?? '#') ?>" target="_blank" class="icon-btn tooltip-trigger" data-tip="Open TestRail">
-                                                                            <span class="material-symbols-outlined">open_in_new</span>
-                                                                        </a>
-                                                                    <?php else: ?>
-                                                                    <?php endif; ?>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -213,24 +362,24 @@ require_once 'configs/header.php';
                                 <div class="table-responsive">
                                     <table class="d-table">
                                         <colgroup>
-                                            <col style="width:10%">
-                                            <col style="width:12%">
-                                            <col style="width:17%">
-                                            <col style="width:13%">
-                                            <col style="width:11%">
-                                            <col style="width:10%">
-                                            <col style="width:13%">
-                                            <col style="width:14%">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
+                                            <col style="width:auto;">
                                         </colgroup>
                                         <thead>
                                             <tr>
-                                                <th>Date</th>
-                                                <th>Type</th>
-                                                <th>Printer</th>
-                                                <th>Current FW</th>
-                                                <th>Branch</th>
-                                                <th>My Role</th>
-                                                <th>Status</th>
+                                                <?= Helper::renderSortHeader('task_date', 'Date', $sort ?? null, $order ?? null) ?>
+                                                <?= Helper::renderSortHeader('testing_type', 'Type', $sort ?? null, $order ?? null) ?>
+                                                <?= Helper::renderSortHeader('model_name', 'Printer', $sort ?? null, $order ?? null) ?>
+                                                <?= Helper::renderSortHeader('fw_version_current', 'Current FW', $sort ?? null, $order ?? null) ?>
+                                                <?= Helper::renderSortHeader('fw_type', 'Firmware', $sort ?? null, $order ?? null) ?>
+                                                <th>Role</th>
+                                                <?= Helper::renderSortHeader('overall_status', 'Status', $sort ?? null, $order ?? null) ?>
                                                 <th>Action</th>
                                             </tr>
                                         </thead>
@@ -239,7 +388,7 @@ require_once 'configs/header.php';
                                                 <?php $printerName = htmlspecialchars($task['model_name']); ?>
                                                 <tr class="main-row">
                                                     <td>
-                                                        <span class="mono" style="font-size:0.8rem; color:var(--text-muted);">
+                                                        <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">
                                                             <?= date('M d', strtotime($task['task_date'])) ?>
                                                         </span>
                                                     </td>
@@ -249,19 +398,19 @@ require_once 'configs/header.php';
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <div style="display: flex; align-items: center; gap: 10px;">
-                                                            <div style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
-                                                                <?= Helper::renderPrinterImage($task['printer_path'] ?? null, $printerName, 16) ?>
+                                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                                            <div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border);">
+                                                                <?= Helper::renderPrinterImage($task['printer_path'] ?? null, $printerName, 14) ?>
                                                             </div>
-                                                            <strong style="font-size:0.88rem;" title="<?= $printerName ?>"><?= $printerName ?></strong>
+                                                            <strong style="font-size:0.82rem;" title="<?= $printerName ?>"><?= $printerName ?></strong>
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span class="mono" style="font-size:0.82rem; color:var(--primary); font-weight:600;">
+                                                        <span class="mono" style="font-size:0.78rem; color:var(--primary); font-weight:600;">
                                                             <?= htmlspecialchars($task['fw_version_current']) ?>
                                                         </span>
                                                     </td>
-                                                    <td style="font-size:0.8rem; color:var(--text-muted);">
+                                                    <td style="font-size:0.75rem; color:var(--text-muted);">
                                                         <?= htmlspecialchars($task['fw_type']) ?>
                                                     </td>
                                                     <td>
@@ -287,14 +436,37 @@ require_once 'configs/header.php';
                                                                 <span class="material-symbols-outlined">do_not_disturb_on</span> N/A
                                                             </span>
                                                         <?php else: ?>
-                                                            <span class="badge badge-pending"><span class="material-symbols-outlined">schedule</span> Pending</span>
+                                                            <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);">
+                                                                <span class="material-symbols-outlined" style="font-size: 12px;">progress_activity</span> In Progress
+                                                            </span>
                                                         <?php endif; ?>
                                                     </td>
                                                     <td>
-                                                        <?php if ($task['testing_type'] == 'Regression'): ?>
-                                                            <a href="<?= htmlspecialchars($task['regression_url']) ?>" target="_blank" class="btn-mini ghost">
-                                                                <span class="material-symbols-outlined">open_in_new</span> Open TestRail
-                                                            </a>
+                                                        <?php 
+                                                        // --- LOCK ACTION IF STATUS IS FINALIZED ---
+                                                        $finalizedStatuses = ['Pass', 'Fail', 'Blocked', 'N/A', 'Completed'];
+                                                        $isLocked = in_array(trim($task['overall_status'] ?? ''), $finalizedStatuses);
+                                                        ?>
+                                                        
+                                                        <?php if ($isLocked): ?>
+                                                            <!-- EXACT CSS FROM ASSIGNMENTS.PHP - Applied inline to guarantee matching -->
+                                                            <button class="btn-disabled" style="
+                                                                display: inline-flex; 
+                                                                align-items: center; 
+                                                                gap: 6px; 
+                                                                padding: 4px 14px; 
+                                                                border-radius: 6px; 
+                                                                background: var(--bg-body) !important; 
+                                                                color: var(--text-muted) !important; 
+                                                                border: 1px solid var(--border) !important; 
+                                                                cursor: not-allowed; 
+                                                                font-size: 0.82rem; 
+                                                                font-weight: 600;
+                                                                opacity: 0.8;
+                                                            " title="Task is finalized">
+                                                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-muted);">lock</span> 
+                                                                Locked
+                                                            </button>
                                                         <?php else: ?>
                                                             <a href="execute_task.php?task_id=<?= $task['id'] ?>&printer_id=<?= $task['printer_id'] ?>" class="btn-mini">
                                                                 <span class="material-symbols-outlined">play_arrow</span> Execute
@@ -312,129 +484,44 @@ require_once 'configs/header.php';
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
-            <div class="dash-split-row">
-
-                <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
-
-                    <div class="d-card">
-                        <div class="d-card-header">
-                            <div class="d-card-title">
-                                <span class="material-symbols-outlined">memory</span>
-                                Firmware Overview
-                            </div>
-                        </div>
-                        <div class="fw-grid">
-                            <?php foreach ($firmware_overview as $fw): ?>
-                                <div class="fw-card tooltip-trigger" data-tip="View History" onclick="openFwModal(<?= $fw['printer_id'] ?>, '<?= htmlspecialchars($fw['model'], ENT_QUOTES) ?>')">
-                                    <div class="fw-model" style="display: flex; align-items: center; gap: 8px;">
-                                        <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden;">
-                                            <?= Helper::renderPrinterImage($fw['printer_path'] ?? null, $fw['model'], 14) ?>
-                                        </div>
-                                        <?= htmlspecialchars($fw['model']) ?>
-                                    </div>
-                                    <div class="fw-row">
-                                        <span class="fw-label">Branch</span>
-                                        <span class="fw-value"><?= htmlspecialchars($fw['branch']) ?></span>
-                                    </div>
-                                    <div class="fw-row">
-                                        <span class="fw-label">Trunk</span>
-                                        <span class="fw-value trunk"><?= htmlspecialchars($fw['trunk']) ?></span>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+            <!-- 2. FIRMWARE OVERVIEW (Full Width, Fixed Alignment) -->
+            <div class="d-card">
+                <div class="d-card-header">
+                    <div class="d-card-title">
+                        <span class="material-symbols-outlined">memory</span>
+                        Firmware Overview
                     </div>
-
-                    <div class="d-card">
-                        <div class="d-card-header">
-                            <div class="d-card-title">
-                                <span class="material-symbols-outlined">donut_large</span>
-                                30-Day Performance by Printer
-                            </div>
-                        </div>
-                        <div class="chart-layout">
-
-                            <div class="chart-sidebar">
-                                <?php if (empty($chart_data)): ?>
-                                    <p style="font-size:0.85rem; color:var(--text-muted); text-align:center; padding: 20px;">No testing data available.</p>
-                                <?php else: ?>
-                                    <div class="p-card-grid" id="chartPrinterSelect">
-                                        <?php foreach ($chart_data as $idx => $data): ?>
-                                            <?php $pName = htmlspecialchars($data['model_name']); ?>
-                                            <div class="p-card <?= $idx === 0 ? 'p-active' : '' ?>" data-idx="<?= $idx ?>" onclick="selectChartPrinter(<?= $idx ?>)">
-                                                <div class="p-card-icon" style="overflow: hidden; padding: 2px;">
-                                                    <?= Helper::renderPrinterImage($data['printer_path'] ?? null, $pName, 20) ?>
-                                                </div>
-                                                <div class="p-card-name"><?= $pName ?></div>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="chart-display">
-                                <?php if (empty($chart_data)): ?>
-                                    <div class="empty-state" style="padding:0; width:100%;">
-                                        <span class="material-symbols-outlined" style="font-size:48px;">pie_chart_outline</span>
-                                        <p>No testing data available.</p>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="custom-chart-layout">
-                                        <div class="chart-canvas-wrap" style="width: 200px; height: 200px; flex-shrink: 0; margin: 0 auto;">
-                                            <canvas id="progressChart"></canvas>
-                                        </div>
-                                        <div class="custom-chart-legend" id="customChartLegend">
-                                            </div>
-                                        <div class="custom-chart-summary" id="customChartSummary">
-                                            </div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-
-                        </div>
-                    </div>
-
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
-
-                    <div class="d-card" style="width: 100%;">
-                        <div class="d-card-header">
-                            <div class="d-card-title">
-                                <span class="material-symbols-outlined">group</span>
-                                Team Status
-                            </div>
-                        </div>
-                        <div class="d-card-body" style="max-height: 620px; overflow-y: auto;">
-                            <?php
-                            foreach ($team_members as $idx => $member):
-                                $lastSeen = $member['last_login'] ? time_ago($member['last_login']) : 'Never';
-                                $lastFull = $member['last_login'] ? date('M d, Y g:i A', strtotime($member['last_login'])) : 'No login recorded';
-                                $pfp = !empty($member['pfp_path']) ? $member['pfp_path'] : 'imgs/default_pfp.svg';
-                            ?>
-                                <div class="member-row">
-                                    <div class="member-avatar" style="background: transparent; border: 1px solid var(--border);">
-                                        <img src="<?= htmlspecialchars($pfp) ?>" class="pfp-img" alt="<?= htmlspecialchars($member['full_name']) ?>">
+                <div class="d-card-body" style="padding: 0;">
+                    <div class="fw-grid">
+                        <?php foreach ($firmware_overview as $fw): ?>
+                            <div class="fw-card tooltip-trigger" data-tip="View History" onclick="openFwModal(<?= $fw['printer_id'] ?>, '<?= htmlspecialchars($fw['model'], ENT_QUOTES) ?>')">
+                                <div class="fw-model" style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden;">
+                                        <?= Helper::renderPrinterImage($fw['printer_path'] ?? null, $fw['model'], 14) ?>
                                     </div>
-                                    <div class="member-info">
-                                        <div class="member-name"><?= htmlspecialchars($member['full_name']) ?></div>
-                                        <div class="member-last tooltip-trigger" data-tip="Last login: <?= $lastFull ?>"><?= $lastSeen ?></div>
-                                    </div>
-                                    <span class="member-role <?= $member['role'] === 'lead' ? 'lead' : 'tester' ?>">
-                                        <?= ucfirst($member['role']) ?>
-                                    </span>
+                                    <?= htmlspecialchars($fw['model']) ?>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
+                                <div class="fw-row">
+                                    <span class="fw-label">Branch</span>
+                                    <span class="fw-value"><?= htmlspecialchars($fw['branch']) ?></span>
+                                </div>
+                                <div class="fw-row">
+                                    <span class="fw-label">Trunk</span>
+                                    <span class="fw-value trunk"><?= htmlspecialchars($fw['trunk']) ?></span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-
                 </div>
             </div>
 
         </div>
     </div>
 
-    <div class="modal-overlay" id="fwModal">
+        <div class="modal-overlay" id="fwModal">
         <div class="modal-box" style="max-width: 480px;">
             
             <div class="modal-header">
@@ -448,7 +535,53 @@ require_once 'configs/header.php';
             </div>
             
             <div class="modal-body" style="padding: 0;">
-                <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border-radius: 0 0 16px 16px;">
+                <!-- Search Box -->
+                <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border);">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <span class="material-symbols-outlined" style="position: absolute; left: 12px; font-size: 18px; color: var(--text-muted); pointer-events: none;">search</span>
+                        <input 
+                            type="text" 
+                            id="fwSearchInput" 
+                            placeholder="Search firmware versions..." 
+                            oninput="filterFwTable(this.value)"
+                            style="
+                                width: 100%; 
+                                padding: 10px 12px 10px 38px; 
+                                border: 1px solid var(--border); 
+                                border-radius: 10px; 
+                                background: var(--bg-surface); 
+                                color: var(--text-main); 
+                                font-family: var(--font-mono); 
+                                font-size: 0.82rem; 
+                                outline: none; 
+                                transition: border-color 0.2s, box-shadow 0.2s;
+                            "
+                            onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(2,136,209,0.1)';"
+                            onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';"
+                        >
+                        <button 
+                            id="fwSearchClear" 
+                            onclick="clearFwSearch()" 
+                            title="Clear search"
+                            style="
+                                position: absolute; right: 8px; 
+                                background: none; border: none; 
+                                color: var(--text-muted); cursor: pointer; 
+                                padding: 4px; border-radius: 6px; 
+                                display: none; 
+                                transition: color 0.15s, background 0.15s;
+                            "
+                            onmouseover="this.style.color='var(--text-main)'; this.style.background='var(--bg-surface)';"
+                            onmouseout="this.style.color='var(--text-muted)'; this.style.background='none';"
+                        >
+                            <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                        </button>
+                    </div>
+                    <div id="fwSearchCount" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; padding-left: 2px; display: none;"></div>
+                </div>
+
+                <!-- Table with Scrollbar -->
+                <div class="table-responsive" style="max-height: 380px; overflow-y: auto; border-radius: 0 0 16px 16px; scroll-behavior: smooth;" id="fwTableScroll">
                     <table class="d-table fw-modal-table" style="margin: 0; border: none;">
                         <thead style="position: sticky; top: 0; z-index: 10;">
                             <tr>
@@ -465,7 +598,7 @@ require_once 'configs/header.php';
                             </tr>
                         </thead>
                         <tbody id="fwModalBody">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -478,7 +611,7 @@ require_once 'configs/header.php';
     {
         $interval = time() - strtotime($datetime);
         if ($interval < 60) return 'Just now';
-        if ($interval < 3600) return floor($interval / 60) . 'm ago';
+        if ($interval < 3600) return floor($interval / 3600) . 'm ago';
         if ($interval < 86400) return floor($interval / 3600) . 'h ago';
         return floor($interval / 86400) . 'd ago';
     }
@@ -525,15 +658,16 @@ require_once 'configs/header.php';
                     });
             }
 
-            // Capture Page Links and Rows-Per-Page Selects
+                        // Capture Page Links and Sort Headers for AJAX reload
             document.addEventListener('click', function(e) {
-                const link = e.target.closest('.page-link');
-                if (link && link.tagName === 'A') {
+                const link = e.target.closest('a');
+                // Intercept pagination links, or sort links inside <th> that contain 'sort='
+                if (link && (link.classList.contains('page-link') || (link.closest('th') && link.href.includes('sort=')))) {
                     e.preventDefault();
                     loadData(link.href);
                 }
             });
-
+            
             document.addEventListener('change', function(e) {
                 if (e.target.classList.contains('per-page-select')) {
                     const url = new URL(window.location.href);
@@ -544,13 +678,22 @@ require_once 'configs/header.php';
             });
         });
 
-        // ── Firmware Modal Logic ─────────────────────────
+                // ── Firmware Modal Logic ─────────────────────────
         let fwData = { branch: [], trunk: [] };
         let sortState = { branch: 'desc', trunk: 'desc' };
+        let fwSearchTerm = '';
 
         function openFwModal(printerId, printerName) {
             document.getElementById('fwModalTitle').textContent = printerName;
             document.getElementById('fwModalBody').innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px;"><div class="loader-spinner"></div></td></tr>';
+            
+            // Reset search
+            const searchInput = document.getElementById('fwSearchInput');
+            searchInput.value = '';
+            fwSearchTerm = '';
+            document.getElementById('fwSearchClear').style.display = 'none';
+            document.getElementById('fwSearchCount').style.display = 'none';
+            
             openModal('fwModal');
 
             fetch(`index.php?fetch_firmware_history=1&printer_id=${printerId}`)
@@ -559,7 +702,7 @@ require_once 'configs/header.php';
                     if (data.success) {
                         fwData.branch = data.branch;
                         fwData.trunk = data.trunk;
-                        sortState = { branch: 'desc', trunk: 'desc' }; // Reset sort
+                        sortState = { branch: 'desc', trunk: 'desc' };
                         renderFwTable();
                     } else {
                         document.getElementById('fwModalBody').innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--error); padding: 40px;">Failed to load data.</td></tr>';
@@ -567,125 +710,156 @@ require_once 'configs/header.php';
                 });
         }
 
+        function filterFwTable(term) {
+            fwSearchTerm = term.trim().toLowerCase();
+            const clearBtn = document.getElementById('fwSearchClear');
+            clearBtn.style.display = fwSearchTerm.length > 0 ? 'block' : 'none';
+            renderFwTable();
+        }
+
+        function clearFwSearch() {
+            const searchInput = document.getElementById('fwSearchInput');
+            searchInput.value = '';
+            fwSearchTerm = '';
+            document.getElementById('fwSearchClear').style.display = 'none';
+            document.getElementById('fwSearchCount').style.display = 'none';
+            searchInput.focus();
+            renderFwTable();
+        }
+
         function sortFw(column) {
-            // Flip state
             sortState[column] = sortState[column] === 'desc' ? 'asc' : 'desc';
             
-            // Update Icons
             document.getElementById('sortIcon_branch').style.color = column === 'branch' ? 'var(--primary)' : 'var(--text-muted)';
             document.getElementById('sortIcon_branch').textContent = sortState.branch === 'desc' ? 'arrow_downward' : 'arrow_upward';
             
             document.getElementById('sortIcon_trunk').style.color = column === 'trunk' ? 'var(--primary)' : 'var(--text-muted)';
             document.getElementById('sortIcon_trunk').textContent = sortState.trunk === 'desc' ? 'arrow_downward' : 'arrow_upward';
 
-            // JS Memory Sort
             fwData[column].reverse();
             renderFwTable();
         }
 
         function renderFwTable() {
             const tbody = document.getElementById('fwModalBody');
+            const countEl = document.getElementById('fwSearchCount');
             tbody.innerHTML = '';
             
             const maxRows = Math.max(fwData.branch.length, fwData.trunk.length);
             
             if (maxRows === 0) {
                 tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; font-style:italic; color:var(--text-muted); padding: 40px;">No firmware history found.</td></tr>';
+                countEl.style.display = 'none';
                 return;
             }
 
+            // Build row indices, apply search filter
+            let indices = [];
             for (let i = 0; i < maxRows; i++) {
+                indices.push(i);
+            }
+
+            if (fwSearchTerm.length > 0) {
+                indices = indices.filter(i => {
+                    const bVal = (fwData.branch[i] || '').toLowerCase();
+                    const tVal = (fwData.trunk[i] || '').toLowerCase();
+                    return bVal.includes(fwSearchTerm) || tVal.includes(fwSearchTerm);
+                });
+            }
+
+            // Show result count when searching
+            if (fwSearchTerm.length > 0) {
+                const total = maxRows;
+                const shown = indices.length;
+                countEl.textContent = shown === total 
+                    ? `Showing all ${total} versions` 
+                    : `Showing ${shown} of ${total} versions`;
+                countEl.style.display = 'block';
+                
+                if (shown === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="2" style="text-align:center; padding: 40px;">
+                                <span class="material-symbols-outlined" style="font-size:32px; color:var(--border); display:block; margin-bottom:8px;">search_off</span>
+                                <span style="color:var(--text-muted); font-size:0.85rem;">No versions matching "<strong style="color:var(--text-main);">${escapeHtml(fwSearchTerm)}</strong>"</span>
+                            </td>
+                        </tr>`;
+                    return;
+                }
+            } else {
+                countEl.style.display = 'none';
+            }
+
+            // Highlight helper
+            function highlight(text, term) {
+                if (!term) return escapeHtml(text);
+                const escaped = escapeHtml(text);
+                const escapedTerm = escapeHtml(term);
+                const regex = new RegExp(`(${escapedTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                return escaped.replace(regex, '<mark style="background:rgba(2,136,209,0.15); color:var(--primary); padding:1px 2px; border-radius:3px;">$1</mark>');
+            }
+
+            for (const i of indices) {
                 const bVal = fwData.branch[i] || '-';
                 const tVal = fwData.trunk[i] || '-';
                 
-                const bStyle = bVal === '-' ? 'color:var(--border);' : 'font-family:var(--font-mono); font-weight:600; color:var(--text-main);';
-                const tStyle = tVal === '-' ? 'color:var(--border);' : 'font-family:var(--font-mono); font-weight:600; color:var(--text-main);';
+                const bIsEmpty = bVal === '-';
+                const tIsEmpty = tVal === '-';
+                
+                const bStyle = bIsEmpty ? 'color:var(--border);' : 'font-family:var(--font-mono); font-weight:600; color:var(--text-main);';
+                const tStyle = tIsEmpty ? 'color:var(--border);' : 'font-family:var(--font-mono); font-weight:600; color:var(--text-main);';
+
+                const bDisplay = bIsEmpty ? '-' : highlight(bVal, fwSearchTerm);
+                const tDisplay = tIsEmpty ? '-' : highlight(tVal, fwSearchTerm);
                 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="${bStyle}">${bVal}</td>
-                        <td style="${tStyle}">${tVal}</td>
+                        <td style="${bStyle}">${bDisplay}</td>
+                        <td style="${tStyle}">${tDisplay}</td>
                     </tr>
                 `;
             }
+
+            // Scroll back to top on re-render
+            document.getElementById('fwTableScroll').scrollTop = 0;
         }
 
-        // ── Custom Analytical Chart Logic ──────────────────────
-        const rawData = <?= json_encode($chart_data) ?>;
-        let chartInstance = null;
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
-        const colors = {
-            pass: '#10b981', fail: '#ef4444', blocked: '#f59e0b', na: '#6b7280', pending: '#cbd5e1' 
-        };
-        const chartColorArray = [colors.pass, colors.fail, colors.blocked, colors.na, colors.pending];
+        // ── Custom Analytical Chart Logic REMOVED ──────────────────────
+        // Chart logic has been removed as it is not needed for the Leader dashboard.
 
-        function renderChart(index) {
-            if (!rawData || rawData.length === 0) return;
-            const data = rawData[index];
-            if (!data) return;
+        // ── Attach Tooltips ──────────────────────────────
+        const tooltip = document.getElementById('custom-tooltip');
 
-            const passed = Number(data.passed);
-            const failed = Number(data.failed);
-            const blocked = Number(data.blocked);
-            const na = Number(data.na);
-            const pending = Number(data.pending);
-            const total = passed + failed + blocked + na + pending;
+        function attachTooltips() {
+            document.querySelectorAll('[data-tip]').forEach(el => {
+                el.addEventListener('mouseenter', (e) => {
+                    tooltip.textContent = el.dataset.tip;
+                    tooltip.classList.add('visible');
+                });
+                el.addEventListener('mousemove', (e) => {
+                    let leftPos = e.clientX + 14;
+                    let topPos = e.clientY - 32;
 
-            const passPct = total > 0 ? Math.round((passed / total) * 100) : 0;
-            const failPct = total > 0 ? Math.round((failed / total) * 100) : 0;
-            const blockPct = total > 0 ? Math.round((blocked / total) * 100) : 0;
-            const naPct = total > 0 ? Math.round((na / total) * 100) : 0;
-            const pendPct = total > 0 ? Math.round((pending / total) * 100) : 0;
-
-            const legendHtml = `
-                <div class="leg-item"><span class="leg-color" style="background:${colors.pending};"></span><div><strong>${pending} Pending</strong><span>${pendPct}% set to Pending</span></div></div>
-                <div class="leg-item"><span class="leg-color" style="background:${colors.pass};"></span><div><strong>${passed} Passed</strong><span>${passPct}% set to Passed</span></div></div>
-                <div class="leg-item"><span class="leg-color" style="background:${colors.blocked};"></span><div><strong>${blocked} Blocked</strong><span>${blockPct}% set to Blocked</span></div></div>
-                <div class="leg-item"><span class="leg-color" style="background:${colors.fail};"></span><div><strong>${failed} Failed</strong><span>${failPct}% set to Failed</span></div></div>
-                <div class="leg-item"><span class="leg-color" style="background:${colors.na};"></span><div><strong>${na} N/A</strong><span>${naPct}% set to N/A</span></div></div>
-            `;
-            document.getElementById('customChartLegend').innerHTML = legendHtml;
-
-            const summaryHtml = `
-                <div class="summary-val">${passPct}%</div>
-                <div class="summary-label">passed</div>
-                <div class="summary-sub">${pending} / ${total} untested<br>(${pendPct}%).</div>
-            `;
-            document.getElementById('customChartSummary').innerHTML = summaryHtml;
-
-            const ctx = document.getElementById('progressChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-
-            chartInstance = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Passed', 'Failed', 'Blocked', 'N/A', 'Pending'],
-                    datasets: [{
-                        data: [passed, failed, blocked, na, pending],
-                        backgroundColor: chartColorArray,
-                        borderWidth: 2,
-                        borderColor: 'var(--bg-surface)',
-                        hoverOffset: 6
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { bodyFont: { family: 'DM Sans' }, titleFont: { family: 'DM Sans', weight: '700' } }
+                    // Check if tooltip goes out of bounds on the right
+                    if (leftPos + tooltip.offsetWidth > window.innerWidth) {
+                        // Flip to the left side of the cursor
+                        leftPos = e.clientX - tooltip.offsetWidth - 14;
                     }
-                }
+
+                    tooltip.style.left = leftPos + 'px';
+                    tooltip.style.top = topPos + 'px';
+                });
+                el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
             });
         }
+        attachTooltips();
 
-        window.selectChartPrinter = function(index) {
-            document.querySelectorAll('#chartPrinterSelect .p-card').forEach(card => card.classList.remove('p-active'));
-            const activeCard = document.querySelector(`#chartPrinterSelect .p-card[data-idx="${index}"]`);
-            if (activeCard) activeCard.classList.add('p-active');
-            renderChart(index);
-        };
-
-        if (rawData && rawData.length > 0) renderChart(0);
     </script>
 </body>
 </html>

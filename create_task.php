@@ -85,7 +85,7 @@ body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 .lp-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 5px; }
 
 .s-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; overflow: visible; margin-bottom: 24px; flex-shrink: 0; }
-.s-card-head { padding: 13px 20px; border-bottom: 1px solid var(--border); background: var(--bg-body); display: flex; align-items: center; gap: 10px; border-radius: 12px 12px 0 0; }
+.s-card-head { padding: 13px 20px; border-bottom: 1px solid var(--border); background: var(--bg-body); display: flex; align-items: center; gap: 10px; }
 .s-num { width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 0.67rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 .s-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-main); }
 .s-card-body { padding: 22px 20px; overflow: visible; }
@@ -124,28 +124,56 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
 .btn-cancel { display: inline-flex; align-items: center; padding: 11px 20px; border: 1.5px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 0.87rem; font-weight: 600; text-decoration: none; transition: border-color 0.14s, color 0.14s; }
 .btn-cancel:hover { border-color: var(--primary); color: var(--text-main); }
 
-.right-panel { background: var(--bg-surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-.rp-head { flex-shrink: 0; padding: 14px 18px 12px; border-bottom: 1px solid var(--border); background: var(--bg-body); }
+/* --- REDESIGNED RIGHT PANEL LAYOUT (NO OVERLAP) --- */
+.right-panel { 
+    background: var(--bg-surface); 
+    border-left: 1px solid var(--border); 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    min-height: 0; 
+}
+.rp-head { 
+    flex-shrink: 0; 
+    padding: 14px 18px 12px; 
+    border-bottom: 1px solid var(--border); 
+    background: var(--bg-body); 
+}
 .rp-head-title { font-size: 0.73rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-main); display: block; margin-bottom: 2px; }
 .rp-head-sub { font-size: 0.7rem; color: var(--text-muted); }
 
-.printer-grid-container { flex: 1 1 0; overflow-y: auto; padding: 16px 12px; border-bottom: 1px solid var(--border); }
+/* 1. Printer Container - Fits content exactly (No scroll) */
+.printer-grid-container { 
+    flex-shrink: 0; /* Prevents it from shrinking */
+    padding: 16px 12px; 
+    border-bottom: 1px solid var(--border);
+}
 .printer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+/* 2. Assignment Panel - Takes all remaining space (Scrolls if needed) */
+.assignment-panel { 
+    flex: 1; /* Takes ALL remaining space */
+    background: var(--bg-body); 
+    padding: 18px 16px; 
+    overflow-y: auto; /* Scrollbar appears if content is too long */
+    border-top: 2px solid var(--border); /* Clear separation line */
+}
+
+/* Printer Card Styling */
 .p-card { position: relative; background: var(--bg-surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 8px 10px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
 .p-card:hover { border-color: var(--primary); box-shadow: 0 6px 14px rgba(2,136,209,0.08); background: var(--bg-body); }
 .p-card.p-active { border-color: var(--primary); background: var(--bg-body); box-shadow: 0 0 0 2px var(--primary); }
 .p-card.p-selected { background: var(--bg-surface); border-color: var(--primary); }
 .p-card.p-selected .selected-badge { opacity: 1; }
 .p-card-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-body); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: background 0.2s; }
-.p-card-icon .material-symbols-outlined { font-size: 24px; color: var(--text-muted); }
 .p-card.p-active .p-card-icon { background: var(--primary); }
 .p-card.p-active .p-card-icon .material-symbols-outlined { color: var(--bg-surface); }
 .p-card-name { font-size: 0.78rem; font-weight: 700; color: var(--text-main); line-height: 1.3; margin-bottom: 4px; max-width: 100%; word-break: break-word; }
 .selected-badge { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
 .selected-badge .material-symbols-outlined { font-size: 14px; }
 
-.assignment-panel { flex: 0 0 auto; background: var(--bg-body); padding: 18px 16px; overflow-y: auto; max-height: 50%; }
-.assignment-placeholder { display: flex; align-items: center; justify-content: center; height: 100px; color: var(--text-muted); font-size: 0.8rem; text-align: center; background: var(--bg-surface); border-radius: 10px; padding: 20px; border: 1px solid var(--border); }
+/* Assignment Panel Styling */
+.assignment-placeholder { display: flex; align-items: center; justify-content: center; height: 80px; color: var(--text-muted); font-size: 0.8rem; text-align: center; background: var(--bg-surface); border-radius: 10px; padding: 20px; border: 1px solid var(--border); }
 .assignment-content { display: flex; flex-direction: column; gap: 22px; }
 .hidden { display: none !important; }
 
@@ -185,6 +213,68 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
 [data-theme="dark"] input[type="date"].f-input::-webkit-calendar-picker-indicator,
 [data-theme="midnight"] input[type="date"].f-input::-webkit-calendar-picker-indicator,
 [data-theme="catppuccin"] input[type="date"].f-input::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+
+/* --- PAGE-SPECIFIC FIX FOR CREATABLE DROPDOWNS --- */
+.enh-menu {
+    position: absolute !important;
+    top: calc(100% + 4px) !important;
+    left: 0 !important;
+    width: 100% !important;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    transform-origin: top center;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+    pointer-events: none;
+    visibility: hidden;
+}
+
+.enh-dropdown.open .enh-menu {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    visibility: visible;
+}
+
+/* DISABLE AUTO-FLIP TO TOP - FORCE DROPDOWN TO STAY BELOW */
+.enh-menu.drop-up {
+    top: calc(100% + 4px) !important;
+    bottom: auto !important;
+    transform-origin: top center;
+    transform: translateY(-8px) scale(0.98);
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.15);
+}
+
+.enh-dropdown.open .enh-menu.drop-up {
+    transform: translateY(0) scale(1);
+}
+
+/* --- DELETE BUTTON STYLES --- */
+.fw-delete-btn {
+    cursor: pointer;
+    color: #ef4444 !important;
+    font-weight: 800;
+    font-size: 18px;
+    padding: 0 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    margin-left: 10px;
+    line-height: 1;
+}
+.fw-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+.enh-option .enh-opt-label {
+    flex: 1;
+    white-space: normal;
+    word-break: break-word;
+}
 </style>
 </head>
 <body>
@@ -198,7 +288,7 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
         Track Manager
     </a>
     <nav class="tb-crumb">
-        <a href="index.php">Dashboard</a>
+        <a href="tasks.php">Tasks</a>
         <span class="tb-crumb-sep">›</span>
         <span class="tb-crumb-cur">Create Task</span>
     </nav>
@@ -321,7 +411,7 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
                 <span class="material-symbols-outlined">check_circle</span>
                 Create Task
             </button>
-            <a href="index.php" class="btn-cancel">Cancel</a>
+            <a href="tasks.php" class="btn-cancel">Cancel</a>
         </div>
     </main>
 
@@ -334,6 +424,9 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
         <div class="printer-grid-container">
             <div class="printer-grid" id="printerGrid">
                 <?php foreach ($data['printers'] as $pi => $p):
+                    // --- FIX: Skip inactive printers (they are already filtered in controller, but extra safety) ---
+                    if (isset($p['status']) && $p['status'] === 'inactive') continue;
+                    
                     $hasSaved = isset($saved_assignments[$p['id']]) || !empty($saved_reg_urls[$p['id']]);
                 ?>
                 <div class="p-card <?= $hasSaved ? 'p-selected' : '' ?>" data-pid="<?= $p['id'] ?>" id="pc_<?= $p['id'] ?>">
@@ -411,45 +504,164 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
 (function() {
     'use strict';
 
-    // --- Firmware Type Smart Filter ---
-    function updateFwDropdowns(type) {
-        // Targets the three specific dropdown containers
+    // --- HELPER: ADD "X" BUTTON TO A SINGLE DROPDOWN OPTION ---
+    function addDeleteButtonToOption(opt, type) {
+        if (opt.querySelector('.fw-delete-btn')) return;
+        const fw = opt.dataset.value;
+        if (!fw) return;
+        const rowWrapper = document.createElement('div');
+        rowWrapper.style.cssText = 'display: flex; align-items: center; justify-content: space-between; width: 100%;';
+        const labelSpan = opt.querySelector('.enh-opt-label');
+        if (labelSpan) {
+            rowWrapper.appendChild(labelSpan);
+        } else {
+            const newLabel = document.createElement('span');
+            newLabel.className = 'enh-opt-label';
+            newLabel.textContent = fw;
+            rowWrapper.appendChild(newLabel);
+        }
+        const deleteBtn = document.createElement('span');
+        deleteBtn.className = 'fw-delete-btn';
+        deleteBtn.textContent = '×';
+        deleteBtn.title = 'Delete "' + fw + '" from the list';
+        deleteBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            if (confirm('Are you sure you want to permanently delete firmware "' + fw + '" from the system?')) {
+                window.deleteFirmware(fw, type, opt);
+            }
+        });
+        rowWrapper.appendChild(deleteBtn);
+        opt.appendChild(rowWrapper);
+    }
+
+    function rebuildFwDropdowns(type) {
         ['fw_prev_dd', 'fw_curr_dd', 'fw_rec_dd'].forEach(id => {
             const container = document.getElementById(id);
             if (!container) return;
-            
-            const labels = container.querySelectorAll('.enh-optgroup-label');
-            labels.forEach(label => {
-                const isMatch = label.textContent.trim() === type;
-                label.style.display = isMatch ? 'block' : 'none';
-                
-                // Hide or show the options under this specific label
-                let next = label.nextElementSibling;
-                while (next && (next.classList.contains('enh-option') || next.classList.contains('type-hidden'))) {
-                    if (isMatch) {
-                        next.classList.remove('type-hidden');
-                    } else {
-                        next.classList.add('type-hidden');
-                    }
-                    next = next.nextElementSibling;
+            const triggerContent = container.querySelector('.enh-trigger-content');
+            if (triggerContent) {
+                triggerContent.innerHTML = `<span class="enh-placeholder">${container.config ? container.config.placeholder : 'e.g. 24.1.0'}</span>`;
+            }
+            let firmwaresData = {};
+            try {
+                firmwaresData = <?= json_encode($data['firmwares']) ?>;
+            } catch (e) {
+                console.error("PHP JSON Data is corrupted or invalid:", e);
+                return; 
+            }
+            const filteredFws = (firmwaresData && firmwaresData[type]) ? firmwaresData[type] : [];
+            const optionsContainer = container.querySelector('.enh-options');
+            if (!optionsContainer) return;
+            const children = optionsContainer.children;
+            for (let i = children.length - 1; i >= 0; i--) {
+                const child = children[i];
+                if (child.classList.contains('enh-option') || child.classList.contains('enh-optgroup-label')) {
+                    optionsContainer.removeChild(child);
                 }
+            }
+            if (filteredFws.length === 0) {
+            } else {
+                const groupLabel = document.createElement('div');
+                groupLabel.className = 'enh-optgroup-label';
+                groupLabel.textContent = type.toUpperCase();
+                optionsContainer.appendChild(groupLabel);
+                filteredFws.forEach(fw => {
+                    const opt = document.createElement('div');
+                    opt.className = 'enh-option';
+                    opt.dataset.value = fw;
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'enh-opt-label';
+                    labelSpan.textContent = fw;
+                    opt.appendChild(labelSpan);
+                    addDeleteButtonToOption(opt, type);
+                    optionsContainer.appendChild(opt);
+                });
+            }
+            if (container._enhancedDropdown) {
+                delete container._enhancedDropdown;
+            }
+            if (window.EnhancedDropdown) {
+                container._enhancedDropdown = new window.EnhancedDropdown(container);
+                container._enhancedDropdown.selectedValues = [];
+                container._enhancedDropdown.renderTrigger();
+            }
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1 && node.classList.contains('enh-option')) {
+                            if (!node.querySelector('.fw-delete-btn')) {
+                                addDeleteButtonToOption(node, type);
+                            }
+                        }
+                    });
+                });
             });
+            observer.observe(optionsContainer, { childList: true, subtree: false });
         });
     }
 
-    // Bind Radio Listeners
+    window.deleteFirmware = function(fw, type, optElement) {
+        const container = optElement ? optElement.closest('.enh-dropdown') : null;
+        if (container) {
+            const triggerContent = container.querySelector('.enh-trigger-content');
+            if (triggerContent) {
+                const placeholderText = container.config ? container.config.placeholder : 'e.g. 24.1.0';
+                triggerContent.innerHTML = `<span class="enh-placeholder">${placeholderText}</span>`;
+            }
+        }
+        const formData = new FormData();
+        formData.append('fw', fw);
+        formData.append('type', type);
+        fetch('delete_firmware.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (optElement && optElement.parentNode) {
+                    optElement.remove();
+                }
+                if (container && container._enhancedDropdown) {
+                    delete container._enhancedDropdown;
+                }
+                if (container && window.EnhancedDropdown) {
+                    container._enhancedDropdown = new window.EnhancedDropdown(container);
+                    container._enhancedDropdown.selectedValues = [];
+                    container._enhancedDropdown.renderTrigger();
+                }
+                if (typeof showDynamicToast === 'function') {
+                    showDynamicToast('Firmware "' + fw + '" deleted successfully.', 'success');
+                }
+            } else {
+                if (typeof showDynamicToast === 'function') {
+                    showDynamicToast(data.error || 'Failed to delete firmware.', 'error');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (typeof showDynamicToast === 'function') {
+                showDynamicToast('Network error. Could not delete firmware.', 'error');
+            }
+        });
+    };
+
     document.querySelectorAll('input[name="fw_type"]').forEach(r => {
-        r.addEventListener('change', (e) => updateFwDropdowns(e.target.value));
+        r.addEventListener('change', (e) => {
+            const selectedType = e.target.value;
+            rebuildFwDropdowns(selectedType);
+        });
     });
 
-    // Run immediately on page load to set initial state
     const initialFwType = document.querySelector('input[name="fw_type"]:checked');
-    if (initialFwType) updateFwDropdowns(initialFwType.value);
+    if (initialFwType) {
+        rebuildFwDropdowns(initialFwType.value);
+    }
 
-
-    // --- Existing Form Logic ---
-    const assignments = <?= $saved_assignments_json ?>;
-    const regressionUrls = <?= $saved_reg_urls_json ?>;
+    const assignments = JSON.parse(JSON.stringify(<?= $saved_assignments_json ?>));
+    const regressionUrls = JSON.parse(JSON.stringify(<?= $saved_reg_urls_json ?>));
     let activePrinter = null;
     let workflow = '<?= $form_data['testing_type'] ?? 'Smoke' ?>';
 
@@ -477,16 +689,13 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
         const card = document.getElementById('pc_' + pid);
         const checkbox = document.getElementById('cb_' + pid);
         let isSelected = false;
-        
         if (workflow === 'Smoke') {
             isSelected = assignments[pid] && assignments[pid].length > 0;
         } else {
             isSelected = !!(regressionUrls[pid] && regressionUrls[pid].trim() !== '');
         }
-        
         checkbox.checked = isSelected;
         card.classList.toggle('p-selected', isSelected);
-        
         const selectedCount = document.querySelectorAll('.printer-checkbox:checked').length;
         footCount.textContent = selectedCount;
     }
@@ -594,27 +803,27 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
     }
 
     function setActivePrinter(pid) {
-        if (activePrinter === pid) return;
-
+        if (activePrinter === pid) {
+            activePrinter = null;
+            printerCards.forEach(card => card.classList.remove('p-active'));
+            assignmentPlaceholder.classList.remove('hidden');
+            assignmentContent.classList.add('hidden');
+            return;
+        }
         if (workflow === 'Regression' && activePrinter) {
             saveRegUrlFromActive();
         }
-
         activePrinter = pid;
-
         printerCards.forEach(card => {
             card.classList.toggle('p-active', card.dataset.pid == pid);
         });
-
         if (!pid) {
             assignmentPlaceholder.classList.remove('hidden');
             assignmentContent.classList.add('hidden');
             return;
         }
-        
         assignmentPlaceholder.classList.add('hidden');
         assignmentContent.classList.remove('hidden');
-
         if (workflow === 'Smoke') {
             smokeUI.classList.remove('hidden');
             regUI.classList.add('hidden');
@@ -629,8 +838,69 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
     
     printerCards.forEach(card => {
         card.addEventListener('click', (e) => {
-            const pid = card.dataset.pid;
-            setActivePrinter(Number(pid));
+            const pid = Number(card.dataset.pid);
+            if (workflow === 'Smoke') {
+                // --- SMOKE: MULTI-SELECT (Toggle independent selection) ---
+                const checkbox = document.getElementById('cb_' + pid);
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.closest('.p-card').classList.toggle('p-selected', checkbox.checked);
+                    const selectedCount = document.querySelectorAll('.printer-checkbox:checked').length;
+                    footCount.textContent = selectedCount;
+                }
+                // Show assignment panel for the clicked printer
+                if (checkbox && checkbox.checked) {
+                    activePrinter = pid;
+                    assignmentPlaceholder.classList.add('hidden');
+                    assignmentContent.classList.remove('hidden');
+                    smokeUI.classList.remove('hidden');
+                    regUI.classList.add('hidden');
+                    // --- CRITICAL FIX: Clear any previous assignments for this printer ---
+                    assignments[pid] = [];
+                    renderActiveSlots();
+                    updatePoolUsed(pid);
+                    printerCards.forEach(c => c.classList.remove('p-active'));
+                    card.classList.add('p-active');
+                } else if (checkbox && !checkbox.checked && activePrinter === pid) {
+                    // If deselecting the active printer, close the panel
+                    activePrinter = null;
+                    assignmentPlaceholder.classList.remove('hidden');
+                    assignmentContent.classList.add('hidden');
+                    printerCards.forEach(c => c.classList.remove('p-active'));
+                }
+            } else {
+                // --- REGRESSION: MULTI-SELECT (Toggle independent selection) ---
+                const checkbox = document.getElementById('cb_' + pid);
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.closest('.p-card').classList.toggle('p-selected', checkbox.checked);
+                    if (checkbox.checked) {
+                        if (!regressionUrls[pid]) regressionUrls[pid] = '';
+                        const hidden = document.getElementById('reg_hidden_' + pid);
+                        if (hidden) hidden.value = regressionUrls[pid] || '';
+                    } else {
+                        const hidden = document.getElementById('reg_hidden_' + pid);
+                        if (hidden) hidden.value = '';
+                    }
+                    const selectedCount = document.querySelectorAll('.printer-checkbox:checked').length;
+                    footCount.textContent = selectedCount;
+                }
+                if (checkbox && checkbox.checked) {
+                    activePrinter = pid;
+                    assignmentPlaceholder.classList.add('hidden');
+                    assignmentContent.classList.remove('hidden');
+                    smokeUI.classList.add('hidden');
+                    regUI.classList.remove('hidden');
+                    loadRegUrlForActive();
+                    printerCards.forEach(c => c.classList.remove('p-active'));
+                    card.classList.add('p-active');
+                } else if (checkbox && !checkbox.checked && activePrinter === pid) {
+                    activePrinter = null;
+                    assignmentPlaceholder.classList.remove('hidden');
+                    assignmentContent.classList.add('hidden');
+                    printerCards.forEach(c => c.classList.remove('p-active'));
+                }
+            }
         });
     });
 
@@ -645,10 +915,8 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
         const uid = poolChip.dataset.uid;
         const name = poolChip.dataset.name;
         const pfp = poolChip.dataset.pfp;
-
         const list = assignments[activePrinter];
         if (list.some(t => String(t.uid) === String(uid))) return;
-
         list.push({ uid, name, pfp });
         renderActiveSlots();
         renderHiddenInputs(activePrinter);
@@ -673,28 +941,115 @@ input[type="date"].f-input { padding-top: 22px; padding-bottom: 5px; cursor: poi
             
             workflow = newWorkflow;
             
-            refreshAllPrinterCards(); 
+            // --- CRITICAL RESET LOGIC ---
             
-            const currentPid = activePrinter;
-            activePrinter = null; 
-            if (currentPid) {
-                setActivePrinter(currentPid);
+            // 1. Reset ALL printer cards (remove selection, uncheck boxes, remove active highlight)
+            document.querySelectorAll('.printer-checkbox').forEach(cb => {
+                cb.checked = false;
+                cb.closest('.p-card').classList.remove('p-selected', 'p-active');
+            });
+            
+            // 2. Clear regression URL data and hidden inputs
+            if (workflow === 'Regression') {
+                document.querySelectorAll('input[name^="regression_urls"]').forEach(input => {
+                    input.value = '';
+                });
+                Object.keys(regressionUrls).forEach(key => {
+                    regressionUrls[key] = '';
+                });
             }
+            
+            // 3. Clear all smoke assignment data
+            Object.keys(assignments).forEach(pid => {
+                assignments[pid] = [];
+            });
+            
+            // 4. Clear active printer and close assignment panel
+            activePrinter = null;
+            assignmentPlaceholder.classList.remove('hidden');
+            assignmentContent.classList.add('hidden');
+            
+            // 5. Reset footer counter
+            footCount.textContent = '0';
+            
+            // 6. Re-render hidden inputs for all printers to ensure no stale data is submitted
+            printerCards.forEach(card => {
+                const pid = card.dataset.pid;
+                renderHiddenInputs(pid);
+            });
         });
     });
 
-    document.getElementById('mainForm').addEventListener('submit', () => {
+    document.getElementById('mainForm').addEventListener('submit', (e) => {
         if (workflow === 'Regression' && activePrinter) {
             saveRegUrlFromActive();
         }
+        // REMOVED: All validation code. Let the PHP handle validation fully.
     });
 
+    // -------------------------------------------------------------------------
+    // FINAL FIX: Force the UI to fully re-render after a page reload
+    // -------------------------------------------------------------------------
+    function restorePageState() {
+        let hasData = false;
+        // Check if we have saved assignments or regression URLs from PHP
+        Object.keys(assignments).forEach(pid => {
+            if (assignments[pid] && assignments[pid].length > 0) {
+                hasData = true;
+            }
+        });
+        Object.keys(regressionUrls).forEach(pid => {
+            if (regressionUrls[pid] && regressionUrls[pid].trim() !== '') {
+                hasData = true;
+            }
+        });
+
+        if (hasData) {
+            refreshAllPrinterCards();
+            // Find the first selected printer and open the panel for it
+            let firstPid = null;
+            if (workflow === 'Smoke') {
+                for (const pid in assignments) {
+                    if (assignments[pid] && assignments[pid].length > 0) {
+                        firstPid = parseInt(pid);
+                        break;
+                    }
+                }
+            } else {
+                for (const pid in regressionUrls) {
+                    if (regressionUrls[pid] && regressionUrls[pid].trim() !== '') {
+                        firstPid = parseInt(pid);
+                        break;
+                    }
+                }
+            }
+            if (firstPid !== null) {
+                activePrinter = firstPid;
+                assignmentPlaceholder.classList.add('hidden');
+                assignmentContent.classList.remove('hidden');
+                if (workflow === 'Smoke') {
+                    smokeUI.classList.remove('hidden');
+                    regUI.classList.add('hidden');
+                    renderActiveSlots();
+                    updatePoolUsed(firstPid);
+                } else {
+                    smokeUI.classList.add('hidden');
+                    regUI.classList.remove('hidden');
+                    loadRegUrlForActive();
+                }
+                printerCards.forEach(card => {
+                    card.classList.toggle('p-active', parseInt(card.dataset.pid) === firstPid);
+                });
+            }
+        }
+    }
+
+    // Initialize
     refreshAllPrinterCards();
-    setActivePrinter(null); 
+    restorePageState(); 
     
     printerCards.forEach(card => {
         const pid = card.dataset.pid;
-        updatePrinterCard(pid);
         renderHiddenInputs(pid);
     });
 

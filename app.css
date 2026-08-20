@@ -379,44 +379,54 @@ body {
     color: var(--error);
 }
 
+/* ---------------------------------------------------------
+   ENHANCED DROPDOWN MENU POSITIONING (Final Fix)
+   --------------------------------------------------------- */
 .enh-menu {
-    position: absolute;
-    left: 0;
-    right: 0;
+    /* Position fixed is required to escape the modal container */
+    position: fixed !important;
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
     box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: 9999;
     display: flex;
     flex-direction: column;
     max-height: 320px;
+    
+    /* Reset all positioning so JS can control it fully */
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: auto !important;
+    min-width: unset !important;
 
-    top: calc(100% + 8px);
+    /* Initial state for animation */
     transform-origin: top center;
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    transition: opacity 0.15s, transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.enh-menu.hidden {
     opacity: 0;
     transform: translateY(-8px) scale(0.98);
     pointer-events: none;
     visibility: hidden;
-    display: flex;
+}
+
+/* When open, animate it in */
+.enh-dropdown.open .enh-menu {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    visibility: visible;
 }
 
 /* Modifier: Drop-Up Positioning */
 .enh-menu.drop-up {
-    top: auto;
-    bottom: calc(100% + 8px);
     transform-origin: bottom center;
     box-shadow: 0 -12px 32px -8px rgba(0, 0, 0, 0.15);
+    transform: translateY(8px) scale(0.98);
 }
 
-.enh-menu.drop-up.hidden {
-    transform: translateY(8px) scale(0.98);
+.enh-dropdown.open .enh-menu.drop-up {
+    transform: translateY(0) scale(1);
 }
 
 /* Search Bar */
@@ -2226,6 +2236,7 @@ body {
     padding: 24px;
     overflow-y: auto;
 }
+
 /* Base container styling */
 .btn-reset-icon { 
     display: inline-flex; 
@@ -2256,4 +2267,394 @@ body {
 
 .btn-reset-icon:hover svg {
     filter: drop-shadow(0 0 2px color-mix(in srgb, var(--error) 40%, transparent)); 
+}
+
+/* =========================================
+   JIRA ENTER HINT TOOLTIP - IMPROVED VISIBILITY
+   ========================================= */
+.jira-enter-hint {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: help;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-surface);
+    border: 2px solid var(--primary);
+    transition: all 0.2s;
+    pointer-events: auto;
+    opacity: 0.8;
+    z-index: 5;
+}
+
+.jira-enter-hint:hover {
+    opacity: 1;
+    border-color: var(--primary);
+    background: rgba(2, 136, 209, 0.15);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.jira-enter-hint .material-symbols-outlined {
+    font-size: 14px;
+    color: var(--primary);
+}
+
+/* Tooltip popup - appears BELOW with clear visibility */
+.jira-enter-hint .hint-popup {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 50%;
+    transform: translateX(50%) translateY(-4px);
+    background: #1e293b;
+    border: 2px solid var(--primary);
+    border-radius: 10px;
+    padding: 10px 16px;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    font-family: var(--font-body);
+    min-width: 140px;
+    text-align: center;
+}
+
+.jira-enter-hint .hint-popup kbd {
+    background: #0f172a;
+    border: 1px solid var(--primary);
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--primary);
+    font-family: var(--font-mono);
+}
+
+.jira-enter-hint .hint-popup::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    right: 50%;
+    transform: translateX(50%);
+    border: 8px solid transparent;
+    border-bottom-color: var(--primary);
+}
+
+.jira-enter-hint .hint-popup::after {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 2px);
+    right: 50%;
+    transform: translateX(50%);
+    border: 7px solid transparent;
+    border-bottom-color: #1e293b;
+}
+
+.jira-enter-hint:hover .hint-popup {
+    opacity: 1;
+    transform: translateX(50%) translateY(0);
+}
+
+/* =========================================
+   JIRA SECTION - CONSISTENT ALIGNMENT
+   ========================================= */
+.jira-section {
+    padding: 0 18px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.25s ease;
+}
+
+/* Show for all statuses with consistent padding */
+.case-card.status-Pass .jira-section,
+.case-card.status-Fail .jira-section,
+.case-card.status-Blocked .jira-section,
+.case-card.status-NA .jira-section,
+.case-card.status-Pending .jira-section {
+    max-height: 80px;
+    padding: 0 18px 14px;
+    opacity: 1;
+    overflow: visible;
+}
+
+.jira-input-wrap { 
+    position: relative; 
+    width: 100%;
+}
+
+.jira-input { 
+    width: 100%; 
+    height: 34px; 
+    padding: 0 34px 0 12px; 
+    border: 1px solid var(--border); 
+    border-radius: 6px; 
+    font-size: 0.78rem; 
+    background: var(--bg-body); 
+    color: var(--text-main); 
+    font-family: var(--font-body); 
+    outline: none; 
+    transition: border-color 0.2s, box-shadow 0.2s; 
+    box-sizing: border-box;
+}
+
+.jira-input::placeholder { 
+    color: var(--text-muted); 
+    font-weight: 500; 
+}
+
+.jira-input:focus { 
+    border-color: var(--primary); 
+    box-shadow: 0 0 0 2px rgba(2, 136, 209, 0.12); 
+}
+
+/* Fix for Fail state - keep alignment consistent */
+.jira-input.fail-missing {
+    border-color: var(--error) !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+    background: var(--error-bg) !important;
+    animation: pulse-red 1.5s ease-in-out infinite;
+    height: 34px;
+    box-sizing: border-box;
+}
+
+.jira-input.fail-missing::placeholder {
+    color: var(--error) !important;
+    font-weight: 700 !important;
+}
+
+.jira-locked { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    background: var(--bg-body); 
+    border: 1px solid var(--border); 
+    border-radius: 6px; 
+    padding: 7px 10px; 
+    height: 34px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.jira-link-text { 
+    font-size: 0.78rem; 
+    color: var(--primary); 
+    text-decoration: none; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    max-width: 90%; 
+    font-weight: 500; 
+    font-family: var(--font-body); 
+}
+
+.jira-link-text:hover { 
+    text-decoration: underline; 
+}
+
+/* Status bar - ensure consistent alignment */
+.status-bar {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    gap: 14px;
+    min-height: 60px;
+}
+
+.case-identity {
+    flex: 1;
+    min-width: 0;
+}
+
+.case-title {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.case-code {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-top: 2px;
+}
+
+.status-dropdown {
+    width: 130px;
+    padding: 8px 28px 8px 12px;
+    border: 1px solid var(--border);
+    background-color: var(--bg-body);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    font-family: var(--font-body);
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    flex-shrink: 0;
+    text-align: center;
+    height: 34px;
+    box-sizing: border-box;
+}
+
+.status-dropdown:hover { 
+    border-color: var(--primary); 
+}
+
+.status-dropdown option { 
+    color: var(--text-main); 
+    background-color: var(--bg-surface); 
+}
+
+.btn-remove-case {
+    width: 28px; 
+    height: 28px; 
+    border: none; 
+    background: transparent;
+    border-radius: 6px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center;
+    justify-content: center; 
+    flex-shrink: 0; 
+    transition: all 0.15s;
+    color: var(--text-muted); 
+    opacity: 0.4;
+    padding: 0;
+}
+
+.btn-remove-case:hover {
+    background: var(--error-bg); 
+    color: var(--error); 
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.btn-remove-case .material-symbols-outlined { 
+    font-size: 18px; 
+}
+
+@keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+    50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.35); }
+}
+
+/* Card border states */
+.case-card.status-Pass { border-left: 4px solid var(--success); }
+.case-card.status-Fail { border-left: 4px solid var(--error); }
+.case-card.status-Blocked { border-left: 4px solid var(--blocked); }
+.case-card.status-NA { border-left: 4px solid var(--na); }
+.case-card.status-Pending { border-left: 4px solid var(--text-muted); }
+
+/* Card background states for dropdown */
+.case-card.status-Pass .status-dropdown {
+    background-color: var(--success); 
+    color: white; 
+    border-color: var(--success);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.case-card.status-Fail .status-dropdown {
+    background-color: var(--error); 
+    color: white; 
+    border-color: var(--error);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.case-card.status-Blocked .status-dropdown {
+    background-color: var(--blocked); 
+    color: white; 
+    border-color: var(--blocked);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.case-card.status-NA .status-dropdown {
+    background-color: var(--na); 
+    color: white; 
+    border-color: var(--na);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.case-card.status-Pending .status-dropdown {
+    background-color: var(--bg-body); 
+    color: var(--text-muted); 
+    border-color: var(--border);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* =========================================
+   PER-PAGE SELECT FIX
+   ========================================= */
+
+/* Base fix for all per-page selects */
+.per-page-select {
+    background-color: #374151 !important;
+    color: #ffffff !important;
+    border: 1px solid #4b5563 !important;
+    padding: 4px 28px 4px 10px !important;
+    width: auto !important;
+    font-size: 0.8rem !important;
+    min-height: 30px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    outline: none !important;
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
+    -moz-appearance: auto !important;
+}
+
+/* Fix dropdown options */
+.per-page-select option {
+    background-color: #374151 !important;
+    color: #ffffff !important;
+    padding: 6px 12px !important;
+    font-weight: 600 !important;
+}
+
+/* Hover and focus states */
+.per-page-select:hover {
+    border-color: var(--primary) !important;
+}
+
+.per-page-select:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.15) !important;
+}
+
+/* Light theme override */
+[data-theme="light"] .per-page-select {
+    background-color: #f3f4f6 !important;
+    color: #1a1a2e !important;
+    border-color: #d1d5db !important;
+}
+
+[data-theme="light"] .per-page-select option {
+    background-color: #f3f4f6 !important;
+    color: #1a1a2e !important;
+}
+
+[data-theme="light"] .per-page-select option:hover,
+[data-theme="light"] .per-page-select option:checked {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
 }

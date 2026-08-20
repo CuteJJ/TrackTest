@@ -31,7 +31,8 @@ $printers   = $_GET['printers']   ?? [];
 $statuses   = $_GET['statuses']   ?? [];
 
 // ----- 3. Fetch Dropdown Options -----
-$printerOpts = $pdo->query("SELECT id, model_name FROM printers ORDER BY model_name")->fetchAll(PDO::FETCH_KEY_PAIR);
+// FIX: Added "WHERE status = 'active'" to exclude inactive printers
+$printerOpts = $pdo->query("SELECT id, model_name FROM printers WHERE status = 'active' ORDER BY model_name")->fetchAll(PDO::FETCH_KEY_PAIR);
 $statusOpts = ['Pass' => 'Passed', 'Fail' => 'Failed', 'Blocked' => 'Blocked', 'N/A' => 'N/A', 'Pending' => 'Pending'];
 
 $my_reports = []; 

@@ -1,13 +1,12 @@
 <?php
 require_once 'configs/helper.php';
 
-// Auto-Login if Remember Me token exists but session doesn't
+// Auto-Login check (Keep your existing logic)
 if (!isset($_SESSION['user_id']) && isset($_COOKIE['rmb_token'])) {
     require_once 'configs/db.php';
     $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = ?");
     $stmt->execute([$_COOKIE['rmb_token']]);
     $user = $stmt->fetch();
-
     if ($user && (!isset($user['status']) || $user['status'] !== 'blocked')) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
@@ -20,7 +19,6 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['rmb_token'])) {
     }
 }
 
-// If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
@@ -52,9 +50,49 @@ if (isset($_SESSION['user_id'])) {
     .brand-dot { width: 12px; height: 12px; background: var(--primary); border-radius: 4px; }
     .login-title { font-size: 2rem; font-weight: 800; color: var(--text-main); letter-spacing: -1px; margin: 0 0 8px 0; }
     .login-subtitle { font-size: 0.95rem; color: var(--text-muted); margin: 0 0 32px 0; }
-    .login-form .form-group { margin-bottom: 24px; width: 100%; }
+    .login-form .form-group { margin-bottom: 24px; width: 100%; position: relative; }
 
-    /* Custom Login Actions (Checkbox & Forgot Password) */
+    /* --- SIMPLE FLOATING LABEL CSS --- */
+    .form-control {
+        width: 100%;
+        padding: 20px 14px 6px;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg-surface);
+        color: var(--text-main);
+        font-size: 0.95rem;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.15s;
+        height: 52px;
+    }
+    .form-control:focus {
+        border-color: var(--primary);
+    }
+    
+    .form-label {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%) scale(1);
+        transform-origin: left top;
+        pointer-events: none;
+        transition: all 0.15s ease;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        background-color: transparent;
+    }
+    
+    /* Move label when user types or focuses */
+    .form-control:focus ~ .form-label,
+    .form-control:valid ~ .form-label {
+        transform: translateY(-160%) scale(0.85);
+        color: var(--primary);
+        background-color: var(--bg-surface);
+        padding: 0 4px;
+    }
+
+    /* Login Actions */
     .login-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; width: 100%; }
     
     .custom-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; user-select: none; transition: color 0.2s; }
@@ -91,11 +129,33 @@ if (isset($_SESSION['user_id'])) {
 </head>
 <body>
 
+    <!-- 
+      ULTIMATE FIX: This script runs BEFORE the browser paints anything.
+      It instantly clears the values, preventing Chrome from overriding them.
+    -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force blank values immediately on load
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            
+            // Re-run after 50ms and 200ms to catch delayed Chrome autofill
+            setTimeout(function() {
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+            }, 50);
+            
+            setTimeout(function() {
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+            }, 200);
+        });
+    </script>
+
     <?php Helper::displayFlash(); ?>
 
     <div class="login-left">
         <div class="form-wrapper">
-            
             <div class="brand-logo">
                 <div class="brand-dot"></div>
                 Track Manager
@@ -107,12 +167,12 @@ if (isset($_SESSION['user_id'])) {
             <form action="controllers/LoginController.php" method="POST" class="login-form">
                 
                 <div class="form-group">
-                    <input type="text" name="username" id="username" class="form-control" autocomplete="off" required>
+                    <input type="text" name="username" id="username" class="form-control" required>
                     <label for="username" class="form-label">Username</label>
                 </div>
 
                 <div class="form-group">
-                    <input type="password" name="password" id="password" class="form-control" autocomplete="off" required>
+                    <input type="password" name="password" id="password" class="form-control" required>
                     <label for="password" class="form-label">Password</label>
                 </div>
 
@@ -128,10 +188,9 @@ if (isset($_SESSION['user_id'])) {
                 <button type="submit" class="btn-login">Sign In</button>
             </form>
 
-            <div class="login-footer">
+                <div class="login-footer">
                 Need help? No account? Contact PIC.
             </div>
-
         </div>
     </div>
 

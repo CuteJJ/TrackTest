@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['update_info'])) {
             $full_name = trim($_POST['full_name']);
             $username = trim($_POST['username']);
-            $email = trim($_POST['email']); // Retrieve new email field
+            $email = trim($_POST['email']);
             
             if(empty($full_name) || empty($username) || empty($email)) throw new Exception("Name, Username, and Email are required.");
             
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // --- 2. Fetch User Data ---
-$stmt = $pdo->prepare("SELECT username, full_name, email, role, pfp_path, last_login FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT username, full_name, email, role, pfp_path, last_login, staff_id, joined_date FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $u = $stmt->fetch();
 $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
@@ -144,8 +144,42 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
         }
 
         .input-error { border-color: var(--error) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; background: var(--bg-surface) !important; }
-    .error-msg { color: var(--error); font-size: 0.75rem; position: absolute; bottom: -20px; left: 4px; font-weight: 600; display: none; }
-    .input-error ~ .error-msg { display: block; }
+        .error-msg { color: var(--error); font-size: 0.75rem; position: absolute; bottom: -20px; left: 4px; font-weight: 600; display: none; }
+        .input-error ~ .error-msg { display: block; }
+        
+        /* --- STATIC READ-ONLY FIELD STYLES --- */
+        .static-field-wrapper {
+            margin-bottom: 20px;
+        }
+        .static-field-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .static-field-value {
+            padding: 10px 14px;
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* Editable input styling */
+        .read-only-field {
+            border-color: var(--border) !important;
+            background: var(--bg-body) !important;
+            color: var(--text-muted) !important;
+            cursor: not-allowed;
+        }
+        .read-only-field:focus {
+            box-shadow: none !important;
+        }
     </style>
 </head>
 <body>
@@ -182,7 +216,7 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
                         
                         <div class="dropzone" id="pfpDropzone">
                             <span class="material-symbols-outlined">cloud_upload</span>
-                            <span class="dropzone-text">Drag & Drop image here or <strong>click to browse</strong></span>
+                            <span class="dropzone-text">Drag & Drop image here, <strong>paste (Ctrl+V)</strong>, or click to browse</span>
                             <span class="dropzone-sub">Max size: 5MB (PNG, JPG)</span>
                             <input type="file" id="pfpInput" accept="image/*" class="hidden">
                         </div>
@@ -221,24 +255,43 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
                         <div class="d-card-title"><span class="material-symbols-outlined">badge</span> Personal Information</div>
                     </div>
                     <div class="d-card-body padded">
-                        <form method="POST">
+                        <form method="POST" id="personalInfoForm">
                             <input type="hidden" name="update_info" value="1">
             
-                            <div class="form-group" style="margin-top: 10px;">
-                                <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($u['full_name']) ?>" autocomplete="off" required>
-                                <label class="form-label">Full Name</label>
+                            <!-- Staff ID (Static Text) -->
+                            <div class="static-field-wrapper">
+                                <div class="static-field-label">Staff ID</div>
+                                <div class="static-field-value"><?= htmlspecialchars($u['staff_id'] ?? '—') ?></div>
+                            </div>
+
+                            <!-- Joined Date (Static Text) -->
+                            <div class="static-field-wrapper">
+                                <div class="static-field-label">Joined Date</div>
+                                <div class="static-field-value"><?= !empty($u['joined_date']) ? date('F d, Y', strtotime($u['joined_date'])) : '—' ?></div>
+                            </div>
+
+                            <!-- Editable Fields -->
+                            <div class="form-group">
+                                <input type="text" name="full_name" id="edit_full_name" class="form-control read-only-field" value="<?= htmlspecialchars($u['full_name']) ?>" autocomplete="off" required>
+                                <label class="form-label" id="lbl_full_name">Full Name</label>
                             </div>
                             <div class="form-group" style="margin-bottom: 28px;">
-                                <input type="text" name="email" class="form-control" value="<?= htmlspecialchars($u['email'] ?? '') ?>" autocomplete="off" required onblur="validateEmail(this)">
-                                <label class="form-label">Email Address</label>
-                                <span class="error-msg">Please enter a valid email address (requires '@').</span>
+                                <input type="text" name="email" id="edit_email" class="form-control read-only-field" value="<?= htmlspecialchars($u['email'] ?? '') ?>" autocomplete="off" required onblur="validateEmail(this)">
+                                <label class="form-label" id="lbl_email">Email Address</label>
+                                <span class="error-msg">Please enter a valid email address.</span>
                             </div>
                             <div class="form-group">
-                                <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($u['username']) ?>" autocomplete="off" required>
-                                <label class="form-label">Username</label>
+                                <input type="text" name="username" id="edit_username" class="form-control read-only-field" value="<?= htmlspecialchars($u['username']) ?>" autocomplete="off" required>
+                                <label class="form-label" id="lbl_username">Username</label>
                             </div>
                             
-                            <button type="submit" class="btn" style="width: auto; float: right;">Save Information</button>
+                            <!-- Toggle Button -->
+                            <button type="button" id="toggleEditBtn" class="btn" style="width: auto; float: right; display: inline-flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined">edit</span> Edit Information
+                            </button>
+                            <button type="submit" id="saveInfoBtn" class="btn" style="width: auto; float: right; display: none; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined">save</span> Save Changes
+                            </button>
                             <div style="clear: both;"></div>
                         </form>
                     </div>
@@ -293,7 +346,41 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
 </div>
 
 <script>
-    // --- Cropper.js Drag and Drop Integration ---
+    // --- EDIT TOGGLE LOGIC ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleBtn = document.getElementById('toggleEditBtn');
+        const saveBtn = document.getElementById('saveInfoBtn');
+        const form = document.getElementById('personalInfoForm');
+        
+        // Editable inputs
+        const inputs = [
+            document.getElementById('edit_full_name'),
+            document.getElementById('edit_email'),
+            document.getElementById('edit_username')
+        ];
+        // Labels
+        const labels = [
+            document.getElementById('lbl_full_name'),
+            document.getElementById('lbl_email'),
+            document.getElementById('lbl_username')
+        ];
+
+        toggleBtn.addEventListener('click', function() {
+            // Make inputs editable
+            inputs.forEach((inp, index) => {
+                inp.classList.remove('read-only-field');
+                inp.removeAttribute('readonly');
+                inp.removeAttribute('disabled');
+                labels[index].style.color = 'var(--text-main)';
+            });
+
+            // Toggle buttons
+            toggleBtn.style.display = 'none';
+            saveBtn.style.display = 'inline-flex';
+        });
+    });
+
+    // --- Cropper.js Drag and Drop & Paste Integration ---
     let cropper;
     const dropzone = document.getElementById('pfpDropzone');
     const fileInput = document.getElementById('pfpInput');
@@ -315,9 +402,24 @@ $pfp = !empty($u['pfp_path']) ? $u['pfp_path'] : 'imgs/default_pfp.svg';
         if (e.target.files.length) handleFile(e.target.files[0]);
     });
 
+    // --- NEW: PASTE EVENT SUPPORT ---
+    document.addEventListener('paste', (e) => {
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                e.preventDefault();
+                const file = items[i].getAsFile();
+                handleFile(file);
+                break;
+            }
+        }
+    });
+
     function handleFile(file) {
         if (!file.type.startsWith('image/')) {
-            alert('Please select a valid image file.');
+            alert('Please select or paste a valid image file.');
             return;
         }
         if (file.size > 5 * 1024 * 1024) { // 5MB limit

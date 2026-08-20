@@ -1,5 +1,5 @@
 <?php
-// admin/admin_printers.php
+// admin/admin_cases.php
 
 // FIX: PREVENT BROWSER CACHING (Must be called BEFORE any HTML output)
 header("Cache-Control: no-cache, no-store, must-revalidate");
@@ -9,15 +9,10 @@ header("Expires: 0");
 require_once '../configs/helper.php';
 Helper::requireManagementRole();
 
-$TITLE = "Printers | Track Manager (Admin)";
+$TITLE = "Test Cases | Track Manager (Admin)";
 $ASSET_PATH = "../";
 
-// Load Header
 require_once '../configs/header.php';
-
-// Load Admin Navbar
 require_once 'admin_nav.php';
-
-// Load Shared Logic (BOTH New Layout and JS Filtering are inside this)
-require_once '../shared/printer_manager.php';
+require_once '../shared/test_case_manager.php';
 ?>

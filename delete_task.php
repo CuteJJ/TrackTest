@@ -42,6 +42,6 @@ try {
     Helper::setFlash("Error deleting task: " . $e->getMessage(), "error");
 }
 
-// Return to dashboard
-header("Location: index.php");
+// Return to the Task Masterlist
+header("Location: tasks.php");
 exit();
