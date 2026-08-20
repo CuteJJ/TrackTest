@@ -162,7 +162,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
 
             <h1 class="login-title">Log in</h1>
-            <p class="login-subtitle">Enter yourcredentials to access your workspace.</p>
+            <p class="login-subtitle">Enter your credentials to access your workspace.</p>
 
             <form action="controllers/LoginController.php" method="POST" class="login-form">
                 
